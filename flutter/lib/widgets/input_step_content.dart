@@ -163,7 +163,7 @@ class InputStepContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'This computation may take a few minutes. Please be patient.',
+            'This computation can take a few minutes. Please be patient.',
             style: theme.textTheme.bodySmall,
           ),
 

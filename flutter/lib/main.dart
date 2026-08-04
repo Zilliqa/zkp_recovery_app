@@ -15,7 +15,7 @@ class LedgerProofApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeL = ThemeData(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Color.fromRGBO(0, 208, 198, 255),
+        seedColor: const Color.fromRGBO(0, 208, 198, 255),
       ),
     );
     // final themeD = ThemeData.dark().copyWith(

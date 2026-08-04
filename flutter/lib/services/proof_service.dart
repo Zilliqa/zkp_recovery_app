@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:bech32/bech32.dart';
 import 'package:bip32_keys/bip32_keys.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:web3dart/web3dart.dart';
 
 import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
 
@@ -65,8 +65,8 @@ class ProofService {
       throw Exception("EVM == ZIL is not allowed");
     }
 
-    log("ZIL: ${bytesToHex(zilAddress, include0x: true)}");
-    log("EVM: ${bytesToHex(evmAddress, include0x: true)}");
+    log("ZIL: ${bytesToHex(zilAddress)}");
+    log("EVM: ${bytesToHex(evmAddress)}");
 
     // Compute BIP39 mnemonic seed; throws exception if invalid.
     final bip39 = Mnemonic.fromSentence(
@@ -106,12 +106,8 @@ class ProofService {
     final inputs = {
       'seed': expand512(seed),
       'accountIndex': accountIndex.toString(),
-      'expectedAddr': BigInt.parse(
-        bytesToHex(zilAddress, include0x: true),
-      ).toString(),
-      'newAddr': BigInt.parse(
-        bytesToHex(evmAddress, include0x: true),
-      ).toString(),
+      'expectedAddr': BigInt.parse(bytesToHex(zilAddress)).toString(),
+      'newAddr': BigInt.parse(bytesToHex(evmAddress)).toString(),
       'domain': '33333', // TODO: Hard-code domain separator
     };
 
@@ -159,11 +155,13 @@ class ProofService {
         inputs['domain'].toString(),
       ],
     );
-    log("CALLDATA: ${bytesToHex(buffer, include0x: true)}");
+    final calldata = bytesToHex(buffer);
+
+    log("CALLDATA: $calldata");
     return ProofResult(
       proof: 'proof.proof',
       publicOutputs: 'proof.publicSignals',
-      abiEncodedHex: bytesToHex(buffer, include0x: true),
+      abiEncodedHex: calldata,
     );
   }
 
@@ -198,10 +196,10 @@ class ProofService {
         sha256.convert(derivedKey.public).bytes,
       ).sublist(12);
 
-      log("ADDR: ${bytesToHex(derivedAddress, include0x: true)}");
+      log("ADDR: ${bytesToHex(derivedAddress)}");
 
       if (listEquals(knownKey, derivedAddress)) {
-        log("${bytesToHex(knownKey, include0x: true)} found at $n");
+        log("${bytesToHex(knownKey)} found at $n");
         return n;
       }
       await Future.delayed(Duration.zero); // yield to prevent UI freeze
@@ -209,6 +207,29 @@ class ProofService {
 
     // Not found in the first `maxIndex` derived keys
     throw Exception('Key not found within $maxIndex derived keys');
+  }
+
+
+  Uint8List hexToBytes(String hex) {
+    String cleaned = hex.startsWith('0x') || hex.startsWith('0X')
+        ? hex.substring(2)
+        : hex;
+
+    // Pad with a leading zero if odd length (e.g. "0x1" -> "01")
+    if (cleaned.length % 2 != 0) {
+      cleaned = '0$cleaned';
+    }
+
+    final result = Uint8List(cleaned.length ~/ 2);
+    for (int i = 0; i < result.length; i++) {
+      final byteStr = cleaned.substring(i * 2, i * 2 + 2);
+      result[i] = int.parse(byteStr, radix: 16);
+    }
+    return result;
+  }
+
+  String bytesToHex(Uint8List buffer) {
+    return '0x${buffer.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}';
   }
 
   /// Decode zil1xxx address
@@ -282,19 +303,18 @@ class ProofService {
     final pC = g1ToCalldata(proof.c);
     final pubSignalsBig = pubSignals.map(_parseFieldElement).toList();
 
-    const signature =
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])';
-    final selector = keccak256(
-      Uint8List.fromList(signature.codeUnits),
-    ).sublist(0, 4);
+    // const signature =
+    //     'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])';
+    final selector = Uint8List.fromList([0x11, 0x47, 0x9f, 0xea]); // hardcoded
 
     final words = <BigInt>[
       pA[0],
       pA[1],
-      pB[0][0],
+      // NB: pB ordering needs to be flipped
       pB[0][1],
-      pB[1][0],
+      pB[0][0],
       pB[1][1],
+      pB[1][0],
       pC[0],
       pC[1],
       pubSignalsBig[0],
