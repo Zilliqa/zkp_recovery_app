@@ -1,0 +1,113 @@
+import 'package:flutter/material.dart';
+
+import '../models/download_status.dart';
+
+class DownloadStepContent extends StatelessWidget {
+  final Map<String, FileDownloadProgress> progress;
+  final void Function(RemoteFileSpec spec) onRetry;
+
+  const DownloadStepContent({
+    super.key,
+    required this.progress,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final allDownloaded = progress.values.every(
+      (p) => p.state == DownloadState.downloaded,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'These files are required to generate your proof, are downloaded once, then cached on this device.',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 12),
+        ...ProvingArtifacts.files.map(
+          (spec) => _DownloadListTile(
+            spec: spec,
+            progress: progress[spec.fileName]!,
+            onRetry: () => onRetry(spec),
+          ),
+        ),
+        if (!allDownloaded) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Please wait for all files to finish downloading to continue.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _DownloadListTile extends StatelessWidget {
+  final RemoteFileSpec spec;
+  final FileDownloadProgress progress;
+  final VoidCallback onRetry;
+
+  const _DownloadListTile({
+    required this.spec,
+    required this.progress,
+    required this.onRetry,
+  });
+
+  Widget _statusIcon() {
+    switch (progress.state) {
+      case DownloadState.notDownloaded:
+        return const Icon(Icons.cancel, color: Colors.red);
+      case DownloadState.downloading:
+        return const Icon(Icons.downloading, color: Colors.blue);
+      case DownloadState.downloaded:
+        return const Icon(Icons.download_done, color: Colors.green);
+      case DownloadState.checksum:
+        return const Icon(Icons.security, color:Colors.amber);
+      case DownloadState.error:
+        return IconButton(
+          icon: const Icon(Icons.error, color: Colors.red),
+          tooltip: 'Retry',
+          onPressed: onRetry,
+        );
+    }
+  }
+
+  String _subtitle() {
+    switch (progress.state) {
+      case DownloadState.notDownloaded:
+        return 'Not downloaded';
+      case DownloadState.downloading:
+        final pct = progress.fractionComplete;
+        return pct != null
+            ? 'Downloading… ${(pct * 100).toStringAsFixed(0)}%'
+            : 'Downloading…';
+      case DownloadState.checksum:
+        final pct = progress.fractionComplete;
+        return pct != null
+            ? 'Checksumming… ${(pct * 100).toStringAsFixed(0)}%'
+            : 'Checksumming…';
+      case DownloadState.downloaded:
+        return 'Ready';
+      case DownloadState.error:
+        return 'Error: ${progress.errorMessage ?? 'unknown'} - tap to retry';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ListTile(
+        leading: _statusIcon(),
+        title: Text(spec.displayName),
+        subtitle: Text(_subtitle()),
+      ),
+    );
+  }
+}
