@@ -35,7 +35,6 @@ mod uniffi_tests {
     }
 }
 
-
 // CIRCOM_TEMPLATE
 // --- Circom Example of using groth16 proving and verifying circuits ---
 
@@ -47,30 +46,38 @@ pub use circom::{
 };
 
 mod witness {
-    rust_witness::witness!(multiplier2);
+    rust_witness::witness!(ledger);
 }
 
 crate::set_circom_circuits! {
-    ("multiplier2_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::multiplier2_witness)),
+    ("ledger_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::ledger_witness)),
 }
 
 #[cfg(test)]
 mod circom_tests {
     use crate::circom::{generate_circom_proof, verify_circom_proof, ProofLib};
 
-    const ZKEY_PATH: &str = "./test-vectors/circom/multiplier2_final.zkey";
+    const ZKEY_PATH: &str = "./test-vectors/circom/ledger_final.zkey";
 
     #[test]
-    fn test_multiplier2() {
-        let circuit_inputs = "{\"a\": 2, \"b\": 3}".to_string();
+    fn test_ledger() {
+        let circuit_inputs = r#"{"seed":[1,1,0,0,1,0,0,0,1,1,0,1,0,0,0,0,1,0,0,1,1,1,1,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0,1,0,1,1,1,0,1,1,0,0,1,1,1,0,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1,1,1,1,0,0,0,0,1,0,0,1,1,0,1,0,0,0,1,1,1,0,1,1,0,0,0,0,1,1,0,1,0,0,1,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0,1,1,1,1,1,1,1,0,0,0,1,0,0,0,0,1,1,1,0,1,0,0,0,1,0,0,1,0,1,0,1,1,0,0,0,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,0,0,1,0,1,0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,1,1,1,0,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,0,0,1,1,1,1,0,1,1,1,1,0,1,0,0,1,1,1,0,0,1,1,1,1,1,1,1,0,1,0,0,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,1,0,1,1,1,0,1,1,1,1,1,0,0,1,0,0,0,0,1,0,1,1,0,1,0,1,1,1,0,0,0,0,0,1,0,1,1,1,1,0,1,1,1,0,1,1,1,0,0,0,1,1,0,0,1,0,1,1,1,1,1,0,0,1,0,0,0,0,1,1,1,0,1,0,0,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,1,0,0,0,0,0,1,1,1,1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,0,0,0,0,0,1,0,1,0,1,1,1,0,1,1,0,1,1,0,0,0,1,0,0,0,1,1,1,0,1,0,1,0,1,0,0,0,1,1,0,0,1,0,0,1,1,1,1,1,1,0,1,0,0,1,1,0,1,0,1,1,0,0,1,1,1,1,0,0,0,0,1,1,1,0,1,0,0,1,1,1,0,0,1,0,1,0,1,0,0,0,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,1,1,1,1,0,1,0,1,0,0,1],"accountIndex":"5","expectedAddr":"594091409465972267269143250280589291679441903583","newAddr":"394365017111200287840249441287420187482473354350","domain":"33333"}"#.to_string();
+        // let public = vec![
+        //     "594091409465972267269143250280589291679441903583",
+        //     "394365017111200287840249441287420187482473354350",
+        //     "33333",
+        // ]
+        // .into_iter()
+        // .map(|s| s.to_string())
+        // .collect::<Vec<String>>();
         let result =
             generate_circom_proof(ZKEY_PATH.to_string(), circuit_inputs, ProofLib::Arkworks);
         assert!(result.is_ok());
         let proof = result.unwrap();
+        println!("Proof: {:?}", proof);
         assert!(verify_circom_proof(ZKEY_PATH.to_string(), proof, ProofLib::Arkworks).is_ok());
     }
 }
-
 
 // HALO2_TEMPLATE
 halo2_stub!();
