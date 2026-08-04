@@ -54,7 +54,9 @@ class InputStepContent extends StatelessWidget {
   String? _validateAddressZil(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'ZIL address is required';
-    if (!RegExp(r'(^0x[0-9a-fA-F]{40}$|^zil1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{38}$)').hasMatch(trimmed)) {
+    if (!RegExp(
+      r'(^0x[0-9a-fA-F]{40}$|^zil1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{38}$)',
+    ).hasMatch(trimmed)) {
       return 'Expected a zil1-prefixed address';
     }
     return null;
@@ -126,7 +128,8 @@ class InputStepContent extends StatelessWidget {
             enableInteractiveSelection: false,
             keyboardType: TextInputType.visiblePassword,
           ),
-          const SizedBox(height: 8),          TextFormField(
+          const SizedBox(height: 8),
+          TextFormField(
             controller: passwordController,
             obscureText: obscurePassword,
             maxLines: 1,
@@ -158,6 +161,12 @@ class InputStepContent extends StatelessWidget {
               );
             }).toList(),
           ),
+          const SizedBox(height: 16),
+          Text(
+            'This computation may take a few minutes. Please be patient.',
+            style: theme.textTheme.bodySmall,
+          ),
+
           if (computeError != null) ...[
             const SizedBox(height: 12),
             Text(

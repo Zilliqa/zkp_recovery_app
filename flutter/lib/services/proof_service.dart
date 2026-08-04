@@ -130,23 +130,36 @@ class ProofService {
       rethrow;
     }
 
-
-    // proof.json
+    // Sample proof.json
     // {"pi_a":["5776502265472665278545497413361249074636339359053766956191787172828408931600","19263940612329229010478124878252338828767017689135906138173595313335781345156","1"],"pi_b":[["8748157903016795952497456733415715907038043025002955466271923316102605554524","886241302875595676424104021652447587813136273860411421594659396476663865418"],["2366384505827240099277823637769490919639979409247333838210784765674118166817","18897666235681030630830142251418440454721963148432445230139588728456976519923"],["1","0"]],"pi_c":["5919590180065651006466053140454899663463559555450770658584387679159065723805","1020193184100732785795472624075572575276220684902432661948682301798054533103","1"],"protocol":"groth16","curve":"bn128"}
-    final proof = {'curve': result.proof.curve, 'protocol': result.proof.protocol, 'pi_a': [result.proof.a.x, result.proof.a.y, result.proof.a.z]};
-    // public.json
+    final proof = {
+      'pi_a': [result.proof.a.x, result.proof.a.y, result.proof.a.z],
+      'pi_b': [result.proof.b.x, result.proof.b.y, result.proof.b.z],
+      'pi_c': [result.proof.c.x, result.proof.c.y, result.proof.c.z],
+      'protocol': result.proof.protocol,
+      'curve': result.proof.curve,
+    };
+    // Sample public.json
     // ["594091409465972267269143250280589291679441903583","394365017111200287840249441287420187482473354350","33333"]
-    final public = [inputs['expectedAddr'], inputs['newAddr'], inputs['domain']];
+    final public = [
+      inputs['expectedAddr'],
+      inputs['newAddr'],
+      inputs['domain'],
+    ];
 
     // Encode the calldata
     log("PROOF: $proof");
     log("PUBLIC: $public");
 
-    final buffer = _abiEncodeCallData(
-      result.proof.toString(),
-      jsonEncode(public),
+    final buffer = encodeVerifyProofCalldata(
+      proof: result.proof,
+      pubSignals: [
+        inputs['expectedAddr'].toString(),
+        inputs['newAddr'].toString(),
+        inputs['domain'].toString(),
+      ],
     );
-    log("PROOF: ${bytesToHex(buffer, include0x: true)}");
+    log("CALLDATA: ${bytesToHex(buffer, include0x: true)}");
     return ProofResult(
       proof: 'proof.proof',
       publicOutputs: 'proof.publicSignals',
@@ -185,7 +198,7 @@ class ProofService {
         sha256.convert(derivedKey.public).bytes,
       ).sublist(12);
 
-      log("PUB: ${bytesToHex(derivedAddress, include0x: true)}");
+      log("ADDR: ${bytesToHex(derivedAddress, include0x: true)}");
 
       if (listEquals(knownKey, derivedAddress)) {
         log("${bytesToHex(knownKey, include0x: true)} found at $n");
@@ -218,17 +231,83 @@ class ProofService {
     return Uint8List.fromList(bytes);
   }
 
-  /// Calldata encoding
-  Uint8List _abiEncodeCallData(String a, String b) {
-    // 1. Define a dummy function with signature matching: bytes, bytes
-    final dummyFunction = ContractFunction(
-      'submitProof', //
-      [
-        FunctionParameter('a', parseAbiType('string')),
-        FunctionParameter('b', parseAbiType('string')),
-      ],
-    );
+  BigInt _parseFieldElement(String s) {
+    // mopro/arkworks typically output decimal strings; adjust if hex.
+    return BigInt.parse(s);
+  }
 
-    return dummyFunction.encodeCall([a, b]);
+  Uint8List _bigIntToUint256(BigInt value) {
+    final bytes = Uint8List(32);
+    var v = value;
+    for (int i = 31; i >= 0; i--) {
+      bytes[i] = (v & BigInt.from(0xff)).toInt();
+      v = v >> 8;
+    }
+    return bytes;
+  }
+
+  /// Converts a G1 point (affine, z assumed == "1") to [x, y] BigInts.
+  List<BigInt> g1ToCalldata(G1 p) {
+    assert(p.z == '1', 'Expected affine G1 point (z=1), got z=${p.z}');
+    return [_parseFieldElement(p.x), _parseFieldElement(p.y)];
+  }
+
+  /// Converts a G2 point (affine, z assumed == ["1","0"]) to the
+  /// [[x1,x0],[y1,y0]] order Solidity verifiers expect (snarkjs-style swap).
+  List<List<BigInt>> g2ToCalldata(G2 p) {
+    assert(
+      p.x.length == 2 && p.y.length == 2,
+      'Expected Fp2 coordinates (2 elements) for G2 point',
+    );
+    final x0 = _parseFieldElement(p.x[0]);
+    final x1 = _parseFieldElement(p.x[1]);
+    final y0 = _parseFieldElement(p.y[0]);
+    final y1 = _parseFieldElement(p.y[1]);
+
+    // snarkjs/Solidity verifier convention swaps the Fp2 component order.
+    return [
+      [x1, x0],
+      [y1, y0],
+    ];
+  }
+
+  Uint8List encodeVerifyProofCalldata({
+    required CircomProof proof,
+    required List<String> pubSignals, // proof.inputs, as decimal strings
+  }) {
+    assert(pubSignals.length == 3, 'Expected exactly 3 public signals');
+
+    final pA = g1ToCalldata(proof.a);
+    final pB = g2ToCalldata(proof.b);
+    final pC = g1ToCalldata(proof.c);
+    final pubSignalsBig = pubSignals.map(_parseFieldElement).toList();
+
+    const signature =
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])';
+    final selector = keccak256(
+      Uint8List.fromList(signature.codeUnits),
+    ).sublist(0, 4);
+
+    final words = <BigInt>[
+      pA[0],
+      pA[1],
+      pB[0][0],
+      pB[0][1],
+      pB[1][0],
+      pB[1][1],
+      pC[0],
+      pC[1],
+      pubSignalsBig[0],
+      pubSignalsBig[1],
+      pubSignalsBig[2],
+    ];
+
+    final builder = BytesBuilder();
+    builder.add(selector);
+    for (final w in words) {
+      builder.add(_bigIntToUint256(w));
+    }
+
+    return builder.toBytes();
   }
 }
