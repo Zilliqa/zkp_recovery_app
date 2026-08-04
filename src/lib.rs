@@ -47,21 +47,21 @@ pub use circom::{
 };
 
 mod witness {
-    rust_witness::witness!(multiplier2);
+    rust_witness::witness!(ledger);
 }
 
 crate::set_circom_circuits! {
-    ("multiplier2_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::multiplier2_witness)),
+    ("ledger_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::ledger_witness)),
 }
 
 #[cfg(test)]
 mod circom_tests {
     use crate::circom::{generate_circom_proof, verify_circom_proof, ProofLib};
 
-    const ZKEY_PATH: &str = "./test-vectors/circom/multiplier2_final.zkey";
+    const ZKEY_PATH: &str = "./test-vectors/circom/ledger_final.zkey";
 
     #[test]
-    fn test_multiplier2() {
+    fn test_ledger() {
         let circuit_inputs = "{\"a\": 2, \"b\": 3}".to_string();
         let result =
             generate_circom_proof(ZKEY_PATH.to_string(), circuit_inputs, ProofLib::Arkworks);

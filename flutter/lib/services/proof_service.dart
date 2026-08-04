@@ -103,7 +103,7 @@ class ProofService {
   domain: '33333'
 }
     */
-    final inputs = jsonEncode({
+    final inputs = {
       'seed': expand512(seed),
       'accountIndex': accountIndex.toString(),
       'expectedAddr': BigInt.parse(
@@ -113,28 +113,38 @@ class ProofService {
         bytesToHex(evmAddress, include0x: true),
       ).toString(),
       'domain': '33333', // TODO: Hard-code domain separator
-    });
+    };
 
     // Compute the Circom proof
-    CircomProofResult? proofResult;
+    CircomProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
     try {
-      proofResult = await generateCircomProof(
+      result = await generateCircomProof(
         zkeyPath: zkeyPath,
-        circuitInputs: inputs,
+        circuitInputs: jsonEncode(inputs),
         proofLib: ProofLib.arkworks,
       ); // DO NOT change the proofLib if you don't build for rapidsnark
-      log("PROOF: ${proofResult.proof}");
     } on Exception catch (e) {
       log("ERROR: ${e.toString()}");
       log("INPUT: ${inputs.toString()}");
       rethrow;
     }
 
+
+    // proof.json
+    // {"pi_a":["5776502265472665278545497413361249074636339359053766956191787172828408931600","19263940612329229010478124878252338828767017689135906138173595313335781345156","1"],"pi_b":[["8748157903016795952497456733415715907038043025002955466271923316102605554524","886241302875595676424104021652447587813136273860411421594659396476663865418"],["2366384505827240099277823637769490919639979409247333838210784765674118166817","18897666235681030630830142251418440454721963148432445230139588728456976519923"],["1","0"]],"pi_c":["5919590180065651006466053140454899663463559555450770658584387679159065723805","1020193184100732785795472624075572575276220684902432661948682301798054533103","1"],"protocol":"groth16","curve":"bn128"}
+    final proof = {'curve': result.proof.curve, 'protocol': result.proof.protocol, 'pi_a': [result.proof.a.x, result.proof.a.y, result.proof.a.z]};
+    // public.json
+    // ["594091409465972267269143250280589291679441903583","394365017111200287840249441287420187482473354350","33333"]
+    final public = [inputs['expectedAddr'], inputs['newAddr'], inputs['domain']];
+
     // Encode the calldata
+    log("PROOF: $proof");
+    log("PUBLIC: $public");
+
     final buffer = _abiEncodeCallData(
-      proofResult.proof.toString(),
-      proofResult.inputs.toString(),
+      result.proof.toString(),
+      jsonEncode(public),
     );
     log("PROOF: ${bytesToHex(buffer, include0x: true)}");
     return ProofResult(
