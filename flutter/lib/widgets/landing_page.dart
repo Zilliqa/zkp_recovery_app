@@ -89,7 +89,12 @@ class InfoCard extends StatelessWidget {
             padding: const EdgeInsets.all(32),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: AspectRatio(aspectRatio: 16 / 5, child: fullLogo),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 80),
+                  child: AspectRatio(aspectRatio: 16 / 5, child: fullLogo),
+                ),
+              ),
             ),
           ),
 
