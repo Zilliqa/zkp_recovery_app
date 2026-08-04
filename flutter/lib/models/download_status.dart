@@ -27,7 +27,7 @@ class RemoteFileSpec {
 /// 
 /// TODO: Replace with pinned values.
 class ProvingArtifacts {
-  static const String _bucketBase = 'http://10.0.2.2:8080';
+  static const String _bucketBase = 'http://192.168.68.130:8080';
 
   static const RemoteFileSpec artifact = RemoteFileSpec(
     displayName: 'Circuit Key File',

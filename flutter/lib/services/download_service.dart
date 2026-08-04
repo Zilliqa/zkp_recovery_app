@@ -14,7 +14,7 @@ class DownloadService {
 
   Directory? _cacheDir;
 
-  Future<Directory> _getCacheDir() async {
+  Future<Directory> getCacheDir() async {
     if (_cacheDir != null) return _cacheDir!;
     final supportDir = await getApplicationSupportDirectory();
     final dir = Directory('${supportDir.path}/proving_artifacts');
@@ -98,7 +98,7 @@ class DownloadService {
   }
 
   Future<bool> existsLocally() async {
-    final dir = await _getCacheDir();
+    final dir = await getCacheDir();
     final file = _fileFor(dir, ProvingArtifacts.artifact.fileName);
     return (await file.exists()) && (await file.length() > 0);
   }
@@ -107,7 +107,7 @@ class DownloadService {
     void Function(FileDownloadProgress progress) onProgress,
   ) async {
     const spec = ProvingArtifacts.artifact;
-    final dir = await _getCacheDir();
+    final dir = await getCacheDir();
     final file = _fileFor(dir, spec.fileName);
     final meta = await _readMeta(dir, spec.fileName);
     final hasLocalCopy = (await file.exists()) && (await file.length() > 0);
@@ -226,7 +226,7 @@ class DownloadService {
   }
 
   Future<String> pathFor() async {
-    final dir = await _getCacheDir();
+    final dir = await getCacheDir();
     return _fileFor(dir, ProvingArtifacts.artifact.fileName).path;
   }
 }

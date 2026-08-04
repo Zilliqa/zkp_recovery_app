@@ -7,6 +7,7 @@ import 'package:bip32_keys/bip32_keys.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:mopro_flutter_example/services/download_service.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
@@ -30,17 +31,8 @@ class ProofService {
   ProofService._();
   static final ProofService instance = ProofService._();
 
-  Directory? _cacheDir;
-
   Future<Directory> _getCacheDir() async {
-    if (_cacheDir != null) return _cacheDir!;
-    final supportDir = await getApplicationSupportDirectory();
-    final dir = Directory('${supportDir.path}/proving_artifacts');
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-    _cacheDir = dir;
-    return dir;
+    return DownloadService.instance.getCacheDir();
   }
 
   /// STUB: replace with the real Groth16 witness generation + proving
@@ -115,6 +107,9 @@ class ProofService {
     CircomProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
     try {
+      // Debug build timings:
+      //  - FCN_sprout  : ~2m
+      //  - emu64xa     : ~45s
       result = await generateCircomProof(
         zkeyPath: zkeyPath,
         circuitInputs: jsonEncode(inputs),
@@ -122,7 +117,6 @@ class ProofService {
       ); // DO NOT change the proofLib if you don't build for rapidsnark
     } on Exception catch (e) {
       log("ERROR: ${e.toString()}");
-      log("INPUT: ${inputs.toString()}");
       rethrow;
     }
 
