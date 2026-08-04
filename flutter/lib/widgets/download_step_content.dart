@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/download_status.dart';
 
 class DownloadStepContent extends StatelessWidget {
-  final Map<String, FileDownloadProgress> progress;
-  final void Function(RemoteFileSpec spec) onRetry;
+  final FileDownloadProgress progress;
+  final VoidCallback onRetry;
 
   const DownloadStepContent({
     super.key,
@@ -15,29 +15,25 @@ class DownloadStepContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final allDownloaded = progress.values.every(
-      (p) => p.state == DownloadState.downloaded,
-    );
+    final allDownloaded = progress.state == DownloadState.downloaded;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'These files are required to generate your proof, are downloaded once, then cached on this device.',
+          'This file is required to generate your proof. It is downloaded once and cached on this device.',
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 12),
-        ...ProvingArtifacts.files.map(
-          (spec) => _DownloadListTile(
-            spec: spec,
-            progress: progress[spec.fileName]!,
-            onRetry: () => onRetry(spec),
-          ),
+        _DownloadListTile(
+          spec: ProvingArtifacts.artifact,
+          progress: progress,
+          onRetry: onRetry,
         ),
         if (!allDownloaded) ...[
           const SizedBox(height: 8),
           Text(
-            'Please wait for all files to finish downloading to continue.',
+            'Please wait for the download to finish to continue.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.error,
             ),

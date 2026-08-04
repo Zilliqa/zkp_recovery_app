@@ -8,10 +8,6 @@ import 'package:path_provider/path_provider.dart';
 
 import '../models/download_status.dart';
 
-/// Handles fetching and caching the proving artifacts from the public
-/// GCS bucket, using conditional requests (`If-None-Match` /
-/// `If-Modified-Since`) so we don't re-download files that haven't
-/// changed on the server.
 class DownloadService {
   DownloadService._();
   static final DownloadService instance = DownloadService._();
@@ -35,7 +31,6 @@ class DownloadService {
   File _metaFileFor(Directory dir, String fileName) =>
       File('${dir.path}/$fileName.meta.json');
 
-  /// Reads cached validators (ETag / Last-Modified) for a given file, if any.
   Future<Map<String, String>?> _readMeta(Directory dir, String fileName) async {
     final metaFile = _metaFileFor(dir, fileName);
     if (!await metaFile.exists()) return null;
@@ -56,12 +51,10 @@ class DownloadService {
   }) async {
     final metaFile = _metaFileFor(dir, fileName);
     await metaFile.writeAsString(
-      jsonEncode({'etag': ?etag, 'lastModified': ?lastModified}),
+      jsonEncode({'etag': etag, 'lastModified': lastModified}),
     );
   }
 
-  /// Streams [file] through SHA-512 without loading it fully into memory,
-  /// since proving artifacts (e.g. `ledger.zkey`) can be large.
   Future<String> _computeSha256Hex(
     File file,
     void Function(FileDownloadProgress progress) onProgress,
@@ -87,7 +80,7 @@ class DownloadService {
           fractionComplete: progress / fileSize,
         ),
       );
-      await Future.delayed(Duration.zero); // yield to prevent UI freeze
+      await Future.delayed(Duration.zero);
     }
     input.close();
     return output.events.single.toString();
@@ -97,8 +90,6 @@ class DownloadService {
     return expectedHex.trim().toLowerCase() == actualHex.trim().toLowerCase();
   }
 
-  /// Deletes the cached file and its metadata sidecar, e.g. after a
-  /// checksum mismatch, so the next attempt performs a clean re-download.
   Future<void> _purgeCachedFile(Directory dir, String fileName) async {
     final file = _fileFor(dir, fileName);
     final metaFile = _metaFileFor(dir, fileName);
@@ -106,23 +97,16 @@ class DownloadService {
     if (await metaFile.exists()) await metaFile.delete();
   }
 
-  /// Returns true if the file already exists locally and has cached
-  /// validators, i.e. it *appears* fully downloaded. This is a fast,
-  /// local-only check used to paint initial UI state before the
-  /// network round-trip in [checkAndDownload] confirms freshness.
-  Future<bool> existsLocally(String fileName) async {
+  Future<bool> existsLocally() async {
     final dir = await _getCacheDir();
-    final file = _fileFor(dir, fileName);
+    final file = _fileFor(dir, ProvingArtifacts.artifact.fileName);
     return (await file.exists()) && (await file.length() > 0);
   }
 
-  /// Ensures [spec] is present and up to date locally, reporting progress
-  /// via [onProgress]. Uses conditional GET so a server-side 304 short
-  /// circuits into "already downloaded" without re-transferring bytes.
   Future<void> checkAndDownload(
-    RemoteFileSpec spec,
     void Function(FileDownloadProgress progress) onProgress,
   ) async {
+    const spec = ProvingArtifacts.artifact;
     final dir = await _getCacheDir();
     final file = _fileFor(dir, spec.fileName);
     final meta = await _readMeta(dir, spec.fileName);
@@ -145,8 +129,6 @@ class DownloadService {
 
       final streamedResponse = await client.send(request);
 
-      // 304 Not Modified -> server says our cached copy is still current.
-      // Still verify its checksum in case of local corruption or tampering.
       if (streamedResponse.statusCode == 304) {
         await streamedResponse.stream.drain();
         client.close();
@@ -200,7 +182,7 @@ class DownloadService {
                 : null,
           ),
         );
-        await Future.delayed(Duration.zero); // yield to prevent UI freeze
+        await Future.delayed(Duration.zero);
       }
       await sink.flush();
       await sink.close();
@@ -243,8 +225,8 @@ class DownloadService {
     }
   }
 
-  Future<String> pathFor(String fileName) async {
+  Future<String> pathFor() async {
     final dir = await _getCacheDir();
-    return _fileFor(dir, fileName).path;
+    return _fileFor(dir, ProvingArtifacts.artifact.fileName).path;
   }
 }

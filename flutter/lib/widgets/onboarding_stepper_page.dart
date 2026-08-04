@@ -35,13 +35,8 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
   bool get _allChecked => _checkedFlags.every((c) => c);
 
   // --- Download state ---
-  final Map<String, FileDownloadProgress> _downloadProgress = {
-    for (final spec in ProvingArtifacts.files)
-      spec.fileName: FileDownloadProgress(),
-  };
-  bool get _allDownloaded => _downloadProgress.values.every(
-    (p) => p.state == DownloadState.downloaded,
-  );
+  FileDownloadProgress _downloadProgress = FileDownloadProgress();
+  bool get _allDownloaded => _downloadProgress.state == DownloadState.downloaded;
 
   // --- Input state ---
   final _inputFormKey = GlobalKey<FormState>();
@@ -61,9 +56,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
   @override
   void initState() {
     super.initState();
-    for (final spec in ProvingArtifacts.files) {
-      _download(spec);
-    }
+    _download();
   }
 
   @override
@@ -74,10 +67,14 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
     super.dispose();
   }
 
-  Future<void> _download(RemoteFileSpec spec) async {
-    await DownloadService.instance.checkAndDownload(spec, (progress) {
+  Future<void> _download() async {
+    await DownloadService.instance.checkAndDownload((progress) {
       if (!mounted) return;
-      setState(() => _downloadProgress[spec.fileName] = progress);
+      setState(() {
+        _downloadProgress.state = progress.state;
+        _downloadProgress.fractionComplete = progress.fractionComplete;
+        _downloadProgress.errorMessage = progress.errorMessage;
+      });
     });
   }
 
