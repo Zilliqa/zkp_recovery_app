@@ -105,7 +105,7 @@ class InputStepContent extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Your seed phrase is only used locally on this device to compute the proof and is never transmitted.',
-            style: theme.textTheme.bodySmall,
+            style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -164,9 +164,8 @@ class InputStepContent extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'This computation can take a few minutes. Please be patient.',
-            style: theme.textTheme.bodySmall,
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
           ),
-
           if (computeError != null) ...[
             const SizedBox(height: 12),
             Text(

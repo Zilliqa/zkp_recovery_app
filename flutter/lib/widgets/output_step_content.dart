@@ -22,29 +22,12 @@ class OutputStepContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Text(
-        //   'Proof (${result.proof.length} bytes)',
-        //   style: theme.textTheme.titleSmall,
-        // ),
-        // const SizedBox(height: 4),
-        // _HexPreview(hex: _toHex(result.proof)),
-        // const SizedBox(height: 16),
-        // Text(
-        //   'Public (${result.publicOutputs.length} bytes)',
-        //   style: theme.textTheme.titleSmall,
-        // ),
-        // const SizedBox(height: 4),
-        // _HexPreview(hex: _toHex(result.publicOutputs)),
-        // const SizedBox(height: 16),
-        // Text('Calldata', style: theme.textTheme.titleSmall),
-        // const SizedBox(height: 4),
+
         _HexPreview(hex: result.abiEncodedHex),
         const SizedBox(height: 8),
         Text(
-          'Copy and paste this directly as calldata / bytes argument in your wallet. Send it to the published contract at\n0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.error,
-          ),
+          'Copy and paste this directly as calldata / bytes argument in your wallet. Send it to the published contract at\n\n0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF',
+          style: theme.textTheme.bodyMedium,
         ),
       ],
     );

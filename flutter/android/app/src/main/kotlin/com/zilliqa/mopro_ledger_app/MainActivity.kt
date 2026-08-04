@@ -1,4 +1,4 @@
-package com.example.mopro_flutter_example
+package com.zilliqa.mopro_ledger_app
 
 import io.flutter.embedding.android.FlutterActivity
 

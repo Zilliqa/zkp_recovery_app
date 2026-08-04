@@ -5,8 +5,7 @@ import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-
-import '../models/download_status.dart';
+import 'package:mopro_ledger_app/models/download_status.dart';
 
 class DownloadService {
   DownloadService._();

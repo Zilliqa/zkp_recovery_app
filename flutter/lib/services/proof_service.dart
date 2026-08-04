@@ -7,10 +7,9 @@ import 'package:bip32_keys/bip32_keys.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mopro_flutter_example/services/download_service.dart';
-import 'package:path_provider/path_provider.dart';
-
+import 'package:mopro_ledger_app/services/download_service.dart';
 import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
+
 
 /// Result of a Groth16 proof computation: the proof itself and the
 /// public outputs it attests to, plus the combined Solidity
@@ -56,9 +55,6 @@ class ProofService {
     if (listEquals(evmAddress, zilAddress)) {
       throw Exception("EVM == ZIL is not allowed");
     }
-
-    log("ZIL: ${bytesToHex(zilAddress)}");
-    log("EVM: ${bytesToHex(evmAddress)}");
 
     // Compute BIP39 mnemonic seed; throws exception if invalid.
     final bip39 = Mnemonic.fromSentence(
@@ -107,9 +103,11 @@ class ProofService {
     CircomProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
     try {
+      // Consumes up to 4GB of RAM for computation.
+      //
       // Debug build timings:
       //  - FCN_sprout  : ~2m
-      //  - emu64xa     : ~45s
+      //  - emu64xa     : <1m
       result = await generateCircomProof(
         zkeyPath: zkeyPath,
         circuitInputs: jsonEncode(inputs),
@@ -120,27 +118,7 @@ class ProofService {
       rethrow;
     }
 
-    // Sample proof.json
-    // {"pi_a":["5776502265472665278545497413361249074636339359053766956191787172828408931600","19263940612329229010478124878252338828767017689135906138173595313335781345156","1"],"pi_b":[["8748157903016795952497456733415715907038043025002955466271923316102605554524","886241302875595676424104021652447587813136273860411421594659396476663865418"],["2366384505827240099277823637769490919639979409247333838210784765674118166817","18897666235681030630830142251418440454721963148432445230139588728456976519923"],["1","0"]],"pi_c":["5919590180065651006466053140454899663463559555450770658584387679159065723805","1020193184100732785795472624075572575276220684902432661948682301798054533103","1"],"protocol":"groth16","curve":"bn128"}
-    final proof = {
-      'pi_a': [result.proof.a.x, result.proof.a.y, result.proof.a.z],
-      'pi_b': [result.proof.b.x, result.proof.b.y, result.proof.b.z],
-      'pi_c': [result.proof.c.x, result.proof.c.y, result.proof.c.z],
-      'protocol': result.proof.protocol,
-      'curve': result.proof.curve,
-    };
-    // Sample public.json
-    // ["594091409465972267269143250280589291679441903583","394365017111200287840249441287420187482473354350","33333"]
-    final public = [
-      inputs['expectedAddr'],
-      inputs['newAddr'],
-      inputs['domain'],
-    ];
-
     // Encode the calldata
-    log("PROOF: $proof");
-    log("PUBLIC: $public");
-
     final buffer = encodeVerifyProofCalldata(
       proof: result.proof,
       pubSignals: [
@@ -203,7 +181,6 @@ class ProofService {
     throw Exception('Key not found within $maxIndex derived keys');
   }
 
-
   Uint8List hexToBytes(String hex) {
     String cleaned = hex.startsWith('0x') || hex.startsWith('0X')
         ? hex.substring(2)
@@ -243,6 +220,7 @@ class ProofService {
         bytes.add((buffer >> bits) & 0xFF);
       }
     }
+
     return Uint8List.fromList(bytes);
   }
 
