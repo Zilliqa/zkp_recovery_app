@@ -10,7 +10,6 @@ import 'package:flutter/foundation.dart';
 import 'package:mopro_ledger_app/services/download_service.dart';
 import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
 
-
 /// Result of a Groth16 proof computation: the proof itself and the
 /// public outputs it attests to, plus the combined Solidity
 /// `abi.encode(bytes,bytes)` payload ready to paste into a wallet.
@@ -64,11 +63,16 @@ class ProofService {
     );
     final seed = Uint8List.fromList(bip39.seed);
 
+    // Find new account index; throws exception if found
+    final evmIndex = await findAccountIndex(seed: seed, knownKey: evmAddress);
+    if (evmIndex != 100) {
+      throw Exception("EVM address is derived from same mnemonic seed phrase.");
+    }
     // Find old account index; throws exception if not found
-    final accountIndex = await findAccountIndex(
-      seed: seed,
-      knownKey: zilAddress,
-    );
+    final zilIndex = await findAccountIndex(seed: seed, knownKey: zilAddress);
+    if (zilIndex == 100) {
+      throw Exception("ZIL address is not derived from mnemonic seed phrase.");
+    }
 
     // Encode the Circom inputs
     /*
@@ -93,10 +97,10 @@ class ProofService {
     */
     final inputs = {
       'seed': expand512(seed),
-      'accountIndex': accountIndex.toString(),
+      'accountIndex': zilIndex.toString(),
       'expectedAddr': BigInt.parse(bytesToHex(zilAddress)).toString(),
       'newAddr': BigInt.parse(bytesToHex(evmAddress)).toString(),
-      'domain': '33333', // TODO: Hard-code domain separator
+      'domain': '32769', // Hard-coded domain separator
     };
 
     // Compute the Circom proof
@@ -176,9 +180,9 @@ class ProofService {
       }
       await Future.delayed(Duration.zero); // yield to prevent UI freeze
     }
-
     // Not found in the first `maxIndex` derived keys
-    throw Exception('Key not found within $maxIndex derived keys');
+    return maxIndex;
+    // throw Exception('Key not found within $maxIndex derived keys');
   }
 
   Uint8List hexToBytes(String hex) {

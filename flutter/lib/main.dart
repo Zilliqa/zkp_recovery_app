@@ -25,7 +25,7 @@ class LedgerProofApp extends StatelessWidget {
       ),
     );
     return MaterialApp(
-      title: 'Ledger Incident Recovery Proof',
+      title: 'Ledger Incident - Recovery Proof',
       theme: themeL,
       darkTheme: themeD,
       themeMode: ThemeMode.system,

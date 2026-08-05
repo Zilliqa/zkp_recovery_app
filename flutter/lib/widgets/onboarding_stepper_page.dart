@@ -243,7 +243,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
     ),
     Step(
       title: const Text('Proof'),
-      subtitle: const Text('Copy this into your wallet'),
+      subtitle: const Text('Submit this for verification'),
       state: _stepState(_stepOutput),
       isActive: _currentStep >= _stepOutput,
       content: Align(
