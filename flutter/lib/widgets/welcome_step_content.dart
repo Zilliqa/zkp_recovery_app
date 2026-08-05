@@ -30,7 +30,13 @@ const List<InfoCardData> welcomeInfoCards = [
     icon: Icons.airplanemode_active,
     title: 'Offline mode capable',
     body:
-        'In Step 4, you may enable Flight mode and disable WiFi as a precaution.',
+        'In Step 4, enable Flight mode and disable WiFi as a precaution.',
+  ),
+  InfoCardData(
+    icon: Icons.upload_file,
+    title: 'Submit the calldata',
+    body:
+        'In Step 5, copy the standard calldata and submit it to our verifier.',
   ),
 ];
 

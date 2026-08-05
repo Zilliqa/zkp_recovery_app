@@ -26,7 +26,7 @@ class OutputStepContent extends StatelessWidget {
         _HexPreview(hex: result.abiEncodedHex),
         const SizedBox(height: 8),
         Text(
-          'Copy and paste this directly as calldata / bytes argument in your wallet. Send it to the published contract at\n\n0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF',
+          'Copy and paste this directly as calldata / bytes argument in your wallet. Submit it to the published contract at\n\n0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF',
           style: theme.textTheme.bodyMedium,
         ),
       ],

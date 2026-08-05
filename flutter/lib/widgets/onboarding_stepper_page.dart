@@ -35,7 +35,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
   bool get _allChecked => _checkedFlags.every((c) => c);
 
   // --- Download state ---
-  FileDownloadProgress _downloadProgress = FileDownloadProgress();
+  final FileDownloadProgress _downloadProgress = FileDownloadProgress();
   bool get _allDownloaded => _downloadProgress.state == DownloadState.downloaded;
 
   // --- Input state ---
@@ -259,12 +259,12 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
       case StepState.editing:
         return Text(
           (step + 1).toString(),
-          style: TextStyle(color: theme.scaffoldBackgroundColor),
+          style: TextStyle(color: theme.canvasColor),
         );
       case StepState.indexed:
         return Text(
           (step + 1).toString(),
-          style: TextStyle(color: theme.scaffoldBackgroundColor),
+          style: TextStyle(color: theme.hintColor),
         );
       case StepState.complete:
         return Icon(Icons.check_circle, color: theme.scaffoldBackgroundColor);
