@@ -4,6 +4,11 @@ mod stubs;
 mod error;
 pub use error::MoproError;
 
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 // Initializes the shared UniFFI scaffolding and defines the `MoproError` enum.
 #[cfg(not(target_arch = "wasm32"))]
 mopro_ffi::app!();
