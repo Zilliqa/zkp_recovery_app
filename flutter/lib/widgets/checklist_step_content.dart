@@ -22,7 +22,7 @@ const List<ChecklistItemData> prepChecklistItems = [
   ChecklistItemData(
     title: 'Agree to Terms of Use',
     subtitle:
-        'Please read the terms of use at https://www.zilliqa.com/ledger-incident-app and agree to it.',
+        'You are deemed to have agreed to terms of use at https://www.zilliqa.com/ledger-incident/',
   ),
 ];
 
