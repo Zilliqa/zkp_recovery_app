@@ -18,7 +18,7 @@ const List<InfoCardData> welcomeInfoCards = [
     icon: Icons.info_outline,
     title: 'How this app works',
     body:
-        'This app generates a zero-knowledge proof that links your existing account to a new EVM-only account.',
+        'This app generates a zero-knowledge proof that links your legacy Ledger account to a new EVM-only account.',
   ),
   InfoCardData(
     icon: Icons.security,
