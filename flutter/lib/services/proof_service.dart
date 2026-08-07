@@ -65,8 +65,10 @@ class ProofService {
 
     // Find old account index; throws exception if not found
     final zilIndex = await findAccountIndex(seed: seed, knownKey: zilAddress);
-    if (zilIndex == 100) {
-      throw Exception("ZIL address is not derived from mnemonic seed phrase.");
+    if (zilIndex == -1) {
+      throw Exception(
+        "ZIL address does not seem to be derived from mnemonic seed phrase.",
+      );
     }
 
     // Encode the Circom inputs in the Arkworks format.
@@ -77,7 +79,9 @@ class ProofService {
       'accountIndex': [zilIndex.toString()],
       'expectedAddr': [BigInt.parse(bytesToHex(zilAddress)).toString()],
       'newAddr': [BigInt.parse(bytesToHex(evmAddress)).toString()],
-      'domain': ['33101'], // Hard-coded domain separator
+      'domain': [
+        (kDebugMode) ? '33101' : '32769',
+      ], // Hard-coded domain separator
     };
 
     // Compute the Circom proof
@@ -138,7 +142,7 @@ class ProofService {
   Future<int> findAccountIndex({
     required Uint8List seed,
     required Uint8List knownKey,
-    int maxIndex = 100,
+    int maxIndex = 1000,
   }) async {
     // Master key, derived once - each path derivation walks down from here.
     final masterKey = Bip32Keys.fromSeed(seed);
@@ -160,8 +164,7 @@ class ProofService {
       await Future.delayed(Duration.zero); // yield to prevent UI freeze
     }
     // Not found in the first `maxIndex` derived keys
-    return maxIndex;
-    // throw Exception('Key not found within $maxIndex derived keys');
+    return -1;
   }
 
   Uint8List hexToBytes(String hex) {
@@ -229,7 +232,6 @@ class ProofService {
   }
 
   /// Converts a G2 point (affine, z assumed == ["1","0"]) to the
-  /// [[x1,x0],[y1,y0]] order Solidity verifiers expect (snarkjs-style swap).
   List<List<BigInt>> g2ToCalldata(G2 p) {
     assert(
       p.x.length == 2 && p.y.length == 2,
@@ -240,7 +242,6 @@ class ProofService {
     final y0 = _parseFieldElement(p.y[0]);
     final y1 = _parseFieldElement(p.y[1]);
 
-    // snarkjs/Solidity verifier convention swaps the Fp2 component order.
     return [
       [x0, x1],
       [y0, y1],
@@ -262,11 +263,12 @@ class ProofService {
     final words = <BigInt>[
       pA[0],
       pA[1],
-      // NB: pB ordering needs to be flipped
-      pB[0][0],
+      // snarkjs/Solidity verifier convention swaps the Fp2 component order.
+      // Checked against verifier.sol
       pB[0][1],
-      pB[1][0],
+      pB[0][0],
       pB[1][1],
+      pB[1][0],
       pC[0],
       pC[1],
       pubSignalsBig[0],
