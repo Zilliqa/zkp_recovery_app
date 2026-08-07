@@ -29,6 +29,11 @@ class OutputStepContent extends StatelessWidget {
           'Copy and paste this directly as calldata / bytes argument in your wallet. Submit it to the published contract at\n\n0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF',
           style: theme.textTheme.bodyMedium,
         ),
+        const SizedBox(height: 16),
+        Text(
+          'For added safety, you may remove this app and restart this device after submitting the proof.',
+          style: theme.textTheme.bodyMedium,
+        ),
       ],
     );
   }

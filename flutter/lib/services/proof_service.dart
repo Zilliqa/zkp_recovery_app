@@ -69,7 +69,9 @@ class ProofService {
       throw Exception("ZIL address is not derived from mnemonic seed phrase.");
     }
 
-    // Encode the Circom inputs
+    // Encode the Circom inputs in the Arkworks format.
+    // Arkworks uses a different encoding format than Rapidsnark.
+    // This object serializes into the expected encoding format for Arkworks.
     final inputs = {
       'seed': expand512(seed),
       'accountIndex': [zilIndex.toString()],
@@ -81,11 +83,11 @@ class ProofService {
     // Compute the Circom proof
     CircomProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
-    // Consumes up to 4GB of RAM for computation.
-    //
-    // Debug build timings:
-    //  - FCN_sprout  : ~2m
-    //  - emu64xa     : <1m
+    // Will crash on devices with < 4GB of RAM.
+    // Estimated timings:
+    //  - FCN_sprout    : <10m
+    //  - emu64xa       : < 3m
+    //  - x86_64_Ubuntu : < 2m
     result = await generateCircomProof(
       zkeyPath: zkeyPath,
       circuitInputs: jsonEncode(inputs),
@@ -103,16 +105,18 @@ class ProofService {
       'protocol': result.proof.protocol,
       'curve': result.proof.curve,
     };
-    log(jsonEncode(proof));
-    log(jsonEncode(result.inputs));
-
-    // Encode the calldata
+    // Encode the outputs
     final calldata = encodeVerifyProofCalldata(result);
-    return ProofResult(
+    final output = ProofResult(
       proof: jsonEncode(proof),
       publicOutputs: jsonEncode(result.inputs),
       abiEncodedHex: bytesToHex(calldata),
     );
+
+    log(output.proof);
+    log(output.publicOutputs);
+    log(output.abiEncodedHex);
+    return output;
   }
 
   List<String> expand512(Uint8List bytes) {
