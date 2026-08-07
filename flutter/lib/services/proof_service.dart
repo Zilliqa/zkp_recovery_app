@@ -77,7 +77,7 @@ class ProofService {
       'accountIndex': [zilIndex.toString()],
       'expectedAddr': [BigInt.parse(bytesToHex(zilAddress)).toString()],
       'newAddr': [BigInt.parse(bytesToHex(evmAddress)).toString()],
-      'domain': ['32769'], // Hard-coded domain separator
+      'domain': ['33101'], // Hard-coded domain separator
     };
 
     // Compute the Circom proof
