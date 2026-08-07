@@ -63,94 +63,77 @@ class ProofService {
     );
     final seed = Uint8List.fromList(bip39.seed);
 
-    // Find new account index; throws exception if found
-    final evmIndex = await findAccountIndex(seed: seed, knownKey: evmAddress);
-    if (evmIndex != 100) {
-      throw Exception("EVM address is derived from same mnemonic seed phrase.");
-    }
     // Find old account index; throws exception if not found
     final zilIndex = await findAccountIndex(seed: seed, knownKey: zilAddress);
-    if (zilIndex == 100) {
-      throw Exception("ZIL address is not derived from mnemonic seed phrase.");
+    if (zilIndex == -1) {
+      throw Exception(
+        "ZIL address does not seem to be derived from mnemonic seed phrase.",
+      );
     }
 
-    // Encode the Circom inputs
-    /*
-{
-  seed: [
-    1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1,
-    0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0,
-    1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1,
-    0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0,
-    1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0,
-    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0,
-    1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 1,
-    1, 0, 0, 0,
-    ... 412 more items
-  ],
-  accountIndex: '5',
-  expectedAddr: '594091409465972267269143250280589291679441903583',
-  newAddr: '394365017111200287840249441287420187482473354350',
-  domain: '33333'
-}
-    */
+    // Encode the Circom inputs in the Arkworks format.
+    // Arkworks uses a different encoding format than Rapidsnark.
+    // This object serializes into the expected encoding format for Arkworks.
     final inputs = {
       'seed': expand512(seed),
-      'accountIndex': zilIndex.toString(),
-      'expectedAddr': BigInt.parse(bytesToHex(zilAddress)).toString(),
-      'newAddr': BigInt.parse(bytesToHex(evmAddress)).toString(),
-      'domain': '32769', // Hard-coded domain separator
+      'accountIndex': [zilIndex.toString()],
+      'expectedAddr': [BigInt.parse(bytesToHex(zilAddress)).toString()],
+      'newAddr': [BigInt.parse(bytesToHex(evmAddress)).toString()],
+      'domain': [
+        (kDebugMode) ? '33101' : '32769',
+      ], // Hard-coded domain separator
     };
 
     // Compute the Circom proof
     CircomProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
-    try {
-      // Consumes up to 4GB of RAM for computation.
-      //
-      // Debug build timings:
-      //  - FCN_sprout  : ~2m
-      //  - emu64xa     : <1m
-      result = await generateCircomProof(
-        zkeyPath: zkeyPath,
-        circuitInputs: jsonEncode(inputs),
-        proofLib: ProofLib.arkworks,
-      ); // DO NOT change the proofLib if you don't build for rapidsnark
-    } on Exception catch (e) {
-      log("ERROR: ${e.toString()}");
-      rethrow;
-    }
+    // Will crash on devices with < 4GB of RAM.
+    // Estimated timings:
+    //  - FCN_sprout    : <10m
+    //  - emu64xa       : < 3m
+    //  - x86_64_Ubuntu : < 2m
+    result = await generateCircomProof(
+      zkeyPath: zkeyPath,
+      circuitInputs: jsonEncode(inputs),
+      proofLib: ProofLib.arkworks,
+    ); // Arkworks is slower, but easier to integrate than Rapidsnark
 
-    // Encode the calldata
-    final buffer = encodeVerifyProofCalldata(
-      proof: result.proof,
-      pubSignals: [
-        inputs['expectedAddr'].toString(),
-        inputs['newAddr'].toString(),
-        inputs['domain'].toString(),
+    final proof = {
+      'pi_a': [result.proof.a.x, result.proof.a.y, result.proof.a.z],
+      'pi_b': [
+        [result.proof.b.x[0], result.proof.b.x[1]],
+        [result.proof.b.y[0], result.proof.b.y[1]],
+        [result.proof.b.z[0], result.proof.b.z[1]],
       ],
+      'pi_c': [result.proof.c.x, result.proof.c.y, result.proof.c.z],
+      'protocol': result.proof.protocol,
+      'curve': result.proof.curve,
+    };
+    // Encode the outputs
+    final calldata = encodeVerifyProofCalldata(result);
+    final output = ProofResult(
+      proof: jsonEncode(proof),
+      publicOutputs: jsonEncode(result.inputs),
+      abiEncodedHex: bytesToHex(calldata),
     );
-    final calldata = bytesToHex(buffer);
 
-    log("CALLDATA: $calldata");
-    return ProofResult(
-      proof: 'proof.proof',
-      publicOutputs: 'proof.publicSignals',
-      abiEncodedHex: calldata,
-    );
+    log(output.proof);
+    log(output.publicOutputs);
+    log(output.abiEncodedHex);
+    return output;
   }
 
-  Uint8List expand512(Uint8List bytes) {
+  List<String> expand512(Uint8List bytes) {
     // bytes.length should be 64 for a 512-bit output (64 * 8 = 512)
-    final List<int> bits = List<int>.filled(bytes.length * 8, 0);
+    assert(bytes.length == 64);
+    final List<String> bits = List<String>.filled(512, "");
     int idx = 0;
     for (final x in bytes) {
       for (int i = 7; i >= 0; i--) {
-        bits[idx++] = (x >> i) & 1;
+        bits[idx++] = ((x >> i) & 1).toString();
       }
     }
-    return Uint8List.fromList(bits);
+    return bits;
   }
 
   /// Searches derivation indices m/44'/313'/n'/0'/0' for n in [0, maxIndex)
@@ -159,14 +142,14 @@ class ProofService {
   Future<int> findAccountIndex({
     required Uint8List seed,
     required Uint8List knownKey,
-    int maxIndex = 100,
+    int maxIndex = 1000,
   }) async {
     // Master key, derived once - each path derivation walks down from here.
     final masterKey = Bip32Keys.fromSeed(seed);
 
     // Derive m/44'/313'/n'/0'/0' for n = 0..maxIndex and compare
     for (int n = 0; n < maxIndex; n++) {
-      final path = "m/44'/313'/$n'/0'/0'"; // TODO: Verify vs Ledger app
+      final path = "m/44'/313'/$n'/0'/0'"; // Verified
       final derivedKey = masterKey.derivePath(path);
       final derivedAddress = Uint8List.fromList(
         sha256.convert(derivedKey.public).bytes,
@@ -181,8 +164,7 @@ class ProofService {
       await Future.delayed(Duration.zero); // yield to prevent UI freeze
     }
     // Not found in the first `maxIndex` derived keys
-    return maxIndex;
-    // throw Exception('Key not found within $maxIndex derived keys');
+    return -1;
   }
 
   Uint8List hexToBytes(String hex) {
@@ -250,7 +232,6 @@ class ProofService {
   }
 
   /// Converts a G2 point (affine, z assumed == ["1","0"]) to the
-  /// [[x1,x0],[y1,y0]] order Solidity verifiers expect (snarkjs-style swap).
   List<List<BigInt>> g2ToCalldata(G2 p) {
     assert(
       p.x.length == 2 && p.y.length == 2,
@@ -261,23 +242,19 @@ class ProofService {
     final y0 = _parseFieldElement(p.y[0]);
     final y1 = _parseFieldElement(p.y[1]);
 
-    // snarkjs/Solidity verifier convention swaps the Fp2 component order.
     return [
-      [x1, x0],
-      [y1, y0],
+      [x0, x1],
+      [y0, y1],
     ];
   }
 
-  Uint8List encodeVerifyProofCalldata({
-    required CircomProof proof,
-    required List<String> pubSignals, // proof.inputs, as decimal strings
-  }) {
-    assert(pubSignals.length == 3, 'Expected exactly 3 public signals');
+  Uint8List encodeVerifyProofCalldata(CircomProofResult result) {
+    assert(result.inputs.length == 3, 'Expected exactly 3 public signals');
 
-    final pA = g1ToCalldata(proof.a);
-    final pB = g2ToCalldata(proof.b);
-    final pC = g1ToCalldata(proof.c);
-    final pubSignalsBig = pubSignals.map(_parseFieldElement).toList();
+    final pA = g1ToCalldata(result.proof.a);
+    final pB = g2ToCalldata(result.proof.b);
+    final pC = g1ToCalldata(result.proof.c);
+    final pubSignalsBig = result.inputs.map(_parseFieldElement).toList();
 
     // const signature =
     //     'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])';
@@ -286,7 +263,8 @@ class ProofService {
     final words = <BigInt>[
       pA[0],
       pA[1],
-      // NB: pB ordering needs to be flipped
+      // snarkjs/Solidity verifier convention swaps the Fp2 component order.
+      // Checked against verifier.sol
       pB[0][1],
       pB[0][0],
       pB[1][1],

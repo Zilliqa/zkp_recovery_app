@@ -29,7 +29,7 @@ class LedgerProofApp extends StatelessWidget {
       theme: themeL,
       darkTheme: themeD,
       themeMode: ThemeMode.system,
-      home: const LandingPage(title: 'Ledger Incident'),
+      home: const LandingPage(title: 'Zero Knowledge Recovery'),
     );
   }
 }

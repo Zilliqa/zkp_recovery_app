@@ -81,7 +81,7 @@ class InputStepContent extends StatelessWidget {
             controller: zilAddressController,
             decoration: const InputDecoration(
               labelText: 'Old Schnorr account address',
-              hintText: 'zil1…',
+              hintText: 'zil1… or 0x…',
               border: OutlineInputBorder(),
             ),
             validator: _validateAddressZil,
@@ -163,7 +163,7 @@ class InputStepContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'This computation can take a few minutes. Please be patient.',
+            'This computation can take several minutes. Please be patient.',
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
           ),
           if (computeError != null) ...[

@@ -26,13 +26,14 @@ class RemoteFileSpec {
 /// Hardcoded GCS public bucket locations for the proving artifacts.
 /// 
 /// TODO: Replace with pinned values.
+/// Use a semver naming convention for the file e.g. ledger_26.8.7.zkey
 class ProvingArtifacts {
-  static const String _bucketBase = 'http://192.168.68.130:8080';
+  static const String _bucketBase = 'https://checkpoints.zq2-testnet.zilliqa.com/';
 
   static const RemoteFileSpec artifact = RemoteFileSpec(
     displayName: 'Circuit Key File',
     fileName: 'ledger_final.zkey',
-    url: '$_bucketBase/ledger_final.zkey',
+    url: '$_bucketBase/circuit_final.zkey',
     checksum: 'ec96c7bc927eb6babe1e6d52b62702a1bd3203ae3d71d6eceb6f972577c050ee',
   );
 }
