@@ -11,8 +11,7 @@ import 'package:integration_test/integration_test.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'package:mopro_flutter_bindings/src/rust/third_party/mopro_example_app.dart';
+import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
 import 'package:mopro_flutter_bindings/src/rust/frb_generated.dart';
 
 void main() {
