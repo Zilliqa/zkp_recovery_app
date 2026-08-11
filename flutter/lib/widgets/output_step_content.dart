@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
-import '../../services/proof_service.dart';
+import 'package:flutter/services.dart';
+import 'package:mopro_ledger_app/services/proof_service.dart';
 
 class OutputStepContent extends StatelessWidget {
   final ProofResult? result;
@@ -22,42 +22,76 @@ class OutputStepContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
-        _HexPreview(hex: result.abiEncodedHex),
-        const SizedBox(height: 8),
         Text(
-          'Copy and paste this directly as calldata / bytes argument in your wallet. Submit it to the published contract at\n\n0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF',
+          'For added safety, you may remove this app and restart this device after submitting the proof.',
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
         Text(
-          'For added safety, you may remove this app and restart this device after submitting the proof.',
+          'Copy and paste this directly as calldata / bytes argument in your wallet. Submit it to the published contract at the bottom.',
           style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+        const _CopyableField(
+          label: 'Contract address',
+          value: '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF',
+        ),
+        const SizedBox(height: 16),
+        _CopyableField(
+          label: 'Contract calldata',
+          value: result.abiEncodedHex,
         ),
       ],
     );
   }
 }
 
-class _HexPreview extends StatelessWidget {
-  final String hex;
-  const _HexPreview({required this.hex});
+class _CopyableField extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _CopyableField({required this.label, required this.value});
+
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$label copied to clipboard'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        hex,
-        maxLines: 10,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-      ),
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: TextEditingController(text: value),
+          readOnly: true,
+          minLines: 1,
+          maxLines: 10,
+          style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: theme.highlightColor,
+            border: const OutlineInputBorder(
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(10),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'Copy',
+              onPressed: () => _copy(context),
+            ),
+            counterText: label,
+          ),
+        ),
+      ],
     );
   }
 }

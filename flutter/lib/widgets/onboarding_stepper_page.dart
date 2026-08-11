@@ -1,6 +1,5 @@
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/download_status.dart';
 import '../services/download_service.dart';
@@ -36,7 +35,8 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
 
   // --- Download state ---
   final FileDownloadProgress _downloadProgress = FileDownloadProgress();
-  bool get _allDownloaded => _downloadProgress.state == DownloadState.downloaded;
+  bool get _allDownloaded =>
+      _downloadProgress.state == DownloadState.downloaded;
 
   // --- Input state ---
   final _inputFormKey = GlobalKey<FormState>();
@@ -146,16 +146,6 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
     }
   }
 
-  Future<void> _copyToClipboard() async {
-    final result = _proofResult;
-    if (result == null) return;
-    await Clipboard.setData(ClipboardData(text: result.abiEncodedHex));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied ABI-encoded calldata to clipboard.')),
-    );
-  }
-
   void _restart() {
     setState(() {
       _currentStep = _stepWelcome;
@@ -231,7 +221,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
           obscureMnemonic: _obscureMnemonic,
           obscurePassword: _obscurePassword,
           onSelectedLanguage: (Language? lang) => {
-            setState(() => _mnemonicLanguage = lang!)
+            setState(() => _mnemonicLanguage = lang!),
           },
           onToggleObscure: () =>
               setState(() => _obscureMnemonic = !_obscureMnemonic),
@@ -300,19 +290,13 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
                   : Text(isInputStep ? 'Compute' : 'Continue'),
             )
           else
-            FilledButton.icon(
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy calldata'),
-              onPressed: _proofResult == null ? null : _copyToClipboard,
-            ),
+            TextButton(onPressed: _restart, child: const Text('Start over')),
           const SizedBox(width: 12),
           if (!isLastStep && _currentStep > _stepWelcome)
             TextButton(
               onPressed: _isComputingProof ? null : details.onStepCancel,
               child: const Text('Back'),
             ),
-          if (isLastStep)
-            TextButton(onPressed: _restart, child: const Text('Start over')),
         ],
       ),
     );
