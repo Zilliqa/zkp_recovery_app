@@ -91,7 +91,7 @@ class ProofService {
     // Estimated timings:
     //  - FCN_sprout    : <10m
     //  - emu64xa       : < 3m
-    //  - x86_64_Ubuntu : < 2m
+    //  - x86_64_Ubuntu : <90s
     result = await generateCircomProof(
       zkeyPath: zkeyPath,
       circuitInputs: jsonEncode(inputs),

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:convert/convert.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
