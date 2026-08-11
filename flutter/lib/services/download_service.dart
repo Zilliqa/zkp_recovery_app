@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:convert/convert.dart';
-import 'package:crypto/crypto.dart';
+import 'package:hashlib/hashlib.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:mopro_ledger_app/models/download_status.dart';
@@ -65,8 +65,7 @@ class DownloadService {
       ),
     );
 
-    final output = AccumulatorSink<Digest>();
-    final input = sha256.startChunkedConversion(output);
+    final input = sha256.createSink();
     final fileSize = await file.length();
 
     var progress = 0;
@@ -81,8 +80,7 @@ class DownloadService {
       );
       await Future.delayed(Duration.zero);
     }
-    input.close();
-    return output.events.single.toString();
+    return input.digest().toString();
   }
 
   bool _hashMatches(String actualHex, String expectedHex) {
