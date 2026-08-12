@@ -1,0 +1,13 @@
+# Dependencies (npm install) and the large proving key (hosted externally / Release asset)
+node_modules/
+circuit_final.zkey
+*.zkey
+*.ptau
+*.r1cs
+
+# per-run, user-generated
+proof.json
+public.json
+calldata.txt
+circuit_in.json
+*.wtns
