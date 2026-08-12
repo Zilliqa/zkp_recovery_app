@@ -9,6 +9,7 @@ class InputStepContent extends StatelessWidget {
   final TextEditingController zilAddressController;
   final bool obscureMnemonic;
   final bool obscurePassword;
+  final bool isComputingProof;
   final VoidCallback onToggleObscure;
   final VoidCallback onTogglePassword;
   final String? computeError;
@@ -26,6 +27,7 @@ class InputStepContent extends StatelessWidget {
     required this.passwordController,
     required this.onTogglePassword,
     required this.obscurePassword,
+    required this.isComputingProof,
     this.computeError,
   });
 
@@ -67,6 +69,7 @@ class InputStepContent extends StatelessWidget {
     final theme = Theme.of(context);
     return Form(
       key: formKey,
+
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -78,6 +81,7 @@ class InputStepContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           TextFormField(
+            enabled: !isComputingProof,
             controller: zilAddressController,
             decoration: const InputDecoration(
               labelText: 'Old Schnorr account address',
@@ -91,6 +95,7 @@ class InputStepContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           TextFormField(
+            enabled: !isComputingProof,
             controller: evmAddressController,
             decoration: const InputDecoration(
               labelText: 'New EVM-only account address',
@@ -109,9 +114,10 @@ class InputStepContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           TextFormField(
+            enabled: !isComputingProof,
             controller: mnemonicController,
-            obscureText: obscureMnemonic,
-            maxLines: obscureMnemonic ? 1 : 3,
+            obscureText: (obscureMnemonic || isComputingProof),
+            maxLines: 1,
             decoration: InputDecoration(
               labelText: '12/24-word mnemonic seed phrase',
               border: const OutlineInputBorder(),
@@ -126,12 +132,15 @@ class InputStepContent extends StatelessWidget {
             autocorrect: false,
             enableSuggestions: false,
             enableInteractiveSelection: false,
+            enableIMEPersonalizedLearning: false,
+            autofillHints: null,
             keyboardType: TextInputType.visiblePassword,
           ),
           const SizedBox(height: 8),
           TextFormField(
+            enabled: !isComputingProof,
             controller: passwordController,
-            obscureText: obscurePassword,
+            obscureText: obscurePassword || isComputingProof,
             maxLines: 1,
             decoration: InputDecoration(
               labelText: 'Passphrase (blank if none)',
@@ -147,10 +156,13 @@ class InputStepContent extends StatelessWidget {
             autocorrect: false,
             enableSuggestions: false,
             enableInteractiveSelection: false,
+            enableIMEPersonalizedLearning: false,
+            autofillHints: null,
             keyboardType: TextInputType.visiblePassword,
           ),
           const SizedBox(height: 8),
           DropdownMenu<Language>(
+            enabled: !isComputingProof,
             initialSelection: Language.english,
             onSelected: onSelectedLanguage,
             dropdownMenuEntries: Language.values.map((Language lang) {
