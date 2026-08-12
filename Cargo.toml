@@ -25,6 +25,7 @@ mimalloc = "0.1.52"
 circom-prover = "0.1"
 rust-witness  = "0.1"
 num-bigint    = "0.4.0"
+co-plonk-bridge = { version = "0.1.0", path = "co-plonk-bridge" }
     
 # HALO2_DEPENDENCIES
 # NOIR_DEPENDENCIES
