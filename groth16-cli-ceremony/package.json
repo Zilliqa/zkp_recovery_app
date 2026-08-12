@@ -1,5 +1,5 @@
 {
-  "name": "ceremony-cli",
+  "name": "groth16-cli-ceremony",
   "private": true,
   "dependencies": { "snarkjs": "^0.7.6" }
 }
