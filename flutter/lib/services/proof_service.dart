@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:bech32/bech32.dart';
 import 'package:bip32_keys/bip32_keys.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
-import 'package:crypto/crypto.dart';
+import 'package:hashlib/hashlib.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mopro_ledger_app/services/download_service.dart';
 import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
@@ -33,12 +33,13 @@ class ProofService {
     return DownloadService.instance.getCacheDir();
   }
 
-  /// STUB: replace with the real Groth16 witness generation + proving
-  /// pipeline (using ledger.zkey / ledger.wsd) once it's ready.
-  ///
-  /// [mnemonic] is the 12-word seed phrase, [evmAddress] is the freshly
-  /// generated EVM-only account that should receive funds. Both are
-  /// expected to already be validated by the caller (see InputDialog).
+  /// Computes the Groth16 Proof
+  /// 
+  /// @param passphrase (optional) passphrase
+  /// @param mnemonic   The mnemonic seed phrase.
+  /// @param eAddress   The clean ECDSA address.
+  /// @param zAddress   The old Schnorr address.
+  /// @param language   The BIP39 language set to use.
   Future<ProofResult> computeGroth16Proof({
     required String passphrase,
     required String mnemonic,
@@ -46,6 +47,7 @@ class ProofService {
     required String zAddress,
     required Language language,
   }) async {
+    await Future.delayed(Duration.zero); // yield to prevent UI freeze
     // Extract addresses
     final evmAddress = hexToBytes(eAddress);
     final zilAddress = (zAddress.startsWith('0x')
@@ -55,17 +57,27 @@ class ProofService {
       throw Exception("EVM == ZIL is not allowed");
     }
 
-    // Compute BIP39 mnemonic seed; throws exception if invalid.
-    final bip39 = Mnemonic.fromSentence(
-      mnemonic,
-      language,
-      passphrase: passphrase,
-    );
-    final seed = Uint8List.fromList(bip39.seed);
+    // Master key, derived once - each path derivation walks down from here.
+    Bip32Keys? hdKey;
+    Uint8List seed = Uint8List(64); // prevent re-allocations
+    try {
+      // Compute BIP39 mnemonic seed; throws exception if invalid.
+      final bip39 = Mnemonic.fromSentence(
+        mnemonic,
+        language,
+        passphrase: passphrase,
+      );
+      seed = Uint8List.fromList(bip39.seed);
+      hdKey = Bip32Keys.fromSeed(seed); // does not store seed
+      seed.fillRange(0, seed.length, 0);
+    } catch (_) {
+      seed.fillRange(0, seed.length, 0);
+      rethrow;
+    }
 
     // Find old account index; throws exception if not found
-    final zilIndex = await findAccountIndex(seed: seed, knownKey: zilAddress);
-    if (zilIndex == -1) {
+    final parent = await findAccountParent(hdKey, zilAddress);
+    if (parent == null) {
       throw Exception(
         "ZIL address does not seem to be derived from mnemonic seed phrase.",
       );
@@ -75,8 +87,8 @@ class ProofService {
     // Arkworks uses a different encoding format than Rapidsnark.
     // This object serializes into the expected encoding format for Arkworks.
     final inputs = {
-      'seed': expand512(seed),
-      'accountIndex': [zilIndex.toString()],
+      'parentPriv': expand256(parent.private!),
+      'parentCC': expand256(parent.chainCode),
       'expectedAddr': [BigInt.parse(bytesToHex(zilAddress)).toString()],
       'newAddr': [BigInt.parse(bytesToHex(evmAddress)).toString()],
       'domain': [
@@ -87,11 +99,10 @@ class ProofService {
     // Compute the Circom proof
     CircomProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
-    // Will crash on devices with < 4GB of RAM.
-    // Estimated timings:
-    //  - FCN_sprout    : <10m
-    //  - emu64xa       : < 3m
-    //  - x86_64_Ubuntu : < 2m
+    // Stop-watch timings:
+    //  - FCN_sprout    : <6m
+    //  - emu64xa       : <2m
+    //  - x86_64_Ubuntu : <2m
     result = await generateCircomProof(
       zkeyPath: zkeyPath,
       circuitInputs: jsonEncode(inputs),
@@ -123,10 +134,10 @@ class ProofService {
     return output;
   }
 
-  List<String> expand512(Uint8List bytes) {
-    // bytes.length should be 64 for a 512-bit output (64 * 8 = 512)
-    assert(bytes.length == 64);
-    final List<String> bits = List<String>.filled(512, "");
+  List<String> expand256(Uint8List bytes) {
+    // bytes.length should be 32 for a 256-bit output
+    assert(bytes.length == 32);
+    final List<String> bits = List<String>.filled(256, "");
     int idx = 0;
     for (final x in bytes) {
       for (int i = 7; i >= 0; i--) {
@@ -139,32 +150,26 @@ class ProofService {
   /// Searches derivation indices m/44'/313'/n'/0'/0' for n in [0, maxIndex)
   /// and returns the matching index, or throws if none of the derived
   /// keys match [knownKey]. This path is unique to Ledger-Zilliqa.
-  Future<int> findAccountIndex({
-    required Uint8List seed,
-    required Uint8List knownKey,
-    int maxIndex = 1000,
-  }) async {
-    // Master key, derived once - each path derivation walks down from here.
-    final masterKey = Bip32Keys.fromSeed(seed);
-
-    // Derive m/44'/313'/n'/0'/0' for n = 0..maxIndex and compare
-    for (int n = 0; n < maxIndex; n++) {
-      final path = "m/44'/313'/$n'/0'/0'"; // Verified
-      final derivedKey = masterKey.derivePath(path);
+  Future<Bip32Keys?> findAccountParent(
+    Bip32Keys masterKey,
+    Uint8List knownAddress,
+  ) async {
+    // Derive m/44'/313'/n'/0'/0' for n = 0..1000 and compare
+    for (int n = 0; n < 1000; n++) {
+      // verified against real key
+      final derivedKey = masterKey.derivePath("m/44'/313'/$n'/0'/0'");
       final derivedAddress = Uint8List.fromList(
         sha256.convert(derivedKey.public).bytes,
       ).sublist(12);
 
-      log("ADDR: ${bytesToHex(derivedAddress)}");
-
-      if (listEquals(knownKey, derivedAddress)) {
-        log("${bytesToHex(knownKey)} found at $n");
-        return n;
+      if (listEquals(knownAddress, derivedAddress)) {
+        log("${bytesToHex(knownAddress)} found at $n");
+        final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
+        return parent;
       }
       await Future.delayed(Duration.zero); // yield to prevent UI freeze
     }
-    // Not found in the first `maxIndex` derived keys
-    return -1;
+    return null;
   }
 
   Uint8List hexToBytes(String hex) {
@@ -256,9 +261,11 @@ class ProofService {
     final pC = g1ToCalldata(result.proof.c);
     final pubSignalsBig = result.inputs.map(_parseFieldElement).toList();
 
-    // const signature =
-    //     'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])';
-    final selector = Uint8List.fromList([0x11, 0x47, 0x9f, 0xea]); // hardcoded
+    final selector = hexToBytes(
+      keccak256sum(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])',
+      ).substring(0, 8),
+    ); // hardcoded
 
     final words = <BigInt>[
       pA[0],

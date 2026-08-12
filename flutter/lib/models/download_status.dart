@@ -28,13 +28,13 @@ class RemoteFileSpec {
 /// TODO: Replace with pinned values.
 /// Use a semver naming convention for the file e.g. ledger_26.8.7.zkey
 class ProvingArtifacts {
-  static const String _bucketBase = 'https://checkpoints.zq2-testnet.zilliqa.com/';
+  static const String _bucketBase = 'https://storage.googleapis.com/bkt-p-zkproof-files-001';
 
   static const RemoteFileSpec artifact = RemoteFileSpec(
     displayName: 'Circuit Key File',
     fileName: 'ledger_final.zkey',
-    url: '$_bucketBase/circuit_final.zkey',
-    checksum: 'ec96c7bc927eb6babe1e6d52b62702a1bd3203ae3d71d6eceb6f972577c050ee',
+    url: '$_bucketBase/groth16/circuit_final.zkey',
+    checksum: 'dc48de69b283cebdf2ca258c29a70e0480f398481f70c24437a4cabda82ce4d8',
   );
 }
 

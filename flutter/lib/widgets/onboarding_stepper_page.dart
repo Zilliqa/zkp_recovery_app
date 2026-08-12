@@ -220,6 +220,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
           zilAddressController: _zilAddressController,
           obscureMnemonic: _obscureMnemonic,
           obscurePassword: _obscurePassword,
+          isComputingProof: _isComputingProof,
           onSelectedLanguage: (Language? lang) => {
             setState(() => _mnemonicLanguage = lang!),
           },
