@@ -1,4 +1,4 @@
-# Dependencies (npm install) and the large proving key (hosted externally / Release asset)
+# Dependencies (npm install) and the large proving key (hosted in the GCS bucket — see README)
 node_modules/
 circuit_final.zkey
 *.zkey
