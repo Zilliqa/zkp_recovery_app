@@ -46,6 +46,7 @@ class ProofService {
     required String zAddress,
     required Language language,
   }) async {
+    await Future.delayed(Duration.zero); // yield to prevent UI freeze
     // Extract addresses
     final evmAddress = hexToBytes(eAddress);
     final zilAddress = (zAddress.startsWith('0x')
@@ -55,16 +56,26 @@ class ProofService {
       throw Exception("EVM == ZIL is not allowed");
     }
 
-    // Compute BIP39 mnemonic seed; throws exception if invalid.
-    final bip39 = Mnemonic.fromSentence(
-      mnemonic,
-      language,
-      passphrase: passphrase,
-    );
-    final seed = Uint8List.fromList(bip39.seed);
+    // Master key, derived once - each path derivation walks down from here.
+    Bip32Keys? hdKey;
+    Uint8List seed = Uint8List(64); // prevent re-allocations
+    try {
+      // Compute BIP39 mnemonic seed; throws exception if invalid.
+      final bip39 = Mnemonic.fromSentence(
+        mnemonic,
+        language,
+        passphrase: passphrase,
+      );
+      seed = Uint8List.fromList(bip39.seed);
+      hdKey = Bip32Keys.fromSeed(seed); // does not store seed
+      seed.fillRange(0, seed.length, 0);
+    } catch (_) {
+      seed.fillRange(0, seed.length, 0);
+      rethrow;
+    }
 
     // Find old account index; throws exception if not found
-    final parent = await findAccountParent(seed: seed, knownKey: zilAddress);
+    final parent = await findAccountParent(hdKey, zilAddress);
     if (parent == null) {
       throw Exception(
         "ZIL address does not seem to be derived from mnemonic seed phrase.",
@@ -87,11 +98,10 @@ class ProofService {
     // Compute the Circom proof
     CircomProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
-    // Will crash on devices with < 4GB of RAM.
     // Estimated timings:
-    //  - FCN_sprout    : <10m
-    //  - emu64xa       : < 3m
-    //  - x86_64_Ubuntu : <90s
+    //  - FCN_sprout    : <5.5m
+    //  - emu64xa       : <1.5m
+    //  - x86_64_Ubuntu : <1.5m
     result = await generateCircomProof(
       zkeyPath: zkeyPath,
       circuitInputs: jsonEncode(inputs),
@@ -139,24 +149,20 @@ class ProofService {
   /// Searches derivation indices m/44'/313'/n'/0'/0' for n in [0, maxIndex)
   /// and returns the matching index, or throws if none of the derived
   /// keys match [knownKey]. This path is unique to Ledger-Zilliqa.
-  Future<Bip32Keys?> findAccountParent({
-    required Uint8List seed,
-    required Uint8List knownKey,
-    int maxIndex = 1000,
-  }) async {
-    // Master key, derived once - each path derivation walks down from here.
-    final masterKey = Bip32Keys.fromSeed(seed);
-
-    // Derive m/44'/313'/n'/0'/0' for n = 0..maxIndex and compare
-    for (int n = 0; n < maxIndex; n++) {
+  Future<Bip32Keys?> findAccountParent(
+    Bip32Keys masterKey,
+    Uint8List knownAddress,
+  ) async {
+    // Derive m/44'/313'/n'/0'/0' for n = 0..1000 and compare
+    for (int n = 0; n < 1000; n++) {
       // verified against real key
       final derivedKey = masterKey.derivePath("m/44'/313'/$n'/0'/0'");
       final derivedAddress = Uint8List.fromList(
         sha256.convert(derivedKey.public).bytes,
       ).sublist(12);
 
-      if (listEquals(knownKey, derivedAddress)) {
-        log("${bytesToHex(knownKey)} found at $n");
+      if (listEquals(knownAddress, derivedAddress)) {
+        log("${bytesToHex(knownAddress)} found at $n");
         final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
         return parent;
       }
