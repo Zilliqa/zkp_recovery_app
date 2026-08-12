@@ -48,12 +48,16 @@ That's it — everything between download and upload is automated.
 ## Operator: running the ceremony
 
 The operator does three things (the browser ceremony's coordinator automated these; in this
-manual CLI flow they're run by hand). All three need two public inputs — **`circuit.r1cs`** (the
-**minimal** circuit's r1cs, ~101 MB — from the bucket, or recompile `../groth16-prover-min/circuit.circom`
-with circom 2.2.3 + the pinned includes) and **`pot.ptau`** (the canonical Hermez
-`powersOfTau28_hez_final_21.ptau`, 2^21 — more than enough; 2^19 is the minimum for this ~427k-constraint
-circuit). These are large binaries, git-ignored here — download them into this folder to run/test the
-operator steps.
+manual CLI flow they're run by hand). All three need two public inputs — **`circuit.r1cs`** and
+**`pot.ptau`** — large binaries, git-ignored here. Download both into this folder first:
+
+```bash
+# minimal circuit r1cs (~101 MB) — or recompile ../groth16-prover-min/circuit.circom (circom 2.2.3 + pinned includes)
+curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/circuit.r1cs
+# canonical Hermez powers-of-tau, 2^21 (~2.3 GB); 2^19 is the minimum for this ~427k-constraint circuit
+curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
+snarkjs powersoftau verify pot.ptau   # confirm it's the genuine public ceremony
+```
 
 ### 1. Initialize — once, at the start
 ```bash
