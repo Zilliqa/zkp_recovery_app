@@ -1,5 +1,6 @@
 extern crate anyhow;
 extern crate ark_bn254;
+extern crate ark_ff;
 extern crate circom_prover;
 extern crate co_circom;
 extern crate co_circom_types;
@@ -7,6 +8,7 @@ extern crate num_bigint;
 
 use anyhow::Result;
 use ark_bn254::Fr;
+use ark_ff::ToConstraintField;
 use circom_prover::witness::{self, WitnessFn};
 use co_circom::{Bn254, PlonkProof};
 use co_circom_types::SharedWitness;
@@ -44,39 +46,37 @@ pub fn prove_plonk(
     Ok((proof, signals))
 }
 
+/// Field order matching snarkjs's generated PlonkVerifier.verifyProof(uint256[24], ...)
+/// Source: https://github.com/iden3/snarkjs/blob/master/templates/verifier_plonk.sol.ejs
 pub fn extract_proof_values(plonk_proof: &PlonkProof<Bn254>) -> Result<Vec<String>> {
-    const POINT_FIELDS: [&str; 9] = ["A", "B", "C", "Z", "T1", "T2", "T3", "Wxi", "Wxiw"];
-    const EVAL_FIELDS: [&str; 6] = [
-        "eval_a", "eval_b", "eval_c", "eval_s1", "eval_s2", "eval_zw",
-    ];
-
-    let proof = serde_json::to_value(plonk_proof)?;
-
     let mut out: Vec<String> = Vec::with_capacity(24);
 
-    for field in POINT_FIELDS {
-        let arr = proof
-            .get(field)
-            .and_then(|v| v.as_array())
-            .ok_or_else(|| anyhow::anyhow!("missing point"))?;
-
-        if arr.len() < 2 {
-            return Err(anyhow::anyhow!("not a point"));
-        }
-
-        for v in arr.iter().take(2) {
-            let s = v
-                .as_str()
-                .ok_or_else(|| anyhow::anyhow!("non-string element"))?;
-            out.push(s.to_string());
-        }
+    for xy in [
+        plonk_proof.a,
+        plonk_proof.b,
+        plonk_proof.c,
+        plonk_proof.z,
+        plonk_proof.t1,
+        plonk_proof.t2,
+        plonk_proof.t3,
+        plonk_proof.wxi,
+        plonk_proof.wxiw,
+    ]
+    .iter()
+    .map(|f| f.to_field_elements().unwrap())
+    {
+        out.push(xy[0].to_string());
+        out.push(xy[1].to_string());
     }
 
-    for field in EVAL_FIELDS {
-        let s = proof
-            .get(field)
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow::anyhow!("missing field"))?;
+    for s in [
+        plonk_proof.eval_a,
+        plonk_proof.eval_b,
+        plonk_proof.eval_c,
+        plonk_proof.eval_s1,
+        plonk_proof.eval_s2,
+        plonk_proof.eval_zw,
+    ] {
         out.push(s.to_string());
     }
 
