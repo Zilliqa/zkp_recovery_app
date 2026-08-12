@@ -30,7 +30,7 @@ No account-index argument — it auto-detects and prints it.
 `circuit_final.zkey` (**247 MB**) exceeds GitHub's 100 MB repo limit, so it's hosted in the
 external bucket (GCS). Download it into this folder before running:
 ```
-curl -L -o circuit_final.zkey https://storage.googleapis.com/bkt-p-zkproof-files-001/proof-runner-min/circuit_final.zkey
+curl -L -o circuit_final.zkey https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey
 sha256sum circuit_final.zkey   # compare to the published checksum
 ```
 It contains no secrets (a proving key is public material). `vk.json` + `verifier.sol` are in the repo.

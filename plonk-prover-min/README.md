@@ -24,7 +24,7 @@ off-circuit in `prepare.js`/`prove-secure.js`.
 `circuit_final.zkey` (**3.7 GB**) exceeds **both** GitHub's 100 MB repo limit and its 2 GB
 Release-asset limit, so it is hosted in an **external bucket (GCS)**. Download it into this folder:
 ```
-curl -L -o circuit_final.zkey https://storage.googleapis.com/bkt-p-zkproof-files-001/plonk-runner-min/circuit_final.zkey
+curl -L -o circuit_final.zkey https://storage.googleapis.com/bkt-p-zkproof-files-001/plonk/circuit_final.zkey
 # verify against the published checksum before use:  sha256sum circuit_final.zkey
 ```
 No secrets in the key. `vk.json` + `verifier.sol` are in the repo.
