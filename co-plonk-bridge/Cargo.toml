@@ -1,0 +1,15 @@
+[package]
+name = "co-plonk-bridge"
+version = "0.1.0"
+# edition = "2021"
+
+[dependencies]
+circom-prover = "0.1"          # reused unmodified, just for witness::generate_witness + WitnessFn
+co-plonk = { version = "0.7.0", path = "../vendor/co-snarks/co-circom/co-plonk" }
+co-circom-types = { version = "0.6.0", path = "../vendor/co-snarks/co-circom/co-circom-types" }
+co-circom = { version = "0.10.0", path = "../vendor/co-snarks/co-circom/co-circom" }
+ark-bn254 = "0.6"
+ark-ff = { version = "0.6", features = ["asm"] }
+num-bigint = "0.4.0"
+anyhow = "1.0.99"
+serde_json = "1.0.151"
