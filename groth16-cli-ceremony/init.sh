@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# OPERATOR-ONLY, run ONCE at the start: create the INITIAL (zero-contribution) key that the
+# FIRST contributor downloads. It's a deterministic function of the public circuit + powers-of-tau.
+# usage:  ./init.sh <circuit.r1cs> <pot21.ptau>
+# output: current.zkey   (publish this for the first contributor; it has 0 contributions)
+set -e
+cd "$(dirname "$0")"
+R1CS="$1"; PTAU="$2"
+[ -n "$R1CS" ] && [ -n "$PTAU" ] || { echo "usage: ./init.sh <circuit.r1cs> <pot21.ptau>"; exit 1; }
+for f in "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not found: $f"; exit 1; }; done
+[ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm install --no-audit --no-fund snarkjs; }
+S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
+
+echo "generating the initial (0-contribution) key from circuit.r1cs + powers-of-tau..."
+$S groth16 setup "$R1CS" "$PTAU" current.zkey
+echo
+echo "Initial key written: current.zkey  (0 contributions)."
+echo "Publish current.zkey for the first contributor to download. circuit.r1cs and the ptau are"
+echo "public too — contributors don't need them, but the operator needs them to verify uploads."
