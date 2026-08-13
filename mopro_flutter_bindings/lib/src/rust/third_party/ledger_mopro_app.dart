@@ -10,11 +10,13 @@ Future<void> initApp() => RustLib.instance.api.ledgerMoproAppInitApp();
 
 /// You can also customize the bindings by #[uniffi::export]
 /// Reference: https://mozilla.github.io/uniffi-rs/latest/proc_macro/index.html
-Future<String> moproHelloWorld() =>
-    RustLib.instance.api.ledgerMoproAppMoproHelloWorld();
-
-Future<String> moproWasmHelloWorld() =>
-    RustLib.instance.api.ledgerMoproAppMoproWasmHelloWorld();
+Future<PlonkProofResult> generateCircomPlonkProof({
+  required String zkeyPath,
+  required String jsonInputStr,
+}) => RustLib.instance.api.ledgerMoproAppGenerateCircomPlonkProof(
+  zkeyPath: zkeyPath,
+  jsonInputStr: jsonInputStr,
+);
 
 Future<CircomProofResult> generateCircomProof({
   required String zkeyPath,
@@ -255,6 +257,24 @@ class Halo2ProofResult {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is Halo2ProofResult &&
+          runtimeType == other.runtimeType &&
+          proof == other.proof &&
+          inputs == other.inputs;
+}
+
+class PlonkProofResult {
+  final List<String> proof;
+  final List<String> inputs;
+
+  const PlonkProofResult({required this.proof, required this.inputs});
+
+  @override
+  int get hashCode => proof.hashCode ^ inputs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PlonkProofResult &&
           runtimeType == other.runtimeType &&
           proof == other.proof &&
           inputs == other.inputs;

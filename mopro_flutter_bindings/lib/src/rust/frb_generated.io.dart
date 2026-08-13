@@ -88,6 +88,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
+  PlonkProofResult dco_decode_plonk_proof_result(dynamic raw);
+
+  @protected
   ProofLib dco_decode_proof_lib(dynamic raw);
 
   @protected
@@ -174,6 +177,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  PlonkProofResult sse_decode_plonk_proof_result(SseDeserializer deserializer);
 
   @protected
   ProofLib sse_decode_proof_lib(SseDeserializer deserializer);
@@ -280,6 +286,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_plonk_proof_result(
+    PlonkProofResult self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_proof_lib(ProofLib self, SseSerializer serializer);

@@ -1,11 +1,5 @@
 /// Represents the lifecycle state of a single downloadable artifact.
-enum DownloadState {
-  notDownloaded,
-  downloading,
-  downloaded,
-  checksum,
-  error,
-}
+enum DownloadState { notDownloaded, downloading, downloaded, checksum, error }
 
 /// Describes a remote file that needs to be cached locally before the
 /// Groth16 proof can be generated.
