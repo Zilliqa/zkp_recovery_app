@@ -18,48 +18,8 @@ use mopro_ffi::prelude::wasm_bindgen;
 /// You can also customize the bindings by #[uniffi::export]
 /// Reference: https://mozilla.github.io/uniffi-rs/latest/proc_macro/index.html
 // #[cfg_attr(feature = "uniffi", uniffi::export)]
-// pub fn mopro_hello_world() -> String {
-//     "Hello, World!".to_string()
-// }
-
-// #[cfg_attr(
-//     all(feature = "wasm", target_arch = "wasm32"),
-//     wasm_bindgen(js_name = "moproWasmHelloWorld")
-// )]
-// pub fn mopro_wasm_hello_world() -> String {
-//     "Hello, World!".to_string()
-// }
-
-// #[cfg(test)]
-// mod uniffi_tests {
-//     #[test]
-//     fn test_mopro_hello_world() {
-//         assert_eq!(super::mopro_hello_world(), "Hello, World!");
-//     }
-// }
-
-// CIRCOM_TEMPLATE
-// --- Circom Example of using groth16 proving and verifying circuits ---
-
-// Module containing the Circom circuit logic (Multiplier2)
-#[macro_use]
-mod circom;
-pub use circom::{
-    CircomProof, CircomProofResult, G1, G2, ProofLib, generate_circom_proof, verify_circom_proof,
-};
-
-use crate::circom::PlonkProofResult;
-
-mod witness {
-    rust_witness::witness!(ledger);
-}
-
-crate::set_circom_circuits! {
-    ("ledger_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::ledger_witness)),
-}
-
 #[cfg_attr(feature = "uniffi", uniffi::export)]
-fn generate_circom_plonk_proof(
+pub fn generate_circom_plonk_proof(
     zkey_path: String,
     json_input_str: String,
 ) -> Result<PlonkProofResult, MoproError> {
@@ -79,6 +39,21 @@ fn generate_circom_plonk_proof(
         proof: proofs,
         inputs: signals.into_iter().map(|i| i.to_string()).collect(),
     })
+}
+
+// Exported to Flutter
+#[macro_use]
+mod circom;
+pub use circom::{
+    generate_circom_proof, verify_circom_proof, CircomProof, CircomProofResult, PlonkProofResult,
+    ProofLib, G1, G2,
+};
+mod witness {
+    rust_witness::witness!(ledger);
+}
+
+crate::set_circom_circuits! {
+    ("ledger_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::ledger_witness)),
 }
 
 #[cfg(test)]

@@ -34,7 +34,7 @@ class ProofService {
   }
 
   /// Computes the Groth16 Proof
-  /// 
+  ///
   /// @param passphrase (optional) passphrase
   /// @param mnemonic   The mnemonic seed phrase.
   /// @param eAddress   The clean ECDSA address.
@@ -97,33 +97,25 @@ class ProofService {
     };
 
     // Compute the Circom proof
-    CircomProofResult? result;
+    PlonkProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
-    // Stop-watch timings:
+    // Groth16 (verified):
     //  - FCN_sprout    : <6m
     //  - emu64xa       : <2m
-    //  - x86_64_Ubuntu : <2m
-    result = await generateCircomProof(
+    //  - Ubuntu_24.04  : <2m
+    // Plonk (verified):
+    //  - Ubuntu_24.04  : <12m
+    //  - emu64xa       : crashed 12GB
+    //  - FCN_sprout    : crashed 8GB
+    result = await generateCircomPlonkProof(
       zkeyPath: zkeyPath,
-      circuitInputs: jsonEncode(inputs),
-      proofLib: ProofLib.arkworks,
-    ); // Arkworks is slower, but easier to integrate than Rapidsnark
+      jsonInputStr: jsonEncode(inputs),
+    );
 
-    final proof = {
-      'pi_a': [result.proof.a.x, result.proof.a.y, result.proof.a.z],
-      'pi_b': [
-        [result.proof.b.x[0], result.proof.b.x[1]],
-        [result.proof.b.y[0], result.proof.b.y[1]],
-        [result.proof.b.z[0], result.proof.b.z[1]],
-      ],
-      'pi_c': [result.proof.c.x, result.proof.c.y, result.proof.c.z],
-      'protocol': result.proof.protocol,
-      'curve': result.proof.curve,
-    };
     // Encode the outputs
-    final calldata = encodeVerifyProofCalldata(result);
+    final calldata = encodeCallData(result);
     final output = ProofResult(
-      proof: jsonEncode(proof),
+      proof: "",
       publicOutputs: jsonEncode(result.inputs),
       abiEncodedHex: bytesToHex(calldata),
     );
@@ -147,9 +139,9 @@ class ProofService {
     return bits;
   }
 
-  /// Searches derivation indices m/44'/313'/n'/0'/0' for n in [0, maxIndex)
+  /// Searches derivation indices m/44'/313'/n'/0'/0' for n in [0, 1000)
   /// and returns the matching index, or throws if none of the derived
-  /// keys match [knownKey]. This path is unique to Ledger-Zilliqa.
+  /// keys match [knownAddress]. This path is unique to Ledger-Zilliqa.
   Future<Bip32Keys?> findAccountParent(
     Bip32Keys masterKey,
     Uint8List knownAddress,
@@ -215,11 +207,6 @@ class ProofService {
     return Uint8List.fromList(bytes);
   }
 
-  BigInt _parseFieldElement(String s) {
-    // mopro/arkworks typically output decimal strings; adjust if hex.
-    return BigInt.parse(s);
-  }
-
   Uint8List _bigIntToUint256(BigInt value) {
     final bytes = Uint8List(32);
     var v = value;
@@ -230,63 +217,23 @@ class ProofService {
     return bytes;
   }
 
-  /// Converts a G1 point (affine, z assumed == "1") to [x, y] BigInts.
-  List<BigInt> g1ToCalldata(G1 p) {
-    assert(p.z == '1', 'Expected affine G1 point (z=1), got z=${p.z}');
-    return [_parseFieldElement(p.x), _parseFieldElement(p.y)];
-  }
-
-  /// Converts a G2 point (affine, z assumed == ["1","0"]) to the
-  List<List<BigInt>> g2ToCalldata(G2 p) {
+  Uint8List encodeCallData(PlonkProofResult result) {
     assert(
-      p.x.length == 2 && p.y.length == 2,
-      'Expected Fp2 coordinates (2 elements) for G2 point',
+      result.inputs.length == 3 && result.proof.length == 24,
+      'Expected exact inputs',
     );
-    final x0 = _parseFieldElement(p.x[0]);
-    final x1 = _parseFieldElement(p.x[1]);
-    final y0 = _parseFieldElement(p.y[0]);
-    final y1 = _parseFieldElement(p.y[1]);
-
-    return [
-      [x0, x1],
-      [y0, y1],
-    ];
-  }
-
-  Uint8List encodeVerifyProofCalldata(CircomProofResult result) {
-    assert(result.inputs.length == 3, 'Expected exactly 3 public signals');
-
-    final pA = g1ToCalldata(result.proof.a);
-    final pB = g2ToCalldata(result.proof.b);
-    final pC = g1ToCalldata(result.proof.c);
-    final pubSignalsBig = result.inputs.map(_parseFieldElement).toList();
 
     final selector = hexToBytes(
-      keccak256sum(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])',
-      ).substring(0, 8),
+      keccak256sum('verifyProof(uint256[24],uint256[3])').substring(0, 8),
     ); // hardcoded
-
-    final words = <BigInt>[
-      pA[0],
-      pA[1],
-      // snarkjs/Solidity verifier convention swaps the Fp2 component order.
-      // Checked against verifier.sol
-      pB[0][1],
-      pB[0][0],
-      pB[1][1],
-      pB[1][0],
-      pC[0],
-      pC[1],
-      pubSignalsBig[0],
-      pubSignalsBig[1],
-      pubSignalsBig[2],
-    ];
 
     final builder = BytesBuilder();
     builder.add(selector);
-    for (final w in words) {
-      builder.add(_bigIntToUint256(w));
+    for (final fp in result.proof) {
+      builder.add(_bigIntToUint256(BigInt.parse(fp)));
+    }
+    for (final sc in result.inputs) {
+      builder.add(_bigIntToUint256(BigInt.parse(sc)));
     }
 
     return builder.toBytes();

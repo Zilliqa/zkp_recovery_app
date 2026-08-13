@@ -64,7 +64,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 909762852;
+  int get rustContentHash => 719893601;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -80,6 +80,11 @@ abstract class RustLibApi extends BaseApi {
   Future<G1> ledgerMoproAppG1Default();
 
   Future<G2> ledgerMoproAppG2Default();
+
+  Future<PlonkProofResult> ledgerMoproAppGenerateCircomPlonkProof({
+    required String zkeyPath,
+    required String jsonInputStr,
+  });
 
   Future<CircomProofResult> ledgerMoproAppGenerateCircomProof({
     required String zkeyPath,
@@ -118,10 +123,6 @@ abstract class RustLibApi extends BaseApi {
   Future<Halo2ProofResult> ledgerMoproAppHalo2ProofResultDefault();
 
   Future<void> ledgerMoproAppInitApp();
-
-  Future<String> ledgerMoproAppMoproHelloWorld();
-
-  Future<String> ledgerMoproAppMoproWasmHelloWorld();
 
   Future<ProofLib> ledgerMoproAppProofLibDefault();
 
@@ -251,6 +252,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "g_2_default", argNames: []);
 
   @override
+  Future<PlonkProofResult> ledgerMoproAppGenerateCircomPlonkProof({
+    required String zkeyPath,
+    required String jsonInputStr,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(zkeyPath, serializer);
+          sse_encode_String(jsonInputStr, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_plonk_proof_result,
+          decodeErrorData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
+        ),
+        constMeta: kLedgerMoproAppGenerateCircomPlonkProofConstMeta,
+        argValues: [zkeyPath, jsonInputStr],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kLedgerMoproAppGenerateCircomPlonkProofConstMeta =>
+      const TaskConstMeta(
+        debugName: "generate_circom_plonk_proof",
+        argNames: ["zkeyPath", "jsonInputStr"],
+      );
+
+  @override
   Future<CircomProofResult> ledgerMoproAppGenerateCircomProof({
     required String zkeyPath,
     required String circuitInputs,
@@ -266,7 +303,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 5,
             port: port_,
           );
         },
@@ -304,7 +341,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 6,
             port: port_,
           );
         },
@@ -342,7 +379,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 7,
             port: port_,
           );
         },
@@ -386,7 +423,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 8,
             port: port_,
           );
         },
@@ -433,7 +470,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 9,
             port: port_,
           );
         },
@@ -464,7 +501,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 10,
             port: port_,
           );
         },
@@ -494,7 +531,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 11,
             port: port_,
           );
         },
@@ -513,60 +550,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
   @override
-  Future<String> ledgerMoproAppMoproHelloWorld() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 11,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
-          decodeErrorData: null,
-        ),
-        constMeta: kLedgerMoproAppMoproHelloWorldConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kLedgerMoproAppMoproHelloWorldConstMeta =>
-      const TaskConstMeta(debugName: "mopro_hello_world", argNames: []);
-
-  @override
-  Future<String> ledgerMoproAppMoproWasmHelloWorld() {
-    return handler.executeNormal(
-      NormalTask(
-        callFfi: (port_) {
-          final serializer = SseSerializer(generalizedFrbRustBinding);
-          pdeCallFfi(
-            generalizedFrbRustBinding,
-            serializer,
-            funcId: 12,
-            port: port_,
-          );
-        },
-        codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
-          decodeErrorData: null,
-        ),
-        constMeta: kLedgerMoproAppMoproWasmHelloWorldConstMeta,
-        argValues: [],
-        apiImpl: this,
-      ),
-    );
-  }
-
-  TaskConstMeta get kLedgerMoproAppMoproWasmHelloWorldConstMeta =>
-      const TaskConstMeta(debugName: "mopro_wasm_hello_world", argNames: []);
-
-  @override
   Future<ProofLib> ledgerMoproAppProofLibDefault() {
     return handler.executeNormal(
       NormalTask(
@@ -575,7 +558,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 12,
             port: port_,
           );
         },
@@ -609,7 +592,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 13,
             port: port_,
           );
         },
@@ -647,7 +630,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 14,
             port: port_,
           );
         },
@@ -687,7 +670,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 15,
             port: port_,
           );
         },
@@ -729,7 +712,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 16,
             port: port_,
           );
         },
@@ -928,6 +911,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
+  }
+
+  @protected
+  PlonkProofResult dco_decode_plonk_proof_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return PlonkProofResult(
+      proof: dco_decode_list_String(arr[0]),
+      inputs: dco_decode_list_String(arr[1]),
+    );
   }
 
   @protected
@@ -1147,6 +1142,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PlonkProofResult sse_decode_plonk_proof_result(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_proof = sse_decode_list_String(deserializer);
+    var var_inputs = sse_decode_list_String(deserializer);
+    return PlonkProofResult(proof: var_proof, inputs: var_inputs);
+  }
+
+  @protected
   ProofLib sse_decode_proof_lib(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
@@ -1361,6 +1364,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     if (self != null) {
       sse_encode_String(self, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_plonk_proof_result(
+    PlonkProofResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_String(self.proof, serializer);
+    sse_encode_list_String(self.inputs, serializer);
   }
 
   @protected
