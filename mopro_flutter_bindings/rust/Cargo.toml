@@ -5,7 +5,7 @@ flutter_rust_bridge = "=2.11.1"
 default-features = false
 features = ["flutter"]
 path = "/home/shawn/recovery-app/ledger_mopro_app"
-version = "0.1.0"
+version = "0.2.0"
 
 [lib]
 crate-type = [
@@ -20,6 +20,6 @@ level = "warn"
 [package]
 edition = "2021"
 name = "mopro_flutter_bindings"
-version = "0.1.0"
+version = "0.2.0"
 
 [workspace]

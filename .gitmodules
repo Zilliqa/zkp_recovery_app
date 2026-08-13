@@ -1,3 +1,0 @@
-[submodule "vendor/co-snarks"]
-	path = vendor/co-snarks
-	url = https://github.com/TaceoLabs/co-snarks.git
