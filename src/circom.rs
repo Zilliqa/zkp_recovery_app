@@ -17,13 +17,6 @@ use std::str::FromStr;
 //
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PlonkProofResult {
-    pub proof: Vec<String>,
-    pub inputs: Vec<String>,
-}
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct CircomProofResult {
     pub proof: CircomProof,
     pub inputs: Vec<String>,

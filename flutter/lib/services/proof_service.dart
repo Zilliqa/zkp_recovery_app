@@ -97,30 +97,26 @@ class ProofService {
     };
 
     // Compute the Circom proof
-    PlonkProofResult? result;
+    CircomProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
-    // Groth16 (~1GB):
+    // Groth16 (~1GB RAM):
     //  - FCN_sprout    : <6m
     //  - emu64xa       : <2m
     //  - Ubuntu_24.04  : <2m
-    // Plonk (~16GB):
-    //  - Ubuntu_24.04  : <15m
-    //  - emu64xa       : <15m
-    result = await generateCircomPlonkProof(
+    result = await generateCircomProof(
       zkeyPath: zkeyPath,
-      jsonInputStr: jsonEncode(inputs),
+      circuitInputs: jsonEncode(inputs),
+      proofLib: ProofLib.arkworks,
     );
 
     // Encode the outputs
     final calldata = encodeCallData(result);
     final output = ProofResult(
       proof: "",
-      publicOutputs: jsonEncode(result.inputs),
+      publicOutputs: "",
       abiEncodedHex: bytesToHex(calldata),
     );
 
-    log(output.proof);
-    log(output.publicOutputs);
     log(output.abiEncodedHex);
     return output;
   }
@@ -216,25 +212,34 @@ class ProofService {
     return bytes;
   }
 
-  Uint8List encodeCallData(PlonkProofResult result) {
-    assert(
-      result.inputs.length == 3 && result.proof.length == 24,
-      'Expected exact inputs',
-    );
+  Uint8List encodeCallData(CircomProofResult result) {
+    assert(result.inputs.length == 3, 'Expected exact inputs');
 
     final selector = hexToBytes(
-      keccak256sum('verifyProof(uint256[24],uint256[3])').substring(0, 8),
+      keccak256sum(
+        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])',
+      ).substring(0, 8),
     ); // hardcoded
+
+    final words = [
+      result.proof.a.x,
+      result.proof.a.y,
+      result.proof.b.x[1],
+      result.proof.b.x[0],
+      result.proof.b.y[1],
+      result.proof.b.y[0],
+      result.proof.c.x,
+      result.proof.c.y,
+      result.inputs[0],
+      result.inputs[1],
+      result.inputs[2],
+    ];
 
     final builder = BytesBuilder();
     builder.add(selector);
-    for (final fp in result.proof) {
-      builder.add(_bigIntToUint256(BigInt.parse(fp)));
+    for (final word in words) {
+      builder.add(_bigIntToUint256(BigInt.parse(word)));
     }
-    for (final sc in result.inputs) {
-      builder.add(_bigIntToUint256(BigInt.parse(sc)));
-    }
-
     return builder.toBytes();
   }
 }

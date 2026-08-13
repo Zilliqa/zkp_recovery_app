@@ -26,10 +26,9 @@ class ProvingArtifacts {
     displayName: 'Circuit Key File',
     fileName: 'ledger_final.zkey',
     url:
-        'http://192.168.68.131:8080/circuit_final.zkey',
-        // 'https://storage.googleapis.com/bkt-p-zkproof-files-001/plonk/circuit_final.zkey',
+        'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey',
     checksum:
-        'e18ad3024cda26e5ae7c153702e299a202e3d4b955fce26a45bf4ad76020464a',
+        'dc48de69b283cebdf2ca258c29a70e0480f398481f70c24437a4cabda82ce4d8',
   );
 }
 

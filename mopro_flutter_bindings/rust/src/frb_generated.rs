@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 719893601;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 993644312;
 
 // Section: executor
 
@@ -136,43 +136,6 @@ fn wire__ledger_mopro_app__g_2_default_impl(
             move |context| {
                 transform_result_sse::<_, ()>((move || {
                     let output_ok = Result::<_, ()>::Ok(ledger_mopro_app::G2::default())?;
-                    Ok(output_ok)
-                })())
-            }
-        },
-    )
-}
-fn wire__ledger_mopro_app__generate_circom_plonk_proof_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "generate_circom_plonk_proof",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_zkey_path = <String>::sse_decode(&mut deserializer);
-            let api_json_input_str = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            move |context| {
-                transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::generate_circom_plonk_proof(
-                        api_zkey_path,
-                        api_json_input_str,
-                    )?;
                     Ok(output_ok)
                 })())
             }
@@ -686,11 +649,6 @@ const _: fn() = || {
         let _: Vec<u8> = Halo2ProofResult.proof;
         let _: Vec<u8> = Halo2ProofResult.inputs;
     }
-    {
-        let PlonkProofResult = None::<ledger_mopro_app::PlonkProofResult>.unwrap();
-        let _: Vec<String> = PlonkProofResult.proof;
-        let _: Vec<String> = PlonkProofResult.inputs;
-    }
 };
 
 // Section: related_funcs
@@ -880,18 +838,6 @@ impl SseDecode for Option<String> {
     }
 }
 
-impl SseDecode for ledger_mopro_app::PlonkProofResult {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_proof = <Vec<String>>::sse_decode(deserializer);
-        let mut var_inputs = <Vec<String>>::sse_decode(deserializer);
-        return ledger_mopro_app::PlonkProofResult {
-            proof: var_proof,
-            inputs: var_inputs,
-        };
-    }
-}
-
 impl SseDecode for ledger_mopro_app::ProofLib {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -944,34 +890,28 @@ fn pde_ffi_dispatcher_primary_impl(
         1 => wire__ledger_mopro_app__circom_proof_default_impl(port, ptr, rust_vec_len, data_len),
         2 => wire__ledger_mopro_app__g_1_default_impl(port, ptr, rust_vec_len, data_len),
         3 => wire__ledger_mopro_app__g_2_default_impl(port, ptr, rust_vec_len, data_len),
-        4 => wire__ledger_mopro_app__generate_circom_plonk_proof_impl(
+        4 => wire__ledger_mopro_app__generate_circom_proof_impl(port, ptr, rust_vec_len, data_len),
+        5 => wire__ledger_mopro_app__generate_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
+        6 => wire__ledger_mopro_app__generate_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
+        7 => wire__ledger_mopro_app__generate_noir_proof_impl(port, ptr, rust_vec_len, data_len),
+        8 => wire__ledger_mopro_app__get_noir_verification_key_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        5 => wire__ledger_mopro_app__generate_circom_proof_impl(port, ptr, rust_vec_len, data_len),
-        6 => wire__ledger_mopro_app__generate_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
-        7 => wire__ledger_mopro_app__generate_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
-        8 => wire__ledger_mopro_app__generate_noir_proof_impl(port, ptr, rust_vec_len, data_len),
-        9 => wire__ledger_mopro_app__get_noir_verification_key_impl(
+        9 => wire__ledger_mopro_app__halo_2_proof_result_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__ledger_mopro_app__halo_2_proof_result_default_impl(
-            port,
-            ptr,
-            rust_vec_len,
-            data_len,
-        ),
-        11 => wire__ledger_mopro_app__init_app_impl(port, ptr, rust_vec_len, data_len),
-        12 => wire__ledger_mopro_app__proof_lib_default_impl(port, ptr, rust_vec_len, data_len),
-        13 => wire__ledger_mopro_app__verify_circom_proof_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__ledger_mopro_app__verify_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__ledger_mopro_app__verify_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__ledger_mopro_app__verify_noir_proof_impl(port, ptr, rust_vec_len, data_len),
+        10 => wire__ledger_mopro_app__init_app_impl(port, ptr, rust_vec_len, data_len),
+        11 => wire__ledger_mopro_app__proof_lib_default_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__ledger_mopro_app__verify_circom_proof_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__ledger_mopro_app__verify_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__ledger_mopro_app__verify_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
+        15 => wire__ledger_mopro_app__verify_noir_proof_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1133,27 +1073,6 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::Halo2ProofRe
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::PlonkProofResult> {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        [
-            self.0.proof.into_into_dart().into_dart(),
-            self.0.inputs.into_into_dart().into_dart(),
-        ]
-        .into_dart()
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<ledger_mopro_app::PlonkProofResult>
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::PlonkProofResult>>
-    for ledger_mopro_app::PlonkProofResult
-{
-    fn into_into_dart(self) -> FrbWrapper<ledger_mopro_app::PlonkProofResult> {
-        self.into()
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::ProofLib> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self.0 {
@@ -1311,14 +1230,6 @@ impl SseEncode for Option<String> {
         if let Some(value) = self {
             <String>::sse_encode(value, serializer);
         }
-    }
-}
-
-impl SseEncode for ledger_mopro_app::PlonkProofResult {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <Vec<String>>::sse_encode(self.proof, serializer);
-        <Vec<String>>::sse_encode(self.inputs, serializer);
     }
 }
 
