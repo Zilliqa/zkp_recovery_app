@@ -25,11 +25,11 @@ class LedgerProofApp extends StatelessWidget {
       ),
     );
     return MaterialApp(
-      title: 'Ledger Incident - Recovery Proof',
+      title: 'Zilliqa Zero Knowledge Proof',
       theme: themeL,
       darkTheme: themeD,
       themeMode: ThemeMode.system,
-      home: const LandingPage(title: 'Zero Knowledge Recovery'),
+      home: const LandingPage(title: 'Zero Knowledge Migration'),
     );
   }
 }

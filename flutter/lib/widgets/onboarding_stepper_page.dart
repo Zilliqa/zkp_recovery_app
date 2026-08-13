@@ -307,7 +307,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recovery Proof'),
+        title: const Text('Zero Knowledge Proof'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SafeArea(

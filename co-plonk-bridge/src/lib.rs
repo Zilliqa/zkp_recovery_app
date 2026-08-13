@@ -33,10 +33,12 @@ pub fn prove_plonk(
     );
 
     let signals = witnesses[1..=zkey.n_public].to_vec(); // copy the signals
-    let fr_witness: Vec<Fr> = witnesses.into_iter().map(Fr::from).collect();
+
+    let mut public_inputs: Vec<Fr> = witnesses.into_iter().map(Fr::from).collect();
+    let witness = public_inputs.split_off(zkey.n_public.saturating_add(1));
     let shared_witness = SharedWitness {
-        public_inputs: fr_witness[..=zkey.n_public].to_vec(),
-        witness: fr_witness[zkey.n_public + 1..].to_vec(),
+        public_inputs,
+        witness,
     };
 
     let proof = co_plonk::Plonk::<Bn254>::plain_prove(zkey, shared_witness)

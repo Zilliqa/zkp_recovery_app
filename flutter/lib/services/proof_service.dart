@@ -99,14 +99,13 @@ class ProofService {
     // Compute the Circom proof
     PlonkProofResult? result;
     final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
-    // Groth16 (verified):
+    // Groth16 (~1GB):
     //  - FCN_sprout    : <6m
     //  - emu64xa       : <2m
     //  - Ubuntu_24.04  : <2m
-    // Plonk (verified):
-    //  - Ubuntu_24.04  : <12m
-    //  - emu64xa       : crashed 12GB
-    //  - FCN_sprout    : crashed 8GB
+    // Plonk (~16GB):
+    //  - Ubuntu_24.04  : <15m
+    //  - emu64xa       : <15m
     result = await generateCircomPlonkProof(
       zkeyPath: zkeyPath,
       jsonInputStr: jsonEncode(inputs),
