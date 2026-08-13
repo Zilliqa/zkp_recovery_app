@@ -31,9 +31,9 @@ class DownloadStepContent extends StatelessWidget {
           onRetry: onRetry,
         ),
         if (!allDownloaded) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            'Please wait for the download to finish to continue.',
+            'Please wait for the download to finish.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.error,
             ),

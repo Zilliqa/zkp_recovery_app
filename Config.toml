@@ -1,4 +1,4 @@
-build_mode = "release"
+build_mode = "debug"
 target_adapters = ["circom"]
 target_platforms = ["flutter"]
 auto_update = false

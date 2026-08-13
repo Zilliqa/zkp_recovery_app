@@ -8,14 +8,6 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 Future<void> initApp() => RustLib.instance.api.ledgerMoproAppInitApp();
 
-/// You can also customize the bindings by #[uniffi::export]
-/// Reference: https://mozilla.github.io/uniffi-rs/latest/proc_macro/index.html
-Future<String> moproHelloWorld() =>
-    RustLib.instance.api.ledgerMoproAppMoproHelloWorld();
-
-Future<String> moproWasmHelloWorld() =>
-    RustLib.instance.api.ledgerMoproAppMoproWasmHelloWorld();
-
 Future<CircomProofResult> generateCircomProof({
   required String zkeyPath,
   required String circuitInputs,

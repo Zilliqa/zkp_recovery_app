@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 909762852;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 993644312;
 
 // Section: executor
 
@@ -407,71 +407,6 @@ fn wire__ledger_mopro_app__init_app_impl(
                     let output_ok = Result::<_, ()>::Ok({
                         ledger_mopro_app::init_app();
                     })?;
-                    Ok(output_ok)
-                })())
-            }
-        },
-    )
-}
-fn wire__ledger_mopro_app__mopro_hello_world_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "mopro_hello_world",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            deserializer.end();
-            move |context| {
-                transform_result_sse::<_, ()>((move || {
-                    let output_ok = Result::<_, ()>::Ok(ledger_mopro_app::mopro_hello_world())?;
-                    Ok(output_ok)
-                })())
-            }
-        },
-    )
-}
-fn wire__ledger_mopro_app__mopro_wasm_hello_world_impl(
-    port_: flutter_rust_bridge::for_generated::MessagePort,
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "mopro_wasm_hello_world",
-            port: Some(port_),
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            deserializer.end();
-            move |context| {
-                transform_result_sse::<_, ()>((move || {
-                    let output_ok =
-                        Result::<_, ()>::Ok(ledger_mopro_app::mopro_wasm_hello_world())?;
                     Ok(output_ok)
                 })())
             }
@@ -972,15 +907,11 @@ fn pde_ffi_dispatcher_primary_impl(
             data_len,
         ),
         10 => wire__ledger_mopro_app__init_app_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__ledger_mopro_app__mopro_hello_world_impl(port, ptr, rust_vec_len, data_len),
-        12 => {
-            wire__ledger_mopro_app__mopro_wasm_hello_world_impl(port, ptr, rust_vec_len, data_len)
-        }
-        13 => wire__ledger_mopro_app__proof_lib_default_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__ledger_mopro_app__verify_circom_proof_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__ledger_mopro_app__verify_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__ledger_mopro_app__verify_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
-        17 => wire__ledger_mopro_app__verify_noir_proof_impl(port, ptr, rust_vec_len, data_len),
+        11 => wire__ledger_mopro_app__proof_lib_default_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__ledger_mopro_app__verify_circom_proof_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__ledger_mopro_app__verify_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__ledger_mopro_app__verify_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
+        15 => wire__ledger_mopro_app__verify_noir_proof_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

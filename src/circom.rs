@@ -1,13 +1,13 @@
 use crate::MoproError;
 use circom_prover::{
-    prover::{
-        circom::{
-            Proof as CircomProverProof, CURVE_BLS12_381, CURVE_BN254, G1 as CircomProverG1,
-            G2 as CircomProverG2,
-        },
-        ProofLib as CircomProverProofLib,
-    },
     CircomProver,
+    prover::{
+        ProofLib as CircomProverProofLib,
+        circom::{
+            CURVE_BLS12_381, CURVE_BN254, G1 as CircomProverG1, G2 as CircomProverG2,
+            Proof as CircomProverProof,
+        },
+    },
 };
 use num_bigint::BigUint;
 use std::str::FromStr;
@@ -169,7 +169,7 @@ pub fn generate_circom_proof(
             return Err(MoproError::CircomError(format!(
                 "Unsupported curve: {}",
                 ret.proof.curve
-            )))
+            )));
         }
     };
 
