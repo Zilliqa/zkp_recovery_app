@@ -30,8 +30,6 @@ pub fn generate_circom_plonk_proof(
     )
     .map_err(|e| MoproError::CircomError(e.to_string()))?;
 
-    println!("{:?}", plonk_proof);
-
     let proofs = co_plonk_bridge::extract_proof_values(&plonk_proof)
         .map_err(|e| MoproError::CircomError(e.to_string()))?;
 

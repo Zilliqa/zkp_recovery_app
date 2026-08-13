@@ -42,7 +42,6 @@ pub fn prove_plonk(
     let proof = co_plonk::Plonk::<Bn254>::plain_prove(zkey, shared_witness)
         .map_err(|_e| anyhow::anyhow!("proving"))?;
 
-    println!("{}", serde_json::to_string(&proof)?);
     Ok((proof, signals))
 }
 
