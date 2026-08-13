@@ -1,0 +1,15 @@
+# Dependencies — reinstall with `npm install` (or bundle for offline use)
+node_modules/
+
+# Large binaries and per-run artifacts — reproduced/downloaded by each tester, never committed
+# (they also exceed GitHub's 100 MB file limit):
+#   current.zkey / contribution.zkey / final.zkey  (keys)
+#   circuit.r1cs                                    (the compiled circuit)
+#   pot.ptau                                        (2^21 powers-of-tau)
+#   vk.json / verifier.sol                          (finalize outputs)
+*.zkey
+*.ptau
+*.r1cs
+vk.json
+verifier.sol
+*.log

@@ -1,0 +1,10 @@
+# Large binaries (hosted externally / regenerated) + deps + temp
+node_modules/
+*.zkey
+*.ptau
+*.r1cs
+proof.json
+public.json
+*.wtns
+*.log
+*.time.txt
