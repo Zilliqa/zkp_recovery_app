@@ -39,7 +39,15 @@ No secrets in the key. `vk.json` + `verifier.sol` are in the repo.
 `verifier.sol` is the PLONK verifier: `verifyProof(uint256[24] _proof, uint256[3] _pubSignals)`,
 pubSignals = `[old, new, domain]`. `print_submit.js` emits matching calldata.
 
+
+## Reproduce / verify the circuit
+`circuit.circom` + `bip32lib.circom` are the source; circom 2.2.3 + pinned includes (0xPARC circom-ecdsa @ d87eb70, circomlib 2.0.2, Electron-Labs sha512 @ be9f01d).
+- `./build-circuit.sh` — recompile from the pinned sources and confirm the `wasm`/`r1cs` are **byte-identical** to the shipped ones.
+- `node --max-old-space-size=16384 secure_core_test.js` — self-test on a throwaway seed: a correct `(old,new,domain)` triple verifies **and** tampering with `newAddr`/`domain` fails (binding) (PLONK proving is heavy, ~20 min). Needs the zkey.
+
 ## Files
 - `run-proof-secure.sh` / `prove-secure.js`, `run-proof.sh` / `prepare.js` — runners (same as the Groth16 min variant, `plonk.*` proving).
 - `circuit.circom` + `bip32lib.circom`, `circuit_js/` — the minimal circuit (same one; PLONK just uses it differently).
 - `vk.json`, `verifier.sol`, `print_submit.js`.
+- `build-circuit.sh` — reproducible compile from pinned sources + byte-identical check.
+- `secure_core_test.js` — binding self-test on a throwaway seed (needs the zkey).
