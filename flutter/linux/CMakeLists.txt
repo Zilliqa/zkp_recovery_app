@@ -74,6 +74,26 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# Baked launch fix (part 2 of 2) for Barretenberg's ~1MB initial-exec TLS:
+# startup-load the Noir/mopro FFI lib so its TLS lands in the INITIAL static TLS
+# block (avoids the "cannot allocate memory in static TLS block" dlopen failure).
+# The companion >=4MB thread-stack override lives in runner/stackfix.cc.
+# -l: keeps the DT_NEEDED as the bare "libmopro_flutter_bindings.so", which the
+# existing $ORIGIN/lib RUNPATH resolves at runtime; --no-as-needed keeps the
+# entry even though the runner references no symbols from it directly.
+# --allow-shlib-undefined: the lib carries undefined circom witnesscalc symbols
+# (groth_*) that bind lazily at runtime via the normal dlopen path, so ld must
+# not try to resolve them at link time just because we name the lib here.
+if(mopro_flutter_bindings_bundled_libraries)
+  get_filename_component(_mopro_lib_dir
+    "${mopro_flutter_bindings_bundled_libraries}" DIRECTORY)
+  target_link_directories(${BINARY_NAME} PRIVATE "${_mopro_lib_dir}")
+  target_link_libraries(${BINARY_NAME} PRIVATE
+    -Wl,--no-as-needed -l:libmopro_flutter_bindings.so
+    -Wl,--as-needed -Wl,--allow-shlib-undefined)
+  add_dependencies(${BINARY_NAME} mopro_flutter_bindings_cargokit)
+endif()
+
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
