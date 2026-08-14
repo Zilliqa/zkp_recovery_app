@@ -1,0 +1,12 @@
+# fetched dep (no git tag) + build artifacts + deps
+vendor/
+target/
+node_modules/
+# sensitive / per-run outputs (never commit)
+Prover.toml
+witness.gz
+*.wtns
+calldata_proof.txt
+calldata_pubs.txt
+proof
+public_inputs
