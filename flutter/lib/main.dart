@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mopro_flutter_bindings/src/rust/frb_generated.dart';
 
-import 'widgets/landing_page.dart';
+import 'package:zkp_recovery_app/widgets/landing_page.dart';
 
 Future<void> main() async {
   await RustLib.init();

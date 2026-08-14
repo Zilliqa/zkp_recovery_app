@@ -28,7 +28,7 @@
 use flutter_rust_bridge::for_generated::byteorder::{NativeEndian, ReadBytesExt, WriteBytesExt};
 use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
 use flutter_rust_bridge::{Handler, IntoIntoDart};
-use ledger_mopro_app::*;
+use zkp_recovery_app::*;
 
 // Section: boilerplate
 
@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 993644312;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1600908;
 
 // Section: executor
 
@@ -46,7 +46,7 @@ flutter_rust_bridge::frb_generated_default_handler!();
 
 // Section: wire_funcs
 
-fn wire__ledger_mopro_app__circom_proof_default_impl(
+fn wire__zkp_recovery_app__circom_proof_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -71,14 +71,14 @@ fn wire__ledger_mopro_app__circom_proof_default_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, ()>((move || {
-                    let output_ok = Result::<_, ()>::Ok(ledger_mopro_app::CircomProof::default())?;
+                    let output_ok = Result::<_, ()>::Ok(zkp_recovery_app::CircomProof::default())?;
                     Ok(output_ok)
                 })())
             }
         },
     )
 }
-fn wire__ledger_mopro_app__g_1_default_impl(
+fn wire__zkp_recovery_app__g_1_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -103,14 +103,14 @@ fn wire__ledger_mopro_app__g_1_default_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, ()>((move || {
-                    let output_ok = Result::<_, ()>::Ok(ledger_mopro_app::G1::default())?;
+                    let output_ok = Result::<_, ()>::Ok(zkp_recovery_app::G1::default())?;
                     Ok(output_ok)
                 })())
             }
         },
     )
 }
-fn wire__ledger_mopro_app__g_2_default_impl(
+fn wire__zkp_recovery_app__g_2_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -135,14 +135,14 @@ fn wire__ledger_mopro_app__g_2_default_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, ()>((move || {
-                    let output_ok = Result::<_, ()>::Ok(ledger_mopro_app::G2::default())?;
+                    let output_ok = Result::<_, ()>::Ok(zkp_recovery_app::G2::default())?;
                     Ok(output_ok)
                 })())
             }
         },
     )
 }
-fn wire__ledger_mopro_app__generate_circom_proof_impl(
+fn wire__zkp_recovery_app__generate_circom_proof_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -166,11 +166,11 @@ fn wire__ledger_mopro_app__generate_circom_proof_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_zkey_path = <String>::sse_decode(&mut deserializer);
             let api_circuit_inputs = <String>::sse_decode(&mut deserializer);
-            let api_proof_lib = <ledger_mopro_app::ProofLib>::sse_decode(&mut deserializer);
+            let api_proof_lib = <zkp_recovery_app::ProofLib>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::generate_circom_proof(
+                    let output_ok = zkp_recovery_app::generate_circom_proof(
                         api_zkey_path,
                         api_circuit_inputs,
                         api_proof_lib,
@@ -181,7 +181,7 @@ fn wire__ledger_mopro_app__generate_circom_proof_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__generate_gnark_proof_impl(
+fn wire__zkp_recovery_app__generate_gnark_proof_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -209,7 +209,7 @@ fn wire__ledger_mopro_app__generate_gnark_proof_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::generate_gnark_proof(
+                    let output_ok = zkp_recovery_app::generate_gnark_proof(
                         api__r1cs_path,
                         api__pk_path,
                         api__witness_json,
@@ -220,7 +220,7 @@ fn wire__ledger_mopro_app__generate_gnark_proof_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__generate_halo2_proof_impl(
+fn wire__zkp_recovery_app__generate_halo2_proof_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -249,7 +249,7 @@ fn wire__ledger_mopro_app__generate_halo2_proof_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::generate_halo2_proof(
+                    let output_ok = zkp_recovery_app::generate_halo2_proof(
                         api__srs_path,
                         api__pk_path,
                         api__circuit_inputs,
@@ -260,7 +260,7 @@ fn wire__ledger_mopro_app__generate_halo2_proof_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__generate_noir_proof_impl(
+fn wire__zkp_recovery_app__generate_noir_proof_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -291,7 +291,7 @@ fn wire__ledger_mopro_app__generate_noir_proof_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::generate_noir_proof(
+                    let output_ok = zkp_recovery_app::generate_noir_proof(
                         api__circuit_path,
                         api__srs_path,
                         api__inputs,
@@ -305,7 +305,7 @@ fn wire__ledger_mopro_app__generate_noir_proof_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__get_noir_verification_key_impl(
+fn wire__zkp_recovery_app__get_noir_verification_key_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -334,7 +334,7 @@ fn wire__ledger_mopro_app__get_noir_verification_key_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::get_noir_verification_key(
+                    let output_ok = zkp_recovery_app::get_noir_verification_key(
                         api__circuit_path,
                         api__srs_path,
                         api__on_chain,
@@ -346,7 +346,7 @@ fn wire__ledger_mopro_app__get_noir_verification_key_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__halo_2_proof_result_default_impl(
+fn wire__zkp_recovery_app__halo_2_proof_result_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -372,14 +372,14 @@ fn wire__ledger_mopro_app__halo_2_proof_result_default_impl(
             move |context| {
                 transform_result_sse::<_, ()>((move || {
                     let output_ok =
-                        Result::<_, ()>::Ok(ledger_mopro_app::Halo2ProofResult::default())?;
+                        Result::<_, ()>::Ok(zkp_recovery_app::Halo2ProofResult::default())?;
                     Ok(output_ok)
                 })())
             }
         },
     )
 }
-fn wire__ledger_mopro_app__init_app_impl(
+fn wire__zkp_recovery_app__init_app_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -405,7 +405,7 @@ fn wire__ledger_mopro_app__init_app_impl(
             move |context| {
                 transform_result_sse::<_, ()>((move || {
                     let output_ok = Result::<_, ()>::Ok({
-                        ledger_mopro_app::init_app();
+                        zkp_recovery_app::init_app();
                     })?;
                     Ok(output_ok)
                 })())
@@ -413,7 +413,7 @@ fn wire__ledger_mopro_app__init_app_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__proof_lib_default_impl(
+fn wire__zkp_recovery_app__proof_lib_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -438,14 +438,14 @@ fn wire__ledger_mopro_app__proof_lib_default_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, ()>((move || {
-                    let output_ok = Result::<_, ()>::Ok(ledger_mopro_app::ProofLib::default())?;
+                    let output_ok = Result::<_, ()>::Ok(zkp_recovery_app::ProofLib::default())?;
                     Ok(output_ok)
                 })())
             }
         },
     )
 }
-fn wire__ledger_mopro_app__verify_circom_proof_impl(
+fn wire__zkp_recovery_app__verify_circom_proof_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -469,12 +469,12 @@ fn wire__ledger_mopro_app__verify_circom_proof_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_zkey_path = <String>::sse_decode(&mut deserializer);
             let api_proof_result =
-                <ledger_mopro_app::CircomProofResult>::sse_decode(&mut deserializer);
-            let api_proof_lib = <ledger_mopro_app::ProofLib>::sse_decode(&mut deserializer);
+                <zkp_recovery_app::CircomProofResult>::sse_decode(&mut deserializer);
+            let api_proof_lib = <zkp_recovery_app::ProofLib>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::verify_circom_proof(
+                    let output_ok = zkp_recovery_app::verify_circom_proof(
                         api_zkey_path,
                         api_proof_result,
                         api_proof_lib,
@@ -485,7 +485,7 @@ fn wire__ledger_mopro_app__verify_circom_proof_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__verify_gnark_proof_impl(
+fn wire__zkp_recovery_app__verify_gnark_proof_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -510,11 +510,11 @@ fn wire__ledger_mopro_app__verify_gnark_proof_impl(
             let api__r1cs_path = <String>::sse_decode(&mut deserializer);
             let api__vk_path = <String>::sse_decode(&mut deserializer);
             let api__proof_result =
-                <ledger_mopro_app::GnarkProofResult>::sse_decode(&mut deserializer);
+                <zkp_recovery_app::GnarkProofResult>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::verify_gnark_proof(
+                    let output_ok = zkp_recovery_app::verify_gnark_proof(
                         api__r1cs_path,
                         api__vk_path,
                         api__proof_result,
@@ -525,7 +525,7 @@ fn wire__ledger_mopro_app__verify_gnark_proof_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__verify_halo2_proof_impl(
+fn wire__zkp_recovery_app__verify_halo2_proof_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -554,7 +554,7 @@ fn wire__ledger_mopro_app__verify_halo2_proof_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::verify_halo2_proof(
+                    let output_ok = zkp_recovery_app::verify_halo2_proof(
                         api__srs_path,
                         api__vk_path,
                         api__proof,
@@ -566,7 +566,7 @@ fn wire__ledger_mopro_app__verify_halo2_proof_impl(
         },
     )
 }
-fn wire__ledger_mopro_app__verify_noir_proof_impl(
+fn wire__zkp_recovery_app__verify_noir_proof_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -596,7 +596,7 @@ fn wire__ledger_mopro_app__verify_noir_proof_impl(
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, MoproError>((move || {
-                    let output_ok = ledger_mopro_app::verify_noir_proof(
+                    let output_ok = zkp_recovery_app::verify_noir_proof(
                         api__circuit_path,
                         api__proof,
                         api__on_chain,
@@ -615,37 +615,37 @@ fn wire__ledger_mopro_app__verify_noir_proof_impl(
 #[allow(clippy::unnecessary_literal_unwrap)]
 const _: fn() = || {
     {
-        let CircomProof = None::<ledger_mopro_app::CircomProof>.unwrap();
-        let _: ledger_mopro_app::G1 = CircomProof.a;
-        let _: ledger_mopro_app::G2 = CircomProof.b;
-        let _: ledger_mopro_app::G1 = CircomProof.c;
+        let CircomProof = None::<zkp_recovery_app::CircomProof>.unwrap();
+        let _: zkp_recovery_app::G1 = CircomProof.a;
+        let _: zkp_recovery_app::G2 = CircomProof.b;
+        let _: zkp_recovery_app::G1 = CircomProof.c;
         let _: String = CircomProof.protocol;
         let _: String = CircomProof.curve;
     }
     {
-        let CircomProofResult = None::<ledger_mopro_app::CircomProofResult>.unwrap();
-        let _: ledger_mopro_app::CircomProof = CircomProofResult.proof;
+        let CircomProofResult = None::<zkp_recovery_app::CircomProofResult>.unwrap();
+        let _: zkp_recovery_app::CircomProof = CircomProofResult.proof;
         let _: Vec<String> = CircomProofResult.inputs;
     }
     {
-        let G1 = None::<ledger_mopro_app::G1>.unwrap();
+        let G1 = None::<zkp_recovery_app::G1>.unwrap();
         let _: String = G1.x;
         let _: String = G1.y;
         let _: String = G1.z;
     }
     {
-        let G2 = None::<ledger_mopro_app::G2>.unwrap();
+        let G2 = None::<zkp_recovery_app::G2>.unwrap();
         let _: Vec<String> = G2.x;
         let _: Vec<String> = G2.y;
         let _: Vec<String> = G2.z;
     }
     {
-        let GnarkProofResult = None::<ledger_mopro_app::GnarkProofResult>.unwrap();
+        let GnarkProofResult = None::<zkp_recovery_app::GnarkProofResult>.unwrap();
         let _: String = GnarkProofResult.proof;
         let _: String = GnarkProofResult.public_inputs;
     }
     {
-        let Halo2ProofResult = None::<ledger_mopro_app::Halo2ProofResult>.unwrap();
+        let Halo2ProofResult = None::<zkp_recovery_app::Halo2ProofResult>.unwrap();
         let _: Vec<u8> = Halo2ProofResult.proof;
         let _: Vec<u8> = Halo2ProofResult.inputs;
     }
@@ -702,15 +702,15 @@ impl SseDecode for bool {
     }
 }
 
-impl SseDecode for ledger_mopro_app::CircomProof {
+impl SseDecode for zkp_recovery_app::CircomProof {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_a = <ledger_mopro_app::G1>::sse_decode(deserializer);
-        let mut var_b = <ledger_mopro_app::G2>::sse_decode(deserializer);
-        let mut var_c = <ledger_mopro_app::G1>::sse_decode(deserializer);
+        let mut var_a = <zkp_recovery_app::G1>::sse_decode(deserializer);
+        let mut var_b = <zkp_recovery_app::G2>::sse_decode(deserializer);
+        let mut var_c = <zkp_recovery_app::G1>::sse_decode(deserializer);
         let mut var_protocol = <String>::sse_decode(deserializer);
         let mut var_curve = <String>::sse_decode(deserializer);
-        return ledger_mopro_app::CircomProof {
+        return zkp_recovery_app::CircomProof {
             a: var_a,
             b: var_b,
             c: var_c,
@@ -720,25 +720,25 @@ impl SseDecode for ledger_mopro_app::CircomProof {
     }
 }
 
-impl SseDecode for ledger_mopro_app::CircomProofResult {
+impl SseDecode for zkp_recovery_app::CircomProofResult {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_proof = <ledger_mopro_app::CircomProof>::sse_decode(deserializer);
+        let mut var_proof = <zkp_recovery_app::CircomProof>::sse_decode(deserializer);
         let mut var_inputs = <Vec<String>>::sse_decode(deserializer);
-        return ledger_mopro_app::CircomProofResult {
+        return zkp_recovery_app::CircomProofResult {
             proof: var_proof,
             inputs: var_inputs,
         };
     }
 }
 
-impl SseDecode for ledger_mopro_app::G1 {
+impl SseDecode for zkp_recovery_app::G1 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_x = <String>::sse_decode(deserializer);
         let mut var_y = <String>::sse_decode(deserializer);
         let mut var_z = <String>::sse_decode(deserializer);
-        return ledger_mopro_app::G1 {
+        return zkp_recovery_app::G1 {
             x: var_x,
             y: var_y,
             z: var_z,
@@ -746,13 +746,13 @@ impl SseDecode for ledger_mopro_app::G1 {
     }
 }
 
-impl SseDecode for ledger_mopro_app::G2 {
+impl SseDecode for zkp_recovery_app::G2 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_x = <Vec<String>>::sse_decode(deserializer);
         let mut var_y = <Vec<String>>::sse_decode(deserializer);
         let mut var_z = <Vec<String>>::sse_decode(deserializer);
-        return ledger_mopro_app::G2 {
+        return zkp_recovery_app::G2 {
             x: var_x,
             y: var_y,
             z: var_z,
@@ -760,24 +760,24 @@ impl SseDecode for ledger_mopro_app::G2 {
     }
 }
 
-impl SseDecode for ledger_mopro_app::GnarkProofResult {
+impl SseDecode for zkp_recovery_app::GnarkProofResult {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_proof = <String>::sse_decode(deserializer);
         let mut var_publicInputs = <String>::sse_decode(deserializer);
-        return ledger_mopro_app::GnarkProofResult {
+        return zkp_recovery_app::GnarkProofResult {
             proof: var_proof,
             public_inputs: var_publicInputs,
         };
     }
 }
 
-impl SseDecode for ledger_mopro_app::Halo2ProofResult {
+impl SseDecode for zkp_recovery_app::Halo2ProofResult {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_proof = <Vec<u8>>::sse_decode(deserializer);
         let mut var_inputs = <Vec<u8>>::sse_decode(deserializer);
-        return ledger_mopro_app::Halo2ProofResult {
+        return zkp_recovery_app::Halo2ProofResult {
             proof: var_proof,
             inputs: var_inputs,
         };
@@ -838,13 +838,13 @@ impl SseDecode for Option<String> {
     }
 }
 
-impl SseDecode for ledger_mopro_app::ProofLib {
+impl SseDecode for zkp_recovery_app::ProofLib {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <i32>::sse_decode(deserializer);
         return match inner {
-            0 => ledger_mopro_app::ProofLib::Arkworks,
-            1 => ledger_mopro_app::ProofLib::Rapidsnark,
+            0 => zkp_recovery_app::ProofLib::Arkworks,
+            1 => zkp_recovery_app::ProofLib::Rapidsnark,
             _ => unreachable!("Invalid variant for ProofLib: {}", inner),
         };
     }
@@ -887,31 +887,31 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        1 => wire__ledger_mopro_app__circom_proof_default_impl(port, ptr, rust_vec_len, data_len),
-        2 => wire__ledger_mopro_app__g_1_default_impl(port, ptr, rust_vec_len, data_len),
-        3 => wire__ledger_mopro_app__g_2_default_impl(port, ptr, rust_vec_len, data_len),
-        4 => wire__ledger_mopro_app__generate_circom_proof_impl(port, ptr, rust_vec_len, data_len),
-        5 => wire__ledger_mopro_app__generate_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
-        6 => wire__ledger_mopro_app__generate_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
-        7 => wire__ledger_mopro_app__generate_noir_proof_impl(port, ptr, rust_vec_len, data_len),
-        8 => wire__ledger_mopro_app__get_noir_verification_key_impl(
+        1 => wire__zkp_recovery_app__circom_proof_default_impl(port, ptr, rust_vec_len, data_len),
+        2 => wire__zkp_recovery_app__g_1_default_impl(port, ptr, rust_vec_len, data_len),
+        3 => wire__zkp_recovery_app__g_2_default_impl(port, ptr, rust_vec_len, data_len),
+        4 => wire__zkp_recovery_app__generate_circom_proof_impl(port, ptr, rust_vec_len, data_len),
+        5 => wire__zkp_recovery_app__generate_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
+        6 => wire__zkp_recovery_app__generate_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
+        7 => wire__zkp_recovery_app__generate_noir_proof_impl(port, ptr, rust_vec_len, data_len),
+        8 => wire__zkp_recovery_app__get_noir_verification_key_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        9 => wire__ledger_mopro_app__halo_2_proof_result_default_impl(
+        9 => wire__zkp_recovery_app__halo_2_proof_result_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__ledger_mopro_app__init_app_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__ledger_mopro_app__proof_lib_default_impl(port, ptr, rust_vec_len, data_len),
-        12 => wire__ledger_mopro_app__verify_circom_proof_impl(port, ptr, rust_vec_len, data_len),
-        13 => wire__ledger_mopro_app__verify_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__ledger_mopro_app__verify_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__ledger_mopro_app__verify_noir_proof_impl(port, ptr, rust_vec_len, data_len),
+        10 => wire__zkp_recovery_app__init_app_impl(port, ptr, rust_vec_len, data_len),
+        11 => wire__zkp_recovery_app__proof_lib_default_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__zkp_recovery_app__verify_circom_proof_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__zkp_recovery_app__verify_gnark_proof_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__zkp_recovery_app__verify_halo2_proof_impl(port, ptr, rust_vec_len, data_len),
+        15 => wire__zkp_recovery_app__verify_noir_proof_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -946,7 +946,7 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<MoproError>> for MoproError {
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::CircomProof> {
+impl flutter_rust_bridge::IntoDart for FrbWrapper<zkp_recovery_app::CircomProof> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.0.a.into_into_dart().into_dart(),
@@ -959,18 +959,18 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::CircomProof>
     }
 }
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<ledger_mopro_app::CircomProof>
+    for FrbWrapper<zkp_recovery_app::CircomProof>
 {
 }
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::CircomProof>>
-    for ledger_mopro_app::CircomProof
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<zkp_recovery_app::CircomProof>>
+    for zkp_recovery_app::CircomProof
 {
-    fn into_into_dart(self) -> FrbWrapper<ledger_mopro_app::CircomProof> {
+    fn into_into_dart(self) -> FrbWrapper<zkp_recovery_app::CircomProof> {
         self.into()
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::CircomProofResult> {
+impl flutter_rust_bridge::IntoDart for FrbWrapper<zkp_recovery_app::CircomProofResult> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.0.proof.into_into_dart().into_dart(),
@@ -980,18 +980,18 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::CircomProofR
     }
 }
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<ledger_mopro_app::CircomProofResult>
+    for FrbWrapper<zkp_recovery_app::CircomProofResult>
 {
 }
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::CircomProofResult>>
-    for ledger_mopro_app::CircomProofResult
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<zkp_recovery_app::CircomProofResult>>
+    for zkp_recovery_app::CircomProofResult
 {
-    fn into_into_dart(self) -> FrbWrapper<ledger_mopro_app::CircomProofResult> {
+    fn into_into_dart(self) -> FrbWrapper<zkp_recovery_app::CircomProofResult> {
         self.into()
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::G1> {
+impl flutter_rust_bridge::IntoDart for FrbWrapper<zkp_recovery_app::G1> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.0.x.into_into_dart().into_dart(),
@@ -1002,16 +1002,16 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::G1> {
     }
 }
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<ledger_mopro_app::G1>
+    for FrbWrapper<zkp_recovery_app::G1>
 {
 }
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::G1>> for ledger_mopro_app::G1 {
-    fn into_into_dart(self) -> FrbWrapper<ledger_mopro_app::G1> {
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<zkp_recovery_app::G1>> for zkp_recovery_app::G1 {
+    fn into_into_dart(self) -> FrbWrapper<zkp_recovery_app::G1> {
         self.into()
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::G2> {
+impl flutter_rust_bridge::IntoDart for FrbWrapper<zkp_recovery_app::G2> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.0.x.into_into_dart().into_dart(),
@@ -1022,16 +1022,16 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::G2> {
     }
 }
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<ledger_mopro_app::G2>
+    for FrbWrapper<zkp_recovery_app::G2>
 {
 }
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::G2>> for ledger_mopro_app::G2 {
-    fn into_into_dart(self) -> FrbWrapper<ledger_mopro_app::G2> {
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<zkp_recovery_app::G2>> for zkp_recovery_app::G2 {
+    fn into_into_dart(self) -> FrbWrapper<zkp_recovery_app::G2> {
         self.into()
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::GnarkProofResult> {
+impl flutter_rust_bridge::IntoDart for FrbWrapper<zkp_recovery_app::GnarkProofResult> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.0.proof.into_into_dart().into_dart(),
@@ -1041,18 +1041,18 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::GnarkProofRe
     }
 }
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<ledger_mopro_app::GnarkProofResult>
+    for FrbWrapper<zkp_recovery_app::GnarkProofResult>
 {
 }
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::GnarkProofResult>>
-    for ledger_mopro_app::GnarkProofResult
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<zkp_recovery_app::GnarkProofResult>>
+    for zkp_recovery_app::GnarkProofResult
 {
-    fn into_into_dart(self) -> FrbWrapper<ledger_mopro_app::GnarkProofResult> {
+    fn into_into_dart(self) -> FrbWrapper<zkp_recovery_app::GnarkProofResult> {
         self.into()
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::Halo2ProofResult> {
+impl flutter_rust_bridge::IntoDart for FrbWrapper<zkp_recovery_app::Halo2ProofResult> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.0.proof.into_into_dart().into_dart(),
@@ -1062,34 +1062,34 @@ impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::Halo2ProofRe
     }
 }
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<ledger_mopro_app::Halo2ProofResult>
+    for FrbWrapper<zkp_recovery_app::Halo2ProofResult>
 {
 }
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::Halo2ProofResult>>
-    for ledger_mopro_app::Halo2ProofResult
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<zkp_recovery_app::Halo2ProofResult>>
+    for zkp_recovery_app::Halo2ProofResult
 {
-    fn into_into_dart(self) -> FrbWrapper<ledger_mopro_app::Halo2ProofResult> {
+    fn into_into_dart(self) -> FrbWrapper<zkp_recovery_app::Halo2ProofResult> {
         self.into()
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for FrbWrapper<ledger_mopro_app::ProofLib> {
+impl flutter_rust_bridge::IntoDart for FrbWrapper<zkp_recovery_app::ProofLib> {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self.0 {
-            ledger_mopro_app::ProofLib::Arkworks => 0.into_dart(),
-            ledger_mopro_app::ProofLib::Rapidsnark => 1.into_dart(),
+            zkp_recovery_app::ProofLib::Arkworks => 0.into_dart(),
+            zkp_recovery_app::ProofLib::Rapidsnark => 1.into_dart(),
             _ => unreachable!(),
         }
     }
 }
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for FrbWrapper<ledger_mopro_app::ProofLib>
+    for FrbWrapper<zkp_recovery_app::ProofLib>
 {
 }
-impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ledger_mopro_app::ProofLib>>
-    for ledger_mopro_app::ProofLib
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<zkp_recovery_app::ProofLib>>
+    for zkp_recovery_app::ProofLib
 {
-    fn into_into_dart(self) -> FrbWrapper<ledger_mopro_app::ProofLib> {
+    fn into_into_dart(self) -> FrbWrapper<zkp_recovery_app::ProofLib> {
         self.into()
     }
 }
@@ -1133,26 +1133,26 @@ impl SseEncode for bool {
     }
 }
 
-impl SseEncode for ledger_mopro_app::CircomProof {
+impl SseEncode for zkp_recovery_app::CircomProof {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <ledger_mopro_app::G1>::sse_encode(self.a, serializer);
-        <ledger_mopro_app::G2>::sse_encode(self.b, serializer);
-        <ledger_mopro_app::G1>::sse_encode(self.c, serializer);
+        <zkp_recovery_app::G1>::sse_encode(self.a, serializer);
+        <zkp_recovery_app::G2>::sse_encode(self.b, serializer);
+        <zkp_recovery_app::G1>::sse_encode(self.c, serializer);
         <String>::sse_encode(self.protocol, serializer);
         <String>::sse_encode(self.curve, serializer);
     }
 }
 
-impl SseEncode for ledger_mopro_app::CircomProofResult {
+impl SseEncode for zkp_recovery_app::CircomProofResult {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <ledger_mopro_app::CircomProof>::sse_encode(self.proof, serializer);
+        <zkp_recovery_app::CircomProof>::sse_encode(self.proof, serializer);
         <Vec<String>>::sse_encode(self.inputs, serializer);
     }
 }
 
-impl SseEncode for ledger_mopro_app::G1 {
+impl SseEncode for zkp_recovery_app::G1 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.x, serializer);
@@ -1161,7 +1161,7 @@ impl SseEncode for ledger_mopro_app::G1 {
     }
 }
 
-impl SseEncode for ledger_mopro_app::G2 {
+impl SseEncode for zkp_recovery_app::G2 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <Vec<String>>::sse_encode(self.x, serializer);
@@ -1170,7 +1170,7 @@ impl SseEncode for ledger_mopro_app::G2 {
     }
 }
 
-impl SseEncode for ledger_mopro_app::GnarkProofResult {
+impl SseEncode for zkp_recovery_app::GnarkProofResult {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.proof, serializer);
@@ -1178,7 +1178,7 @@ impl SseEncode for ledger_mopro_app::GnarkProofResult {
     }
 }
 
-impl SseEncode for ledger_mopro_app::Halo2ProofResult {
+impl SseEncode for zkp_recovery_app::Halo2ProofResult {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <Vec<u8>>::sse_encode(self.proof, serializer);
@@ -1233,13 +1233,13 @@ impl SseEncode for Option<String> {
     }
 }
 
-impl SseEncode for ledger_mopro_app::ProofLib {
+impl SseEncode for zkp_recovery_app::ProofLib {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <i32>::sse_encode(
             match self {
-                ledger_mopro_app::ProofLib::Arkworks => 0,
-                ledger_mopro_app::ProofLib::Rapidsnark => 1,
+                zkp_recovery_app::ProofLib::Arkworks => 0,
+                zkp_recovery_app::ProofLib::Rapidsnark => 1,
                 _ => {
                     unimplemented!("");
                 }
@@ -1292,7 +1292,7 @@ mod io {
     };
     use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
     use flutter_rust_bridge::{Handler, IntoIntoDart};
-    use ledger_mopro_app::*;
+    use zkp_recovery_app::*;
 
     // Section: boilerplate
 
@@ -1331,7 +1331,7 @@ mod web {
     use flutter_rust_bridge::for_generated::wasm_bindgen::prelude::*;
     use flutter_rust_bridge::for_generated::{transform_result_dco, Lifetimeable, Lockable};
     use flutter_rust_bridge::{Handler, IntoIntoDart};
-    use ledger_mopro_app::*;
+    use zkp_recovery_app::*;
 
     // Section: boilerplate
 

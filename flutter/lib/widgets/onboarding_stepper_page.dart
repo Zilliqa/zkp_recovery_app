@@ -1,9 +1,9 @@
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:flutter/material.dart';
 
-import '../models/download_status.dart';
-import '../services/download_service.dart';
-import '../services/proof_service.dart';
+import 'package:zkp_recovery_app/models/download_status.dart';
+import 'package:zkp_recovery_app/services/download_service.dart';
+import 'package:zkp_recovery_app/services/proof_service.dart';
 import 'checklist_step_content.dart';
 import 'download_step_content.dart';
 import 'input_step_content.dart';
