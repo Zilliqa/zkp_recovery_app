@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mopro_ledger_app/services/proof_service.dart';
+import 'package:zkp_recovery_app/services/proof_service.dart';
 
 class OutputStepContent extends StatelessWidget {
   final ProofResult? result;

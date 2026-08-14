@@ -7,7 +7,7 @@ import 'package:bip32_keys/bip32_keys.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mopro_ledger_app/services/download_service.dart';
+import 'package:zkp_recovery_app/services/download_service.dart';
 import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
 
 /// Result of a Groth16 proof computation: the proof itself and the

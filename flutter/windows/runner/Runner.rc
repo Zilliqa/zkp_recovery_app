@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.zilliqa" "\0"
-            VALUE "FileDescription", "mopro_ledger_app" "\0"
+            VALUE "FileDescription", "zkp_recovery_app" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "mopro_ledger_app" "\0"
+            VALUE "InternalName", "zkp_recovery_app" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.zilliqa. All rights reserved." "\0"
-            VALUE "OriginalFilename", "mopro_ledger_app.exe" "\0"
-            VALUE "ProductName", "mopro_ledger_app" "\0"
+            VALUE "OriginalFilename", "zkp_recovery_app.exe" "\0"
+            VALUE "ProductName", "zkp_recovery_app" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
