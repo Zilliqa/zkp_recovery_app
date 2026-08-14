@@ -97,7 +97,7 @@ class ProofService {
 
     // Compute the Circom proof
     CircomProofResult? result;
-    final zkeyPath = '${(await _getCacheDir()).path}/groth_final.zkey';
+    final zkeyPath = '${(await _getCacheDir()).path}/circuit_final.zkey';
     // Groth16 (~1GB RAM):
     //  - FCN_sprout    : <6m
     //  - emu64xa       : <2m

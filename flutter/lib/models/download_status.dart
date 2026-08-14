@@ -24,7 +24,7 @@ class RemoteFileSpec {
 class ProvingArtifacts {
   static const RemoteFileSpec artifact = RemoteFileSpec(
     displayName: 'Circuit Key File',
-    fileName: 'groth_final.zkey',
+    fileName: 'circuit_final.zkey',
     url:
         'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey',
     checksum:
