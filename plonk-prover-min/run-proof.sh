@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Minimal-circuit GROTH16 proof runner. Off-circuit: derive the m/44'/313'/n'/0' parent node.
+# Minimal-circuit PLONK proof runner. Off-circuit: derive the m/44'/313'/n'/0' parent node.
 # usage: ./run-proof.sh "<mnemonic>" <oldAddr 0x..|zil1..> <newAddr> <domain dec|0x..>
 set -e
 [ -d node_modules ] || npm install @scure/bip39 @scure/bip32 snarkjs

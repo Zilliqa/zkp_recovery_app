@@ -4,11 +4,12 @@ The **Noir** counterpart of `../groth16-prover-min`. **Identical statement, inpu
 interface** (`[expectedAddr, newAddr, domain]`) — it differs only in the proof system: Aztec's
 **Barretenberg / UltraHonk** (plonkish, universal setup).
 
-> Why this variant exists: on this circuit it is **client-side lighter than Groth16** — ~3.4 s
-> proving at **~0.35 GB RAM** (vs ~13 s / ~7 GB), with **no per-circuit key and no ceremony**.
-> That RAM profile is what makes it **mobile-viable**. The cost is a bigger proof (~14.7 KB) and a
-> **~2.58 M-gas** on-chain verifier (vs ~250 K for Groth16). Provided for the no-ceremony /
-> mobile case; Groth16-min stays the cheapest-on-chain option.
+> Why this variant exists: on this circuit it is **far lighter on RAM than Groth16**. Measured CLI
+> run (22-thread x86_64): witness+prove peaks at **~0.42 GB in ~7.8 s** (prove step 5.0 s / 0.42 GB),
+> vs snarkjs Groth16's **~6.5 GB in ~23 s** (prove step 14.6 s / 6.5 GB) — **no per-circuit key and no
+> ceremony**. That RAM profile is what makes it **mobile-viable**. The cost is a bigger proof
+> (~14.7 KB) and a **~2.58 M-gas** on-chain verifier (vs ~250 K for Groth16). Provided for the
+> no-ceremony / mobile case; Groth16-min stays the cheapest-on-chain option.
 
 ## What it proves
 Same as `../groth16-prover-min`: the `m/44'/313'/n'/0'` parent node (private) → final hardened

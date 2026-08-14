@@ -4,6 +4,28 @@ This is the example app of mopro. You can use the following commands to build na
 
 **📚 To learn more about mopro, visit: https://zkmopro.org**
 
+---
+
+## Zilliqa Ledger biased-nonce recovery — what's in this repo
+
+This fork hosts the recovery tooling for the Zilliqa Ledger incident. Every prover below proves the
+**same statement**: the `m/44'/313'/n'/0'` parent node (private) → final hardened CKD in-circuit →
+`secp256k1` → `SHA-256[-20:]` address `== old`, bound to a new address + domain
+(public inputs `[expectedAddr, newAddr, domain]`).
+
+- **`flutter/`** — the mobile/desktop recovery **app** (this mopro example app). Its proving code:
+  `flutter/lib/services/proof_service.dart` (`computeGroth16Proof` / `computeNoirProof`), with the
+  Rust backends in **`src/`** (`circom.rs` for Groth16/PLONK via mopro, `noir.rs` for Noir/UltraHonk).
+- **`groth16-prover-min/`** — standalone Groth16 CLI prover (circom + snarkjs). Cheapest on-chain.
+- **`plonk-prover-min/`** + **`plonk-setup-min/`** — standalone PLONK CLI prover + universal-setup helper.
+- **`noir-prover-min/`** — standalone Noir / UltraHonk (Barretenberg) CLI prover. No per-circuit key or
+  ceremony; lighter client-side RAM.
+
+Each `*-prover-min/` folder has its own README with the exact toolchain, reproducibility (circuit
+hash / VK hash), and airgapped-usage instructions.
+
+---
+
 ## Getting Started
 
 To set up and build bindings, follow these steps.
