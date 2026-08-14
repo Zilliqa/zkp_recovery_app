@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/download_status.dart';
+import 'package:zkp_recovery_app/models/download_status.dart';
 
 class DownloadStepContent extends StatelessWidget {
   final FileDownloadProgress progress;

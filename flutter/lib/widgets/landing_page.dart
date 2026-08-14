@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import 'onboarding_stepper_page.dart';
+import 'package:zkp_recovery_app/widgets/onboarding_stepper_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key, required this.title});

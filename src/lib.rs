@@ -37,7 +37,7 @@ crate::set_circom_circuits! {
 mod circom_tests {
     // use crate::generate_circom_plonk_proof;
     // use std::str::FromStr;
-    use crate::generate_circom_proof;
+    use crate::{generate_circom_proof, verify_circom_proof};
 
     const ZKEY_PATH: &str = "./test-vectors/circom/groth_final.zkey";
 
@@ -52,12 +52,12 @@ mod circom_tests {
         assert!(result.is_ok());
         // let result = result.unwrap();
         println!("Proof: {result:?}");
-        // assert!(verify_circom_proof(
-        //     ZKEY_PATH.to_string(),
-        //     result.unwrap().proof,
-        //     crate::ProofLib::Arkworks
-        // )
-        // .is_ok());
+        assert!(verify_circom_proof(
+            ZKEY_PATH.to_string(),
+            result.unwrap(),
+            crate::ProofLib::Arkworks
+        )
+        .is_ok());
     }
 }
 

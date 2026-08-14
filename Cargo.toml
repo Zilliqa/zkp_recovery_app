@@ -1,6 +1,6 @@
 
 [package]
-name = "ledger_mopro_app"
+name = "zkp_recovery_app"
 version = "0.2.0"
 edition = "2021"
 
@@ -23,9 +23,9 @@ mimalloc = "0.1.52"
 # CIRCOM_DEPENDENCIES
 
 circom-prover = "0.1"
-rust-witness  = "0.1"
-num-bigint    = "0.4.0"
-    
+rust-witness = "0.1"
+num-bigint = "0.4.0"
+
 # HALO2_DEPENDENCIES
 # NOIR_DEPENDENCIES
 # GNARK_DEPENDENCIES
@@ -35,7 +35,7 @@ num-bigint    = "0.4.0"
 
 witnesscalc-adapter = "0.1"
 rust-witness = "0.1"
-    
+
 # HALO2_BUILD_DEPENDENCIES
 # NOIR_BUILD_DEPENDENCIES
 # GNARK_BUILD_DEPENDENCIES
@@ -47,7 +47,7 @@ mopro-ffi = { version = "=0.3.7", features = ["uniffi-tests"] }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.94"
-    
+
 # HALO2_DEV_DEPENDENCIES
 # NOIR_DEV_DEPENDENCIES
 # GNARK_DEV_DEPENDENCIES
@@ -56,5 +56,3 @@ serde_json = "1.0.94"
 mopro-ffi = { version = "=0.3.7", features = ["wasm"] }
 wasm-bindgen = "0.2"
 serde-wasm-bindgen = "0.6"
-
-    

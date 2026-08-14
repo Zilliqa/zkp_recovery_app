@@ -8,7 +8,7 @@ import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:flutter/foundation.dart';
 import 'package:zkp_recovery_app/services/download_service.dart';
-import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
+import 'package:mopro_flutter_bindings/src/rust/third_party/zkp_recovery_app.dart';
 
 /// Result of a Groth16 proof computation: the proof itself and the
 /// public outputs it attests to, plus the combined Solidity
@@ -59,7 +59,6 @@ class ProofService {
 
     // Master key, derived once - each path derivation walks down from here.
     Bip32Keys? hdKey;
-    Uint8List seed = Uint8List(64); // prevent re-allocations
     try {
       // Compute BIP39 mnemonic seed; throws exception if invalid.
       final bip39 = Mnemonic.fromSentence(
@@ -67,11 +66,10 @@ class ProofService {
         language,
         passphrase: passphrase,
       );
-      seed = Uint8List.fromList(bip39.seed);
-      hdKey = Bip32Keys.fromSeed(seed); // does not store seed
-      seed.fillRange(0, seed.length, 0);
+      hdKey = Bip32Keys.fromSeed(
+        Uint8List.fromList(bip39.seed),
+      ); // does not store seed      
     } catch (_) {
-      seed.fillRange(0, seed.length, 0);
       rethrow;
     }
 
