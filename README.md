@@ -13,6 +13,8 @@ This fork hosts the recovery tooling for the Zilliqa Ledger incident. Every prov
 `secp256k1` → `SHA-256[-20:]` address `== old`, bound to a new address + domain
 (public inputs `[expectedAddr, newAddr, domain]`).
 
+**→ To build and run the app (toolchain, per-platform steps, troubleshooting), see [`BUILD.md`](BUILD.md).**
+
 - **`flutter/`** — the mobile/desktop recovery **app** (this mopro example app). Its proving code:
   `flutter/lib/services/proof_service.dart` (`computeGroth16Proof` / `computeNoirProof`), with the
   Rust backends in **`src/`** (`circom.rs` for Groth16/PLONK via mopro, `noir.rs` for Noir/UltraHonk).
