@@ -147,24 +147,26 @@ app **bundles it by default** so the Noir path proves **fully offline** — no p
 `pubspec.yaml` declares `assets/srs_g1.srs`, so you **must** produce it before building:
 
 ```bash
-scripts/fetch-srs.sh                     # -> flutter/assets/srs_g1.srs (~140 MB): downloads the raw
-                                         #    .dat and converts it to the bincode .srs (idempotent)
+scripts/fetch-srs.sh                     # -> flutter/assets/srs_g1.srs (~140 MB, idempotent)
 cd flutter && flutter build linux --release
 ```
 
 - **Required before `flutter build`.** The asset is declared in `pubspec.yaml`, so a missing
   `flutter/assets/srs_g1.srs` fails the build (`unable to find asset`). Run `scripts/fetch-srs.sh`
   once per checkout (it skips if the file already exists).
-- The file is **git-ignored** (~140 MB > GitHub's 100 MB limit), so the script produces it locally;
-  `flutter build` bakes it into the app bundle.
-- `fetch-srs.sh` downloads the raw G1 SRS prefix (`.dat`) from `https://crs.aztec.network/g1.dat`
-  and converts it to `srs_g1.srs` via `cargo run --bin gen_srs` — the same **`.srs`** format the
-  upstream mopro example ships. (The adapter also accepts a raw `.dat` directly, but `.srs` keeps us
-  aligned with mopro.) Don't reuse the 16 MB `~/.bb-crs/bn254_g1.dat` — too few points → panics.
-- `proof_service.dart` uses the bundled `assets/srs_g1.srs` as `srsPath`; the only fallback to a
-  network download is if the asset is somehow absent at runtime.
-- To host `srs_g1.srs` on your own GCS bucket instead of regenerating it, upload it and repoint the
-  `URL`/step in `fetch-srs.sh`.
+- The file is **git-ignored** (~140 MB > GitHub's 100 MB limit); `flutter build` bakes it into the bundle.
+- **Two sources, checksum-verified (`sha256 afc399b6…`):**
+  1. **primary — GCS:** the finished bincode `.srs`
+     (`https://storage.googleapis.com/bkt-p-zkproof-files-001/noir/srs_g1.srs`) — a plain download,
+     no build tools needed.
+  2. **fallback — the authentic Aztec CRS:** raw `g1.dat` prefix from `https://crs.aztec.network/g1.dat`,
+     converted to `.srs` via `cargo run --bin gen_srs` (needs `cargo`). Same file, same checksum.
+  `.srs` is the format mopro's example ships; the adapter also accepts a raw `.dat`, but `.srs` keeps
+  us aligned with mopro. Don't reuse the 16 MB `~/.bb-crs/bn254_g1.dat` — too few points → panics.
+- `proof_service.dart` uses the bundled `assets/srs_g1.srs` as `srsPath`; it only falls back to a
+  network download if the asset is somehow absent at runtime.
+- **Enlarging the circuit:** bump `POINTS` in `fetch-srs.sh`, regenerate with `gen_srs`, re-upload to
+  GCS, and update `SRS_SHA256`.
 
 ---
 
