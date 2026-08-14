@@ -19,9 +19,17 @@ account-index auto-scan happen **off-circuit** in `prepare.js`.
 
 ## Toolchain (install once)
 ```bash
-curl -sL https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash && noirup -v 1.0.0-beta.19
-curl -sL https://raw.githubusercontent.com/AztecProtocol/aztec-packages/master/barretenberg/bbup/install | bash && bbup -v 4.2.0-aztecnr-rc.2
-# add ~/.nargo/bin and ~/.bb to PATH
+# 1) install the version managers (these only edit ~/.bashrc)
+curl -sL https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash
+curl -sL https://raw.githubusercontent.com/AztecProtocol/aztec-packages/master/barretenberg/bbup/install | bash
+# 2) put them on PATH in THIS shell (an already-open shell won't see the ~/.bashrc
+#    change — either run this or open a new terminal)
+export PATH="$HOME/.nargo/bin:$HOME/.bb:$PATH"
+# 3) install the pinned versions (do NOT chain these onto the curl above — bbup/noirup
+#    aren't on PATH until step 2)
+noirup -v 1.0.0-beta.19
+bbup   -v 4.2.0-aztecnr-rc.2
+# verify: nargo --version -> 1.0.0-beta.19 ; bb --version -> 4.2.0-aztecnr-rc.2
 ```
 Node.js is also needed (first run installs `@scure/bip32`, `@scure/bip39`).
 

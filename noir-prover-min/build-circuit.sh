@@ -18,8 +18,8 @@ cd "$(dirname "$0")"
 export PATH="$HOME/.nargo/bin:$HOME/.bb:$PATH"
 command -v nargo >/dev/null && command -v bb >/dev/null || {
   echo "ERROR: nargo/bb not on PATH. Install the pinned toolchain (see README):"
-  echo "  curl -sL https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash && noirup -v 1.0.0-beta.19"
-  echo "  curl -sL https://raw.githubusercontent.com/AztecProtocol/aztec-packages/master/barretenberg/bbup/install | bash && bbup -v 4.2.0-aztecnr-rc.2"
+  echo "  curl -sL https://raw.githubusercontent.com/noir-lang/noirup/main/install | bash   # then in a NEW shell (or after: export PATH=$HOME/.nargo/bin:$PATH): noirup -v 1.0.0-beta.19"
+  echo "  curl -sL https://raw.githubusercontent.com/AztecProtocol/aztec-packages/master/barretenberg/bbup/install | bash   # then in a NEW shell (or after: export PATH=$HOME/.bb:$PATH): bbup -v 4.2.0-aztecnr-rc.2"
   echo "  (or add ~/.nargo/bin and ~/.bb to PATH if already installed)"
   exit 1
 }
