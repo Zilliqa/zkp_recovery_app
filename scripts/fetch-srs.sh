@@ -24,6 +24,10 @@ SRS="flutter/assets/srs_g1.srs"       # bundled asset
 URL="https://crs.aztec.network/g1.dat"
 
 mkdir -p flutter/assets
+if [ -s "$SRS" ]; then
+  echo "$SRS already present ($(wc -c < "$SRS") bytes) — skipping. Delete it to re-fetch."
+  exit 0
+fi
 echo "1/2  downloading $(( BYTES / 1024 / 1024 )) MiB of the BN254 G1 SRS from $URL"
 curl -fL --retry 3 -r "0-$(( BYTES - 1 ))" -o "$DAT" "$URL"
 echo "2/2  converting $DAT -> $SRS (bincode .srs)"

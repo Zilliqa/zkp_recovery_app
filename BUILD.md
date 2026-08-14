@@ -21,12 +21,13 @@ build. Branch: **`feature/noir-implementation`**.
 # toolchain: Rust + Flutter (see Prerequisites), then:
 git checkout feature/noir-implementation
 cp groth16-prover-min/circuit_js/circuit.wasm test-vectors/circom/circuit.wasm   # build.rs input
+scripts/fetch-srs.sh                                                             # REQUIRED: bundles the offline SRS (~140 MB, once)
 cd flutter && flutter pub get && flutter build linux --release
-./build/linux/x64/release/bundle/zkp_recovery_app                               # runs; no LD_PRELOAD
+./build/linux/x64/release/bundle/zkp_recovery_app                               # runs offline; no LD_PRELOAD
 ```
 
-First launch downloads the Barretenberg SRS (~once, to `~/.bb-crs`); generating a proof needs the
-addresses + mnemonic entered in the UI.
+The SRS is **bundled by default** (`scripts/fetch-srs.sh`), so the Noir path proves **offline** — no
+per-launch download. Generating a proof needs the addresses + mnemonic entered in the UI.
 
 ---
 
@@ -130,9 +131,9 @@ rebuild.
 
 ## Runtime notes / first run
 
-- **SRS (Noir):** with `srsPath: null` (default), `noir_rs` downloads the ~128 MB BN254 SRS
-  **into memory on every launch** (it does *not* persist it — the `~/.bb-crs` folder is the separate
-  `bb` CLI cache). To avoid that and enable offline, bundle it — see [Offline SRS](#offline-srs).
+- **SRS (Noir):** bundled by default (`assets/srs_g1.srs`, see [Offline SRS](#offline-srs)), so proving
+  works with no network. Only if the asset is absent does `noir_rs` fall back to downloading the
+  ~128 MB SRS into memory per launch (it doesn't persist it — `~/.bb-crs` is the separate `bb` CLI cache).
 - **zkey (Groth16):** the app downloads `circuit_final.zkey` (247 MB) into its cache dir on first use.
 - **Memory:** Noir proving peaks ~1.3 GB in-app; Groth16 ~1 GB. Fine on ≥4 GB.
 
@@ -141,26 +142,29 @@ rebuild.
 ## Offline SRS
 
 The Noir prover needs the BN254 SRS — a **universal** setup (same file for every circuit; each circuit
-uses a prefix sized to it). This circuit needs **~128 MB** (262,144 gates × 8 SRS points × 64 B). By
-default the app downloads it per launch; to prove **fully offline** (and skip that download), bundle it:
+uses a prefix sized to it). This circuit needs **~128 MB** (262,144 gates × 8 SRS points × 64 B). The
+app **bundles it by default** so the Noir path proves **fully offline** — no per-launch download.
+`pubspec.yaml` declares `assets/srs_g1.srs`, so you **must** produce it before building:
 
 ```bash
-scripts/fetch-srs.sh                     # -> flutter/assets/srs_g1.srs (~140 MB): downloads the
-                                         #    raw .dat and converts it to the bincode .srs format
-# then uncomment  "- assets/srs_g1.srs"  in flutter/pubspec.yaml
+scripts/fetch-srs.sh                     # -> flutter/assets/srs_g1.srs (~140 MB): downloads the raw
+                                         #    .dat and converts it to the bincode .srs (idempotent)
 cd flutter && flutter build linux --release
 ```
 
-- The file is **git-ignored** (~140 MB > GitHub's 100 MB limit), so the script produces it at build
-  time; `flutter build` bakes it into the app bundle.
+- **Required before `flutter build`.** The asset is declared in `pubspec.yaml`, so a missing
+  `flutter/assets/srs_g1.srs` fails the build (`unable to find asset`). Run `scripts/fetch-srs.sh`
+  once per checkout (it skips if the file already exists).
+- The file is **git-ignored** (~140 MB > GitHub's 100 MB limit), so the script produces it locally;
+  `flutter build` bakes it into the app bundle.
 - `fetch-srs.sh` downloads the raw G1 SRS prefix (`.dat`) from `https://crs.aztec.network/g1.dat`
   and converts it to `srs_g1.srs` via `cargo run --bin gen_srs` — the same **`.srs`** format the
   upstream mopro example ships. (The adapter also accepts a raw `.dat` directly, but `.srs` keeps us
   aligned with mopro.) Don't reuse the 16 MB `~/.bb-crs/bn254_g1.dat` — too few points → panics.
-- `proof_service.dart` auto-detects the bundled `assets/srs_g1.srs` and passes it as `srsPath`; if it
-  isn't bundled, `srsPath` stays `null` and the app downloads the SRS — so the default build works.
-- For an **airgapped** device there's no first-run download to fall back on, so bundling (or
-  side-loading the `.srs`) is required.
+- `proof_service.dart` uses the bundled `assets/srs_g1.srs` as `srsPath`; the only fallback to a
+  network download is if the asset is somehow absent at runtime.
+- To host `srs_g1.srs` on your own GCS bucket instead of regenerating it, upload it and repoint the
+  `URL`/step in `fetch-srs.sh`.
 
 ---
 
@@ -185,6 +189,8 @@ cd flutter && flutter build linux --release
   beta.19; use **`bb 4.2.0-aztecnr-rc.2`**, not 5.0.0-nightly (that's beta.22).
 - **`build.rs` fails / missing `circuit_*` symbols** — you skipped the `circuit.wasm` copy in
   [One-time setup](#one-time-repo-setup).
+- **`flutter build` fails with `unable to find asset: assets/srs_g1.srs`** — run `scripts/fetch-srs.sh`
+  first; the offline SRS is bundled by default (see [Offline SRS](#offline-srs)).
 - **`failed to select a version for tokio`** — a stale `mopro_flutter_bindings/rust/Cargo.lock`; delete
   it and let cargo re-resolve.
 - **`rustc … is not supported`** — run `rustup update stable` (need ≥ 1.91).
