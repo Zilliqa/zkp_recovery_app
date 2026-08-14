@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:bech32/bech32.dart';
 import 'package:bip32_keys/bip32_keys.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
@@ -117,6 +118,96 @@ class ProofService {
 
     log(output.abiEncodedHex);
     return output;
+  }
+
+  /// Computes the Noir (UltraHonk) proof — same off-circuit derivation as Groth16,
+  /// but proves the minimal circuit via Barretenberg (noir-rs). The ACIR is bundled
+  /// as an asset; the SRS is fetched/cached by noir-rs. No zkey needed.
+  Future<ProofResult> computeNoirProof({
+    required String passphrase,
+    required String mnemonic,
+    required String eAddress,
+    required String zAddress,
+    required Language language,
+  }) async {
+    await Future.delayed(Duration.zero);
+    final evmAddress = hexToBytes(eAddress);
+    final zilAddress = (zAddress.startsWith('0x')
+        ? hexToBytes(zAddress)
+        : bech32ToBytes(zAddress));
+    if (listEquals(evmAddress, zilAddress)) {
+      throw Exception("EVM == ZIL is not allowed");
+    }
+
+    Bip32Keys? hdKey;
+    Uint8List seed = Uint8List(64);
+    try {
+      final bip39 =
+          Mnemonic.fromSentence(mnemonic, language, passphrase: passphrase);
+      seed = Uint8List.fromList(bip39.seed);
+      hdKey = Bip32Keys.fromSeed(seed);
+      seed.fillRange(0, seed.length, 0);
+    } catch (_) {
+      seed.fillRange(0, seed.length, 0);
+      rethrow;
+    }
+
+    final parent = await findAccountParent(hdKey, zilAddress);
+    if (parent == null) {
+      throw Exception(
+        "ZIL address does not seem to be derived from mnemonic seed phrase.",
+      );
+    }
+
+    // Noir ABI inputs (67): parent_priv[32 bytes], parent_cc[32 bytes], expected, new, domain
+    final inputs = <String>[];
+    for (final b in parent.private!) {
+      inputs.add(b.toString());
+    }
+    for (final b in parent.chainCode) {
+      inputs.add(b.toString());
+    }
+    inputs.add(BigInt.parse(bytesToHex(zilAddress)).toString());
+    inputs.add(BigInt.parse(bytesToHex(evmAddress)).toString());
+    inputs.add((kDebugMode) ? '33101' : '32769');
+
+    // Materialize the bundled ACIR to a file path (noir-rs reads from a path).
+    final circuitPath = '${(await _getCacheDir()).path}/circuit_min.json';
+    final circuitFile = File(circuitPath);
+    if (!await circuitFile.exists()) {
+      final data = await rootBundle.load('assets/circuit_min.json');
+      await circuitFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
+    }
+
+    final vk = await getNoirVerificationKey(
+      circuitPath: circuitPath,
+      srsPath: null,
+      onChain: true,
+      lowMemoryMode: false,
+    );
+    final proof = await generateNoirProof(
+      circuitPath: circuitPath,
+      srsPath: null,
+      inputs: inputs,
+      onChain: true,
+      vk: vk,
+      lowMemoryMode: false,
+    );
+    final ok = await verifyNoirProof(
+      circuitPath: circuitPath,
+      proof: proof,
+      onChain: true,
+      vk: vk,
+      lowMemoryMode: false,
+    );
+
+    final proofHex = bytesToHex(Uint8List.fromList(proof));
+    log("Noir proof ${proof.length} bytes, verified=$ok");
+    return ProofResult(
+      proof: proofHex,
+      publicOutputs: "verified=$ok",
+      abiEncodedHex: proofHex,
+    );
   }
 
   List<String> expand256(Uint8List bytes) {

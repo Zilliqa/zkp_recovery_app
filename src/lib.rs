@@ -65,7 +65,9 @@ mod circom_tests {
 halo2_stub!();
 
 // NOIR_TEMPLATE
-noir_stub!();
+// Real Noir adapter (was: noir_stub!()) — UltraHonk via noir-rs/Barretenberg.
+mod noir;
+pub use noir::{generate_noir_proof, get_noir_verification_key, verify_noir_proof};
 
 // GNARK_TEMPLATE
 gnark_stub!();

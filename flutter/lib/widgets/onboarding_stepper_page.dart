@@ -124,7 +124,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
 
     setState(() => _isComputingProof = true);
     try {
-      final result = await ProofService.instance.computeGroth16Proof(
+      final result = await ProofService.instance.computeNoirProof(
         passphrase: _passwordController.text.trim(),
         mnemonic: _mnemonicController.text.trim(),
         eAddress: _evmAddressController.text.trim(),

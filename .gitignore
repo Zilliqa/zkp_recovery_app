@@ -1,3 +1,5 @@
 target/
 build/
 *.jar
+test-vectors/circom/*.zkey
+test-vectors/circom/*.wasm
