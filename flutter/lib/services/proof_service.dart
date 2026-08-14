@@ -11,9 +11,10 @@ import 'package:flutter/foundation.dart';
 import 'package:zkp_recovery_app/services/download_service.dart';
 import 'package:mopro_flutter_bindings/src/rust/third_party/zkp_recovery_app.dart';
 
-/// Result of a Groth16 proof computation: the proof itself and the
-/// public outputs it attests to, plus the combined Solidity
-/// `abi.encode(bytes,bytes)` payload ready to paste into a wallet.
+/// Result of a proof computation (Groth16 or Noir): the proof, the public
+/// outputs it attests to, and `abiEncodedHex` — the full ABI-encoded verifier
+/// calldata (`verifyProof(...)` for Groth16, `verify(bytes,bytes32[])` for Noir),
+/// ready to submit to the on-chain verifier.
 class ProofResult {
   final String proof;
   final String publicOutputs;
@@ -121,8 +122,9 @@ class ProofService {
   }
 
   /// Computes the Noir (UltraHonk) proof — same off-circuit derivation as Groth16,
-  /// but proves the minimal circuit via Barretenberg (noir-rs). The ACIR is bundled
-  /// as an asset; the SRS is fetched/cached by noir-rs. No zkey needed.
+  /// but proves the minimal circuit via Barretenberg (noir-rs). The ACIR and the
+  /// SRS are bundled as assets and the SRS is passed as srsPath, so proving works
+  /// offline (falls back to a network fetch only if the SRS asset is absent). No zkey.
   Future<ProofResult> computeNoirProof({
     required String passphrase,
     required String mnemonic,
@@ -179,10 +181,10 @@ class ProofService {
       await circuitFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
     }
 
-    // Offline SRS (opt-in): if a bundled SRS asset is present, materialize it and use it —
-    // noir-rs then reads it locally instead of downloading ~128 MB on every launch. If it's
-    // not bundled, srsPath stays null and noir-rs downloads the SRS. The file must end in
-    // `.dat`. See scripts/fetch-srs.sh + BUILD.md for how to bundle it.
+    // Offline SRS: the bundled SRS asset is materialized to a file and passed as srsPath,
+    // so noir-rs reads it locally instead of downloading ~128 MB on every launch. If it's
+    // not bundled, srsPath stays null and noir-rs downloads the SRS. The `.srs` (bincode)
+    // format is what noir-rs's LocalSrs reads. See scripts/fetch-srs.sh + BUILD.md.
     String? srsPath;
     try {
       final srsData = await rootBundle.load('assets/srs_g1.srs');

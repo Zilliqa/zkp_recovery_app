@@ -65,7 +65,8 @@ mod circom_tests {
 halo2_stub!();
 
 // NOIR_TEMPLATE
-// Real Noir adapter (was: noir_stub!()) — UltraHonk via noir-rs/Barretenberg.
+// Noir adapter: mopro's official src/noir.rs template (replaces the noir_stub!() placeholder)
+// — UltraHonk via noir-rs/Barretenberg.
 mod noir;
 pub use noir::{generate_noir_proof, get_noir_verification_key, verify_noir_proof};
 

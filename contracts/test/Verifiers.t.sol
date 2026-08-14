@@ -11,7 +11,7 @@ interface Vm {
 
 /// Regression: the *single ABI-encoded calldata blob* the Flutter app produces
 /// (ProofResult.abiEncodedHex) must be accepted by the deployed verifier.
-/// Fixtures are real proofs; regenerate with ./gen-fixtures.sh.
+/// Fixtures are real proofs; see README.md for how to regenerate them.
 contract VerifiersTest {
     Vm constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     Groth16Verifier g16;

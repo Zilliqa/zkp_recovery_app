@@ -67,7 +67,9 @@ curl -L -o test-vectors/circom/circuit_final.zkey \
 ```
 
 The **Noir circuit** is bundled precompiled as `flutter/assets/circuit_min.json` (the ACIR) — no
-step needed; it's reproducible via `noir-prover-min/build-circuit.sh` (VK hash `1bbdaf1c…`).
+step needed; it's reproducible via `noir-prover-min/build-circuit.sh` (VK hash `1bbdaf1c…`). The
+committed ACIR has `nargo`'s `debug_symbols`/`file_map` stripped (they only carry source paths for
+error messages); the `bytecode` — and hence the VK hash — is the reproducibility anchor.
 
 ---
 
@@ -90,7 +92,7 @@ startup-loads the FFI lib; `linux/runner/stackfix.cc` forces ≥4 MB thread stac
 works — **no `LD_PRELOAD`, no wrapper**.
 
 **WSL2 note:** these binaries are built against glibc 2.39, so a WSL2 distro must be **Ubuntu 24.04+**;
-the GUI needs **Windows 11 / WSLg** (Win10 needs an external X server). See `compare/README-WSL2.md`.
+the GUI needs **Windows 11 / WSLg** (Win10 needs an external X server).
 
 ---
 
@@ -142,7 +144,8 @@ rebuild.
 ## Offline SRS
 
 The Noir prover needs the BN254 SRS — a **universal** setup (same file for every circuit; each circuit
-uses a prefix sized to it). This circuit needs **~128 MB** (262,144 gates × 8 SRS points × 64 B). The
+uses a prefix sized to it). This circuit needs a **~128 MB** prefix (262,144 gates × 8 SRS points
+× 64 B); `fetch-srs.sh` bundles **~140 MB** (a small margin). The
 app **bundles it by default** so the Noir path proves **fully offline** — no per-launch download.
 `pubspec.yaml` declares `assets/srs_g1.srs`, so you **must** produce it before building:
 
@@ -196,4 +199,4 @@ cd flutter && flutter build linux --release
 - **`failed to select a version for tokio`** — a stale `mopro_flutter_bindings/rust/Cargo.lock`; delete
   it and let cargo re-resolve.
 - **`rustc … is not supported`** — run `rustup update stable` (need ≥ 1.91).
-- **GUI won't open on WSL2** — Windows 11 (WSLg) + Ubuntu 24.04; see `compare/README-WSL2.md`.
+- **GUI won't open on WSL2** — needs Windows 11 (WSLg) + Ubuntu 24.04 (glibc 2.39).
