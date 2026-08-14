@@ -185,8 +185,8 @@ class ProofService {
     // `.dat`. See scripts/fetch-srs.sh + BUILD.md for how to bundle it.
     String? srsPath;
     try {
-      final srsData = await rootBundle.load('assets/srs_g1.dat');
-      srsPath = '${(await _getCacheDir()).path}/srs_g1.dat';
+      final srsData = await rootBundle.load('assets/srs_g1.srs');
+      srsPath = '${(await _getCacheDir()).path}/srs_g1.srs';
       final srsFile = File(srsPath);
       if (!await srsFile.exists()) {
         await srsFile.writeAsBytes(srsData.buffer.asUint8List(), flush: true);

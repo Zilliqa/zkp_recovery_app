@@ -145,21 +145,22 @@ uses a prefix sized to it). This circuit needs **~128 MB** (262,144 gates × 8 S
 default the app downloads it per launch; to prove **fully offline** (and skip that download), bundle it:
 
 ```bash
-scripts/fetch-srs.sh                     # downloads the right-sized flutter/assets/srs_g1.dat (~140 MB)
-# then uncomment  "- assets/srs_g1.dat"  in flutter/pubspec.yaml
+scripts/fetch-srs.sh                     # -> flutter/assets/srs_g1.srs (~140 MB): downloads the
+                                         #    raw .dat and converts it to the bincode .srs format
+# then uncomment  "- assets/srs_g1.srs"  in flutter/pubspec.yaml
 cd flutter && flutter build linux --release
 ```
 
-- The file is **git-ignored** (128 MB > GitHub's 100 MB limit), so the script fetches it at build
+- The file is **git-ignored** (~140 MB > GitHub's 100 MB limit), so the script produces it at build
   time; `flutter build` bakes it into the app bundle.
-- `proof_service.dart` auto-detects the bundled asset and passes it as `srsPath` (must end in `.dat`,
-  loaded via `from_dat_file`); if it isn't bundled, `srsPath` stays `null` and the app downloads it —
-  so the default build still works.
-- It's the **raw `.dat`** (raw G1 points from `https://crs.aztec.network/g1.dat`), *not* the
-  serialized `.srs` the upstream mopro example ships — our adapter reads either, and `.dat` needs no
-  conversion. Don't reuse the 16 MB `~/.bb-crs/bn254_g1.dat` (too few points → panics).
+- `fetch-srs.sh` downloads the raw G1 SRS prefix (`.dat`) from `https://crs.aztec.network/g1.dat`
+  and converts it to `srs_g1.srs` via `cargo run --bin gen_srs` — the same **`.srs`** format the
+  upstream mopro example ships. (The adapter also accepts a raw `.dat` directly, but `.srs` keeps us
+  aligned with mopro.) Don't reuse the 16 MB `~/.bb-crs/bn254_g1.dat` — too few points → panics.
+- `proof_service.dart` auto-detects the bundled `assets/srs_g1.srs` and passes it as `srsPath`; if it
+  isn't bundled, `srsPath` stays `null` and the app downloads the SRS — so the default build works.
 - For an **airgapped** device there's no first-run download to fall back on, so bundling (or
-  side-loading the `.dat`) is required.
+  side-loading the `.srs`) is required.
 
 ---
 

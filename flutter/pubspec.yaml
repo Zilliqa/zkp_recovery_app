@@ -69,9 +69,9 @@ flutter:
   assets:
     - assets/images/zilliqa-full-teal.svg
     - assets/circuit_min.json
-    # Offline SRS (~128 MB): run scripts/fetch-srs.sh, then uncomment the next line to bundle it
+    # Offline SRS (~140 MB): run scripts/fetch-srs.sh, then uncomment the next line to bundle it
     # so the Noir path proves without downloading the SRS. See BUILD.md.
-    # - assets/srs_g1.dat
+    # - assets/srs_g1.srs
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
