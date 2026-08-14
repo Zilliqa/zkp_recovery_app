@@ -20,6 +20,16 @@ The verifiers are imported straight from the prover-min folders via remappings (
 cd contracts && forge test -vv
 ```
 
+## Check a calldata blob straight from the app
+Copy the calldata the Flutter app shows (`ProofResult.abiEncodedHex`) and confirm the deployed
+verifier accepts it — no file, no anvil (in-memory `forge test`):
+```bash
+bash check.sh noir    0x<paste-noir-calldata>
+bash check.sh groth16 0x<paste-groth16-calldata>
+```
+Prints `✅ ACCEPTED` or `❌ REJECTED`. (Uses `test/CalldataCheck.t.sol`, driven by the
+`CHECK_VARIANT`/`CHECK_CALLDATA` env vars; it's a no-op during a normal `forge test`.)
+
 ## Fixtures
 `fixtures/*.hex` are real proofs (Groth16 arkworks / Noir UltraHonk-keccak) for the all-zero-ish
 test vector, encoded exactly as the app encodes them. The matching Dart-side check that
