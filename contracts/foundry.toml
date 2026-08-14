@@ -1,0 +1,10 @@
+[profile.default]
+test = "test"
+solc = "0.8.27"
+evm_version = "cancun"
+allow_paths = ["..", "../groth16-prover-min", "../noir-prover-min"]
+remappings = [
+    "groth16-verifier/=../groth16-prover-min/",
+    "honk-verifier/=../noir-prover-min/",
+]
+fs_permissions = [{ access = "read", path = "./fixtures" }]

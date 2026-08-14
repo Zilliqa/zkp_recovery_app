@@ -5,3 +5,4 @@ test-vectors/circom/*.zkey
 test-vectors/circom/*.wasm
 flutter/assets/srs_g1.dat
 flutter/assets/srs_g1.srs
+compare/

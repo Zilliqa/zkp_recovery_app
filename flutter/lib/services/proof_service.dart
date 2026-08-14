@@ -217,13 +217,52 @@ class ProofService {
       lowMemoryMode: false,
     );
 
-    final proofHex = bytesToHex(Uint8List.fromList(proof));
-    log("Noir proof ${proof.length} bytes, verified=$ok");
+    final proofBlob = Uint8List.fromList(proof);
+    final calldata = encodeNoirCallData(proofBlob);
+    log("Noir proof ${proof.length} bytes, verified=$ok, "
+        "verify() calldata ${calldata.length} bytes");
     return ProofResult(
-      proof: proofHex,
+      proof: bytesToHex(proofBlob),
       publicOutputs: "verified=$ok",
-      abiEncodedHex: proofHex,
+      abiEncodedHex: bytesToHex(calldata),
     );
+  }
+
+  /// ABI-encodes the on-chain HonkVerifier call
+  /// `verify(bytes _proof, bytes32[] _publicInputs)` from the raw noir-rs proof
+  /// blob, producing a single submittable calldata byte array (mirrors the
+  /// Groth16 [encodeCallData]).
+  ///
+  /// The noir-rs blob is `[uint32 numPubs][numPubs*32 pubs][proof]`, so the
+  /// public inputs are stripped off the front and re-encoded as `bytes32[]`,
+  /// and the remainder is the `bytes _proof`. Both args are dynamic, so the
+  /// encoding is: selector + 2 head offsets + (proof len + padded proof) +
+  /// (pubs len + pubs).
+  Uint8List encodeNoirCallData(Uint8List blob) {
+    final numPubs = (blob[0] << 24) | (blob[1] << 16) | (blob[2] << 8) | blob[3];
+    final headerLen = 4 + numPubs * 32;
+    final pubs = blob.sublist(4, headerLen); // numPubs * 32 bytes
+    final proof = blob.sublist(headerLen); // proof only
+
+    final selector = hexToBytes(
+      keccak256sum('verify(bytes,bytes32[])').substring(0, 8),
+    );
+    final proofPadded = ((proof.length + 31) ~/ 32) * 32;
+    // head = 2 words (offset to _proof, offset to _publicInputs)
+    final offsetPubs = 64 + 32 + proofPadded; // after head + (len + padded proof)
+
+    final builder = BytesBuilder();
+    builder.add(selector);
+    builder.add(_bigIntToUint256(BigInt.from(64))); // offset to _proof
+    builder.add(_bigIntToUint256(BigInt.from(offsetPubs))); // offset to _publicInputs
+    builder.add(_bigIntToUint256(BigInt.from(proof.length))); // _proof length
+    builder.add(proof);
+    if (proofPadded > proof.length) {
+      builder.add(Uint8List(proofPadded - proof.length)); // right-pad to 32
+    }
+    builder.add(_bigIntToUint256(BigInt.from(numPubs))); // _publicInputs length
+    builder.add(pubs); // numPubs bytes32 words
+    return builder.toBytes();
   }
 
   List<String> expand256(Uint8List bytes) {
