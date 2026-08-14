@@ -130,9 +130,36 @@ rebuild.
 
 ## Runtime notes / first run
 
-- **SRS (Noir):** first proof downloads the Barretenberg CRS to `~/.bb-crs` (cached thereafter).
+- **SRS (Noir):** with `srsPath: null` (default), `noir_rs` downloads the ~128 MB BN254 SRS
+  **into memory on every launch** (it does *not* persist it — the `~/.bb-crs` folder is the separate
+  `bb` CLI cache). To avoid that and enable offline, bundle it — see [Offline SRS](#offline-srs).
 - **zkey (Groth16):** the app downloads `circuit_final.zkey` (247 MB) into its cache dir on first use.
 - **Memory:** Noir proving peaks ~1.3 GB in-app; Groth16 ~1 GB. Fine on ≥4 GB.
+
+---
+
+## Offline SRS
+
+The Noir prover needs the BN254 SRS — a **universal** setup (same file for every circuit; each circuit
+uses a prefix sized to it). This circuit needs **~128 MB** (262,144 gates × 8 SRS points × 64 B). By
+default the app downloads it per launch; to prove **fully offline** (and skip that download), bundle it:
+
+```bash
+scripts/fetch-srs.sh                     # downloads the right-sized flutter/assets/srs_g1.dat (~140 MB)
+# then uncomment  "- assets/srs_g1.dat"  in flutter/pubspec.yaml
+cd flutter && flutter build linux --release
+```
+
+- The file is **git-ignored** (128 MB > GitHub's 100 MB limit), so the script fetches it at build
+  time; `flutter build` bakes it into the app bundle.
+- `proof_service.dart` auto-detects the bundled asset and passes it as `srsPath` (must end in `.dat`,
+  loaded via `from_dat_file`); if it isn't bundled, `srsPath` stays `null` and the app downloads it —
+  so the default build still works.
+- It's the **raw `.dat`** (raw G1 points from `https://crs.aztec.network/g1.dat`), *not* the
+  serialized `.srs` the upstream mopro example ships — our adapter reads either, and `.dat` needs no
+  conversion. Don't reuse the 16 MB `~/.bb-crs/bn254_g1.dat` (too few points → panics).
+- For an **airgapped** device there's no first-run download to fall back on, so bundling (or
+  side-loading the `.dat`) is required.
 
 ---
 

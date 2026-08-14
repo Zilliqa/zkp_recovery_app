@@ -179,15 +179,31 @@ class ProofService {
       await circuitFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
     }
 
+    // Offline SRS (opt-in): if a bundled SRS asset is present, materialize it and use it —
+    // noir-rs then reads it locally instead of downloading ~128 MB on every launch. If it's
+    // not bundled, srsPath stays null and noir-rs downloads the SRS. The file must end in
+    // `.dat`. See scripts/fetch-srs.sh + BUILD.md for how to bundle it.
+    String? srsPath;
+    try {
+      final srsData = await rootBundle.load('assets/srs_g1.dat');
+      srsPath = '${(await _getCacheDir()).path}/srs_g1.dat';
+      final srsFile = File(srsPath);
+      if (!await srsFile.exists()) {
+        await srsFile.writeAsBytes(srsData.buffer.asUint8List(), flush: true);
+      }
+    } catch (_) {
+      srsPath = null; // asset not bundled -> noir-rs fetches the SRS over the network
+    }
+
     final vk = await getNoirVerificationKey(
       circuitPath: circuitPath,
-      srsPath: null,
+      srsPath: srsPath,
       onChain: true,
       lowMemoryMode: false,
     );
     final proof = await generateNoirProof(
       circuitPath: circuitPath,
-      srsPath: null,
+      srsPath: srsPath,
       inputs: inputs,
       onChain: true,
       vk: vk,
