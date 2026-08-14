@@ -26,11 +26,11 @@ pub use circom::{
     generate_circom_proof, verify_circom_proof, CircomProof, CircomProofResult, ProofLib, G1, G2,
 };
 mod witness {
-    rust_witness::witness!(ledger);
+    rust_witness::witness!(groth);
 }
 
 crate::set_circom_circuits! {
-    ("ledger_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::ledger_witness)),
+    ("groth_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::groth_witness)),
 }
 
 #[cfg(test)]
@@ -39,7 +39,7 @@ mod circom_tests {
     // use std::str::FromStr;
     use crate::generate_circom_proof;
 
-    const ZKEY_PATH: &str = "./test-vectors/circom/ledger_final.zkey";
+    const ZKEY_PATH: &str = "./test-vectors/circom/groth_final.zkey";
 
     #[test]
     fn test_plonk() {
