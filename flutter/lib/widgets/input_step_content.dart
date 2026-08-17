@@ -34,6 +34,12 @@ class InputStepContent extends StatelessWidget {
   String? _validateMnemonic(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'Seed phrase is required';
+    if (trimmed.startsWith("xprv")) {
+      if (RegExp(r'^xprv[1-9A-HJ-NP-Za-km-z]{107}$').hasMatch(trimmed)) {
+        return null;
+      }
+      return 'Invalid XPRV value';
+    }
     final words = trimmed.split(RegExp(r'\s+'));
     if (words.length != 12 && words.length != 24) {
       return 'Expected 12/24 words, got ${words.length}';
@@ -119,7 +125,7 @@ class InputStepContent extends StatelessWidget {
             obscureText: (obscureMnemonic || isComputingProof),
             maxLines: 1,
             decoration: InputDecoration(
-              labelText: '12/24-word mnemonic seed phrase',
+              labelText: 'xprv… or 12/24-word mnemonic',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: Icon(

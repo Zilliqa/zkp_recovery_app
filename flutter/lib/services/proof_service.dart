@@ -60,15 +60,19 @@ class ProofService {
     // Master key, derived once - each path derivation walks down from here.
     Bip32Keys? hdKey;
     try {
-      // Compute BIP39 mnemonic seed; throws exception if invalid.
-      final bip39 = Mnemonic.fromSentence(
-        mnemonic,
-        language,
-        passphrase: passphrase,
-      );
-      hdKey = Bip32Keys.fromSeed(
-        Uint8List.fromList(bip39.seed),
-      ); // does not store seed      
+      // Compute master key from seed/xprv; throws exception if invalid.
+      if (mnemonic.startsWith("xprv")) {
+        hdKey = Bip32Keys.fromBase58(mnemonic);
+      } else {
+        final bip39 = Mnemonic.fromSentence(
+          mnemonic,
+          language,
+          passphrase: passphrase,
+        );
+        hdKey = Bip32Keys.fromSeed(
+          Uint8List.fromList(bip39.seed),
+        ); // does not store seed
+      }
     } catch (_) {
       rethrow;
     }
@@ -77,7 +81,7 @@ class ProofService {
     final parent = await findAccountParent(hdKey, zilAddress);
     if (parent == null) {
       throw Exception(
-        "ZIL address does not seem to be derived from mnemonic seed phrase.",
+        "ZIL address does not seem to be derived from mnemonic-seed or master-key.",
       );
     }
 

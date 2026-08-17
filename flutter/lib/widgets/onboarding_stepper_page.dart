@@ -131,6 +131,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
         zAddress: _zilAddressController.text.trim(),
         language: _mnemonicLanguage,
       );
+      _mnemonicController.clear();
       if (!mounted) return;
       setState(() {
         _proofResult = result;
