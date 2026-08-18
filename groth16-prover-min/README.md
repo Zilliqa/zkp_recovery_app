@@ -10,6 +10,7 @@ constraints), so proving is ~15 s at ~7 GB with a **247 MB** key.
 `parent node m/44'/313'/n'/0'  --(final hardened CKD 0')-->  key --secp256k1--> pubkey --SHA-256[-20:]--> address == <old>`, bound to `newAddr` + `domain`.
 - **Private inputs:** the parent node's private key + chain code (256+256 bits), each **binary-constrained**.
 - **Public inputs:** `[expectedAddr(old), newAddr, domain]`.
+- **Canonical `domain`:** Zilliqa EVM mainnet chainId `32769` (or `keccak(chainId, claimContract)` once the claim contract is deployed).
 - **Off-circuit (in `prepare.js`/`prove-secure.js`):** PBKDF2, then derive `m/44'/313'/n'/0'`,
   auto-scanning the account index `n` (0–99) to match the old address.
 
@@ -17,7 +18,7 @@ Security note: this proves knowledge of the **`m/44'/313'/n'/0'` node**, not the
 hardened derivation is one-way, an attacker holding the *leaked final key* still cannot produce
 that node — so it remains a valid ownership signal for the incident.
 
-## Use it (same command as the full runner)
+## Use it (same command as the other runners)
 ```bash
 # hardened (mnemonic at a hidden prompt):
 ./run-proof-secure.sh <oldAddr 0x..|zil1..> <newAddr> <domain dec|0x..>
@@ -44,6 +45,12 @@ It contains no secrets (a proving key is public material). `vk.json` + `verifier
 (0xPARC circom-ecdsa @ d87eb70, circomlib 2.0.2, Electron-Labs sha512 @ be9f01d). The
 prover-supplied bit inputs are `b*(b-1)===0` constrained (audit-hardening).
 
+
+## Reproduce / verify the circuit
+`circuit.circom` + `bip32lib.circom` are the source; circom 2.2.3 + pinned includes (0xPARC circom-ecdsa @ d87eb70, circomlib 2.0.2, Electron-Labs sha512 @ be9f01d).
+- `./build-circuit.sh` — recompile from the pinned sources and confirm the `wasm`/`r1cs` are **byte-identical** to the shipped ones.
+- `node secure_core_test.js` — self-test on a throwaway seed: a correct `(old,new,domain)` triple verifies **and** tampering with `newAddr`/`domain` fails (binding). Needs the zkey.
+
 ## Files
 - `run-proof-secure.sh` / `prove-secure.js` — hardened runner (masked stdin, in-memory).
 - `run-proof.sh` / `prepare.js` — quick runner (argv; testing only).
@@ -51,3 +58,5 @@ prover-supplied bit inputs are `b*(b-1)===0` constrained (audit-hardening).
 - `circuit_js/` — witness generator (wasm) for the minimal circuit.
 - `vk.json`, `verifier.sol` — Groth16 verification key + on-chain verifier (`uint[3]` = `[old,new,domain]`).
 - `print_submit.js` — prints on-chain submission/claim instructions.
+- `build-circuit.sh` — reproducible compile from pinned sources + byte-identical check.
+- `secure_core_test.js` — binding self-test on a throwaway seed (needs the zkey).
