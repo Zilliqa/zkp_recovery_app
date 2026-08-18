@@ -9,7 +9,7 @@ import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
-import 'third_party/ledger_mopro_app.dart';
+import 'third_party/zkp_recovery_app.dart';
 
 /// Main entrypoint of the Rust API
 class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
@@ -64,7 +64,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 993644312;
+  int get rustContentHash => -1600908;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -75,31 +75,31 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
-  Future<CircomProof> ledgerMoproAppCircomProofDefault();
+  Future<CircomProof> zkpRecoveryAppCircomProofDefault();
 
-  Future<G1> ledgerMoproAppG1Default();
+  Future<G1> zkpRecoveryAppG1Default();
 
-  Future<G2> ledgerMoproAppG2Default();
+  Future<G2> zkpRecoveryAppG2Default();
 
-  Future<CircomProofResult> ledgerMoproAppGenerateCircomProof({
+  Future<CircomProofResult> zkpRecoveryAppGenerateCircomProof({
     required String zkeyPath,
     required String circuitInputs,
     required ProofLib proofLib,
   });
 
-  Future<GnarkProofResult> ledgerMoproAppGenerateGnarkProof({
+  Future<GnarkProofResult> zkpRecoveryAppGenerateGnarkProof({
     required String r1CsPath,
     required String pkPath,
     required String witnessJson,
   });
 
-  Future<Halo2ProofResult> ledgerMoproAppGenerateHalo2Proof({
+  Future<Halo2ProofResult> zkpRecoveryAppGenerateHalo2Proof({
     required String srsPath,
     required String pkPath,
     required Map<String, List<String>> circuitInputs,
   });
 
-  Future<Uint8List> ledgerMoproAppGenerateNoirProof({
+  Future<Uint8List> zkpRecoveryAppGenerateNoirProof({
     required String circuitPath,
     String? srsPath,
     required List<String> inputs,
@@ -108,39 +108,39 @@ abstract class RustLibApi extends BaseApi {
     required bool lowMemoryMode,
   });
 
-  Future<Uint8List> ledgerMoproAppGetNoirVerificationKey({
+  Future<Uint8List> zkpRecoveryAppGetNoirVerificationKey({
     required String circuitPath,
     String? srsPath,
     required bool onChain,
     required bool lowMemoryMode,
   });
 
-  Future<Halo2ProofResult> ledgerMoproAppHalo2ProofResultDefault();
+  Future<Halo2ProofResult> zkpRecoveryAppHalo2ProofResultDefault();
 
-  Future<void> ledgerMoproAppInitApp();
+  Future<void> zkpRecoveryAppInitApp();
 
-  Future<ProofLib> ledgerMoproAppProofLibDefault();
+  Future<ProofLib> zkpRecoveryAppProofLibDefault();
 
-  Future<bool> ledgerMoproAppVerifyCircomProof({
+  Future<bool> zkpRecoveryAppVerifyCircomProof({
     required String zkeyPath,
     required CircomProofResult proofResult,
     required ProofLib proofLib,
   });
 
-  Future<bool> ledgerMoproAppVerifyGnarkProof({
+  Future<bool> zkpRecoveryAppVerifyGnarkProof({
     required String r1CsPath,
     required String vkPath,
     required GnarkProofResult proofResult,
   });
 
-  Future<bool> ledgerMoproAppVerifyHalo2Proof({
+  Future<bool> zkpRecoveryAppVerifyHalo2Proof({
     required String srsPath,
     required String vkPath,
     required List<int> proof,
     required List<int> publicInput,
   });
 
-  Future<bool> ledgerMoproAppVerifyNoirProof({
+  Future<bool> zkpRecoveryAppVerifyNoirProof({
     required String circuitPath,
     required List<int> proof,
     required bool onChain,
@@ -166,7 +166,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
-  Future<CircomProof> ledgerMoproAppCircomProofDefault() {
+  Future<CircomProof> zkpRecoveryAppCircomProofDefault() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -182,18 +182,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_circom_proof,
           decodeErrorData: null,
         ),
-        constMeta: kLedgerMoproAppCircomProofDefaultConstMeta,
+        constMeta: kZkpRecoveryAppCircomProofDefaultConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppCircomProofDefaultConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppCircomProofDefaultConstMeta =>
       const TaskConstMeta(debugName: "circom_proof_default", argNames: []);
 
   @override
-  Future<G1> ledgerMoproAppG1Default() {
+  Future<G1> zkpRecoveryAppG1Default() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -209,18 +209,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_g_1,
           decodeErrorData: null,
         ),
-        constMeta: kLedgerMoproAppG1DefaultConstMeta,
+        constMeta: kZkpRecoveryAppG1DefaultConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppG1DefaultConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppG1DefaultConstMeta =>
       const TaskConstMeta(debugName: "g_1_default", argNames: []);
 
   @override
-  Future<G2> ledgerMoproAppG2Default() {
+  Future<G2> zkpRecoveryAppG2Default() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -236,18 +236,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_g_2,
           decodeErrorData: null,
         ),
-        constMeta: kLedgerMoproAppG2DefaultConstMeta,
+        constMeta: kZkpRecoveryAppG2DefaultConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppG2DefaultConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppG2DefaultConstMeta =>
       const TaskConstMeta(debugName: "g_2_default", argNames: []);
 
   @override
-  Future<CircomProofResult> ledgerMoproAppGenerateCircomProof({
+  Future<CircomProofResult> zkpRecoveryAppGenerateCircomProof({
     required String zkeyPath,
     required String circuitInputs,
     required ProofLib proofLib,
@@ -271,21 +271,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppGenerateCircomProofConstMeta,
+        constMeta: kZkpRecoveryAppGenerateCircomProofConstMeta,
         argValues: [zkeyPath, circuitInputs, proofLib],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppGenerateCircomProofConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppGenerateCircomProofConstMeta =>
       const TaskConstMeta(
         debugName: "generate_circom_proof",
         argNames: ["zkeyPath", "circuitInputs", "proofLib"],
       );
 
   @override
-  Future<GnarkProofResult> ledgerMoproAppGenerateGnarkProof({
+  Future<GnarkProofResult> zkpRecoveryAppGenerateGnarkProof({
     required String r1CsPath,
     required String pkPath,
     required String witnessJson,
@@ -309,21 +309,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppGenerateGnarkProofConstMeta,
+        constMeta: kZkpRecoveryAppGenerateGnarkProofConstMeta,
         argValues: [r1CsPath, pkPath, witnessJson],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppGenerateGnarkProofConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppGenerateGnarkProofConstMeta =>
       const TaskConstMeta(
         debugName: "generate_gnark_proof",
         argNames: ["r1CsPath", "pkPath", "witnessJson"],
       );
 
   @override
-  Future<Halo2ProofResult> ledgerMoproAppGenerateHalo2Proof({
+  Future<Halo2ProofResult> zkpRecoveryAppGenerateHalo2Proof({
     required String srsPath,
     required String pkPath,
     required Map<String, List<String>> circuitInputs,
@@ -347,21 +347,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppGenerateHalo2ProofConstMeta,
+        constMeta: kZkpRecoveryAppGenerateHalo2ProofConstMeta,
         argValues: [srsPath, pkPath, circuitInputs],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppGenerateHalo2ProofConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppGenerateHalo2ProofConstMeta =>
       const TaskConstMeta(
         debugName: "generate_halo2_proof",
         argNames: ["srsPath", "pkPath", "circuitInputs"],
       );
 
   @override
-  Future<Uint8List> ledgerMoproAppGenerateNoirProof({
+  Future<Uint8List> zkpRecoveryAppGenerateNoirProof({
     required String circuitPath,
     String? srsPath,
     required List<String> inputs,
@@ -391,14 +391,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppGenerateNoirProofConstMeta,
+        constMeta: kZkpRecoveryAppGenerateNoirProofConstMeta,
         argValues: [circuitPath, srsPath, inputs, onChain, vk, lowMemoryMode],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppGenerateNoirProofConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppGenerateNoirProofConstMeta =>
       const TaskConstMeta(
         debugName: "generate_noir_proof",
         argNames: [
@@ -412,7 +412,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
-  Future<Uint8List> ledgerMoproAppGetNoirVerificationKey({
+  Future<Uint8List> zkpRecoveryAppGetNoirVerificationKey({
     required String circuitPath,
     String? srsPath,
     required bool onChain,
@@ -438,21 +438,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppGetNoirVerificationKeyConstMeta,
+        constMeta: kZkpRecoveryAppGetNoirVerificationKeyConstMeta,
         argValues: [circuitPath, srsPath, onChain, lowMemoryMode],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppGetNoirVerificationKeyConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppGetNoirVerificationKeyConstMeta =>
       const TaskConstMeta(
         debugName: "get_noir_verification_key",
         argNames: ["circuitPath", "srsPath", "onChain", "lowMemoryMode"],
       );
 
   @override
-  Future<Halo2ProofResult> ledgerMoproAppHalo2ProofResultDefault() {
+  Future<Halo2ProofResult> zkpRecoveryAppHalo2ProofResultDefault() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -468,21 +468,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_halo_2_proof_result,
           decodeErrorData: null,
         ),
-        constMeta: kLedgerMoproAppHalo2ProofResultDefaultConstMeta,
+        constMeta: kZkpRecoveryAppHalo2ProofResultDefaultConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppHalo2ProofResultDefaultConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppHalo2ProofResultDefaultConstMeta =>
       const TaskConstMeta(
         debugName: "halo_2_proof_result_default",
         argNames: [],
       );
 
   @override
-  Future<void> ledgerMoproAppInitApp() {
+  Future<void> zkpRecoveryAppInitApp() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -498,18 +498,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_unit,
           decodeErrorData: null,
         ),
-        constMeta: kLedgerMoproAppInitAppConstMeta,
+        constMeta: kZkpRecoveryAppInitAppConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppInitAppConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppInitAppConstMeta =>
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
   @override
-  Future<ProofLib> ledgerMoproAppProofLibDefault() {
+  Future<ProofLib> zkpRecoveryAppProofLibDefault() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -525,18 +525,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeSuccessData: sse_decode_proof_lib,
           decodeErrorData: null,
         ),
-        constMeta: kLedgerMoproAppProofLibDefaultConstMeta,
+        constMeta: kZkpRecoveryAppProofLibDefaultConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppProofLibDefaultConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppProofLibDefaultConstMeta =>
       const TaskConstMeta(debugName: "proof_lib_default", argNames: []);
 
   @override
-  Future<bool> ledgerMoproAppVerifyCircomProof({
+  Future<bool> zkpRecoveryAppVerifyCircomProof({
     required String zkeyPath,
     required CircomProofResult proofResult,
     required ProofLib proofLib,
@@ -560,21 +560,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppVerifyCircomProofConstMeta,
+        constMeta: kZkpRecoveryAppVerifyCircomProofConstMeta,
         argValues: [zkeyPath, proofResult, proofLib],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppVerifyCircomProofConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppVerifyCircomProofConstMeta =>
       const TaskConstMeta(
         debugName: "verify_circom_proof",
         argNames: ["zkeyPath", "proofResult", "proofLib"],
       );
 
   @override
-  Future<bool> ledgerMoproAppVerifyGnarkProof({
+  Future<bool> zkpRecoveryAppVerifyGnarkProof({
     required String r1CsPath,
     required String vkPath,
     required GnarkProofResult proofResult,
@@ -598,21 +598,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppVerifyGnarkProofConstMeta,
+        constMeta: kZkpRecoveryAppVerifyGnarkProofConstMeta,
         argValues: [r1CsPath, vkPath, proofResult],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppVerifyGnarkProofConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppVerifyGnarkProofConstMeta =>
       const TaskConstMeta(
         debugName: "verify_gnark_proof",
         argNames: ["r1CsPath", "vkPath", "proofResult"],
       );
 
   @override
-  Future<bool> ledgerMoproAppVerifyHalo2Proof({
+  Future<bool> zkpRecoveryAppVerifyHalo2Proof({
     required String srsPath,
     required String vkPath,
     required List<int> proof,
@@ -638,21 +638,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppVerifyHalo2ProofConstMeta,
+        constMeta: kZkpRecoveryAppVerifyHalo2ProofConstMeta,
         argValues: [srsPath, vkPath, proof, publicInput],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppVerifyHalo2ProofConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppVerifyHalo2ProofConstMeta =>
       const TaskConstMeta(
         debugName: "verify_halo2_proof",
         argNames: ["srsPath", "vkPath", "proof", "publicInput"],
       );
 
   @override
-  Future<bool> ledgerMoproAppVerifyNoirProof({
+  Future<bool> zkpRecoveryAppVerifyNoirProof({
     required String circuitPath,
     required List<int> proof,
     required bool onChain,
@@ -680,14 +680,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData:
               sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerMoproError,
         ),
-        constMeta: kLedgerMoproAppVerifyNoirProofConstMeta,
+        constMeta: kZkpRecoveryAppVerifyNoirProofConstMeta,
         argValues: [circuitPath, proof, onChain, vk, lowMemoryMode],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kLedgerMoproAppVerifyNoirProofConstMeta =>
+  TaskConstMeta get kZkpRecoveryAppVerifyNoirProofConstMeta =>
       const TaskConstMeta(
         debugName: "verify_noir_proof",
         argNames: ["circuitPath", "proof", "onChain", "vk", "lowMemoryMode"],

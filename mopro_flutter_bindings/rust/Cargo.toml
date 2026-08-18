@@ -1,11 +1,11 @@
 [dependencies]
 flutter_rust_bridge = "=2.11.1"
 
-[dependencies.ledger_mopro_app]
+[dependencies.zkp_recovery_app]
 default-features = false
 features = ["flutter"]
-path = "/home/shawn/recovery-app/ledger_mopro_app"
-version = "0.2.0"
+path = "../.."
+version = "0.3.0"
 
 [lib]
 crate-type = [

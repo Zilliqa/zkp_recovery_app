@@ -6,13 +6,13 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-Future<void> initApp() => RustLib.instance.api.ledgerMoproAppInitApp();
+Future<void> initApp() => RustLib.instance.api.zkpRecoveryAppInitApp();
 
 Future<CircomProofResult> generateCircomProof({
   required String zkeyPath,
   required String circuitInputs,
   required ProofLib proofLib,
-}) => RustLib.instance.api.ledgerMoproAppGenerateCircomProof(
+}) => RustLib.instance.api.zkpRecoveryAppGenerateCircomProof(
   zkeyPath: zkeyPath,
   circuitInputs: circuitInputs,
   proofLib: proofLib,
@@ -22,7 +22,7 @@ Future<bool> verifyCircomProof({
   required String zkeyPath,
   required CircomProofResult proofResult,
   required ProofLib proofLib,
-}) => RustLib.instance.api.ledgerMoproAppVerifyCircomProof(
+}) => RustLib.instance.api.zkpRecoveryAppVerifyCircomProof(
   zkeyPath: zkeyPath,
   proofResult: proofResult,
   proofLib: proofLib,
@@ -32,7 +32,7 @@ Future<Halo2ProofResult> generateHalo2Proof({
   required String srsPath,
   required String pkPath,
   required Map<String, List<String>> circuitInputs,
-}) => RustLib.instance.api.ledgerMoproAppGenerateHalo2Proof(
+}) => RustLib.instance.api.zkpRecoveryAppGenerateHalo2Proof(
   srsPath: srsPath,
   pkPath: pkPath,
   circuitInputs: circuitInputs,
@@ -43,7 +43,7 @@ Future<bool> verifyHalo2Proof({
   required String vkPath,
   required List<int> proof,
   required List<int> publicInput,
-}) => RustLib.instance.api.ledgerMoproAppVerifyHalo2Proof(
+}) => RustLib.instance.api.zkpRecoveryAppVerifyHalo2Proof(
   srsPath: srsPath,
   vkPath: vkPath,
   proof: proof,
@@ -57,7 +57,7 @@ Future<Uint8List> generateNoirProof({
   required bool onChain,
   required List<int> vk,
   required bool lowMemoryMode,
-}) => RustLib.instance.api.ledgerMoproAppGenerateNoirProof(
+}) => RustLib.instance.api.zkpRecoveryAppGenerateNoirProof(
   circuitPath: circuitPath,
   srsPath: srsPath,
   inputs: inputs,
@@ -72,7 +72,7 @@ Future<bool> verifyNoirProof({
   required bool onChain,
   required List<int> vk,
   required bool lowMemoryMode,
-}) => RustLib.instance.api.ledgerMoproAppVerifyNoirProof(
+}) => RustLib.instance.api.zkpRecoveryAppVerifyNoirProof(
   circuitPath: circuitPath,
   proof: proof,
   onChain: onChain,
@@ -85,7 +85,7 @@ Future<Uint8List> getNoirVerificationKey({
   String? srsPath,
   required bool onChain,
   required bool lowMemoryMode,
-}) => RustLib.instance.api.ledgerMoproAppGetNoirVerificationKey(
+}) => RustLib.instance.api.zkpRecoveryAppGetNoirVerificationKey(
   circuitPath: circuitPath,
   srsPath: srsPath,
   onChain: onChain,
@@ -96,7 +96,7 @@ Future<GnarkProofResult> generateGnarkProof({
   required String r1CsPath,
   required String pkPath,
   required String witnessJson,
-}) => RustLib.instance.api.ledgerMoproAppGenerateGnarkProof(
+}) => RustLib.instance.api.zkpRecoveryAppGenerateGnarkProof(
   r1CsPath: r1CsPath,
   pkPath: pkPath,
   witnessJson: witnessJson,
@@ -106,7 +106,7 @@ Future<bool> verifyGnarkProof({
   required String r1CsPath,
   required String vkPath,
   required GnarkProofResult proofResult,
-}) => RustLib.instance.api.ledgerMoproAppVerifyGnarkProof(
+}) => RustLib.instance.api.zkpRecoveryAppVerifyGnarkProof(
   r1CsPath: r1CsPath,
   vkPath: vkPath,
   proofResult: proofResult,
@@ -131,7 +131,7 @@ class CircomProof {
   });
 
   static Future<CircomProof> default_() =>
-      RustLib.instance.api.ledgerMoproAppCircomProofDefault();
+      RustLib.instance.api.zkpRecoveryAppCircomProofDefault();
 
   @override
   int get hashCode =>
@@ -175,7 +175,7 @@ class G1 {
   const G1({required this.x, required this.y, required this.z});
 
   static Future<G1> default_() =>
-      RustLib.instance.api.ledgerMoproAppG1Default();
+      RustLib.instance.api.zkpRecoveryAppG1Default();
 
   @override
   int get hashCode => x.hashCode ^ y.hashCode ^ z.hashCode;
@@ -198,7 +198,7 @@ class G2 {
   const G2({required this.x, required this.y, required this.z});
 
   static Future<G2> default_() =>
-      RustLib.instance.api.ledgerMoproAppG2Default();
+      RustLib.instance.api.zkpRecoveryAppG2Default();
 
   @override
   int get hashCode => x.hashCode ^ y.hashCode ^ z.hashCode;
@@ -238,7 +238,7 @@ class Halo2ProofResult {
   const Halo2ProofResult({required this.proof, required this.inputs});
 
   static Future<Halo2ProofResult> default_() =>
-      RustLib.instance.api.ledgerMoproAppHalo2ProofResultDefault();
+      RustLib.instance.api.zkpRecoveryAppHalo2ProofResultDefault();
 
   @override
   int get hashCode => proof.hashCode ^ inputs.hashCode;
@@ -257,5 +257,5 @@ enum ProofLib {
   rapidsnark;
 
   static Future<ProofLib> default_() =>
-      RustLib.instance.api.ledgerMoproAppProofLibDefault();
+      RustLib.instance.api.zkpRecoveryAppProofLibDefault();
 }

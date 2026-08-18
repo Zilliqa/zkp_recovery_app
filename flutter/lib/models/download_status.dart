@@ -24,7 +24,7 @@ class RemoteFileSpec {
 class ProvingArtifacts {
   static const RemoteFileSpec artifact = RemoteFileSpec(
     displayName: 'Circuit Key File',
-    fileName: 'ledger_final.zkey',
+    fileName: 'groth_final.zkey',
     url:
         'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey',
     checksum:
@@ -44,3 +44,5 @@ class FileDownloadProgress {
     this.errorMessage,
   });
 }
+
+enum Wallets { atomic, ledger, moonlet, torch, trust, zillet, zilpay }

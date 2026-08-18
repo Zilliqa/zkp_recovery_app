@@ -11,8 +11,8 @@
 /// - Download https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey
 ///
 /// How to build and run the Flutter app:
-/// 1. Copy the `circuit.wasm` file to the `test-vectors/circom/ledger.wasm` file.
-/// 2. Copy the `circuit_final.zkey` file to the `test-vectors/circom/ledger_final.zkey` file.
+/// 1. Copy the `circuit.wasm` file to the `test-vectors/circom/groth.wasm` file.
+/// 2. Copy the `circuit_final.zkey` file to the `test-vectors/circom/groth_final.zkey` file.
 /// 3. Run `mopro build` to build the Rust library bindings for flutter; it should complete without errors.
 /// 4. Run `cargo test -- circom_test` to run the self-test; it should pass without errors.
 /// 5. Do not forget to run `mopro build` again if you change the circuit; and recompile it with circom.

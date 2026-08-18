@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:hashlib/hashlib.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:mopro_ledger_app/models/download_status.dart';
+import 'package:zkp_recovery_app/models/download_status.dart';
 
 class DownloadService {
   DownloadService._();

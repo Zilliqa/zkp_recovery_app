@@ -926,22 +926,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
-name = "ledger_mopro_app"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "circom-prover",
- "mimalloc",
- "mopro-ffi",
- "num-bigint",
- "rust-witness",
- "serde-wasm-bindgen",
- "thiserror",
- "wasm-bindgen",
- "witnesscalc-adapter",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1044,7 +1028,7 @@ name = "mopro_flutter_bindings"
 version = "0.2.0"
 dependencies = [
  "flutter_rust_bridge",
- "ledger_mopro_app",
+ "zkp_recovery_app",
 ]
 
 [[package]]
@@ -1885,6 +1869,22 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "zkp_recovery_app"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "circom-prover",
+ "mimalloc",
+ "mopro-ffi",
+ "num-bigint",
+ "rust-witness",
+ "serde-wasm-bindgen",
+ "thiserror",
+ "wasm-bindgen",
+ "witnesscalc-adapter",
 ]
 
 [[package]]

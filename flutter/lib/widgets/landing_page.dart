@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import 'onboarding_stepper_page.dart';
+import 'package:zkp_recovery_app/widgets/onboarding_stepper_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key, required this.title});
@@ -37,7 +37,7 @@ class _LandingPageState extends State<LandingPage> {
             InfoCard(
               imageUrl: 'assets/images/zilliqa-full-teal.svg',
               title: 'Legacy Account Migration',
-              subTitle: 'v0.2.0',
+              subTitle: 'v0.3.0',
               paragraphs: paragraphs,
             ),
             const SizedBox(height: 16),

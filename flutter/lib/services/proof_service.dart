@@ -7,8 +7,9 @@ import 'package:bip32_keys/bip32_keys.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mopro_ledger_app/services/download_service.dart';
-import 'package:mopro_flutter_bindings/src/rust/third_party/ledger_mopro_app.dart';
+import 'package:zkp_recovery_app/models/download_status.dart';
+import 'package:zkp_recovery_app/services/download_service.dart';
+import 'package:mopro_flutter_bindings/src/rust/third_party/zkp_recovery_app.dart';
 
 /// Result of a Groth16 proof computation: the proof itself and the
 /// public outputs it attests to, plus the combined Solidity
@@ -46,6 +47,7 @@ class ProofService {
     required String eAddress,
     required String zAddress,
     required Language language,
+    required Wallets wallet,
   }) async {
     await Future.delayed(Duration.zero); // yield to prevent UI freeze
     // Extract addresses
@@ -59,27 +61,29 @@ class ProofService {
 
     // Master key, derived once - each path derivation walks down from here.
     Bip32Keys? hdKey;
-    Uint8List seed = Uint8List(64); // prevent re-allocations
     try {
-      // Compute BIP39 mnemonic seed; throws exception if invalid.
-      final bip39 = Mnemonic.fromSentence(
-        mnemonic,
-        language,
-        passphrase: passphrase,
-      );
-      seed = Uint8List.fromList(bip39.seed);
-      hdKey = Bip32Keys.fromSeed(seed); // does not store seed
-      seed.fillRange(0, seed.length, 0);
+      // Compute master key from seed/xprv; throws exception if invalid.
+      if (mnemonic.startsWith("xprv")) {
+        hdKey = Bip32Keys.fromBase58(mnemonic);
+      } else {
+        final bip39 = Mnemonic.fromSentence(
+          mnemonic,
+          language,
+          passphrase: passphrase,
+        );
+        hdKey = Bip32Keys.fromSeed(
+          Uint8List.fromList(bip39.seed),
+        ); // does not store seed
+      }
     } catch (_) {
-      seed.fillRange(0, seed.length, 0);
       rethrow;
     }
 
     // Find old account index; throws exception if not found
-    final parent = await findAccountParent(hdKey, zilAddress);
+    final parent = await findAccountParent(hdKey, zilAddress, wallet);
     if (parent == null) {
       throw Exception(
-        "ZIL address does not seem to be derived from mnemonic seed phrase.",
+        "ZIL address does not seem to be derived from mnemonic-seed or master-key.",
       );
     }
 
@@ -98,7 +102,7 @@ class ProofService {
 
     // Compute the Circom proof
     CircomProofResult? result;
-    final zkeyPath = '${(await _getCacheDir()).path}/ledger_final.zkey';
+    final zkeyPath = '${(await _getCacheDir()).path}/groth_final.zkey';
     // Groth16 (~1GB RAM):
     //  - FCN_sprout    : <6m
     //  - emu64xa       : <2m
@@ -140,23 +144,39 @@ class ProofService {
   Future<Bip32Keys?> findAccountParent(
     Bip32Keys masterKey,
     Uint8List knownAddress,
+    Wallets wallet,
   ) async {
-    // Derive m/44'/313'/n'/0'/0' for n = 0..1000 and compare
     for (int n = 0; n < 1000; n++) {
-      // verified against real key
-      final derivedKey = masterKey.derivePath("m/44'/313'/$n'/0'/0'");
-      final derivedAddress = Uint8List.fromList(
-        sha256.convert(derivedKey.public).bytes,
-      ).sublist(12);
-
+      final derivedAddress = _deriveAddress(masterKey, wallet, n);
       if (listEquals(knownAddress, derivedAddress)) {
         log("${bytesToHex(knownAddress)} found at $n");
-        final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
-        return parent;
+        return _deriveParent(masterKey, wallet, n);
       }
       await Future.delayed(Duration.zero); // yield to prevent UI freeze
     }
     return null;
+  }
+
+  // Derive m/44'/313'/n'/0'/0' for n = 0..1000 and compare
+  Uint8List _deriveAddress(Bip32Keys masterKey, Wallets wallet, int n) {
+    switch (wallet) {
+      case Wallets.ledger:
+        final derivedKey = masterKey.derivePath("m/44'/313'/$n'/0'/0'");
+        return Uint8List.fromList(
+          sha256.convert(derivedKey.public).bytes,
+        ).sublist(12);
+      default:
+        throw Exception("unsupported wallet");
+    }
+  }
+
+  Bip32Keys _deriveParent(Bip32Keys masterKey, Wallets wallet, int n) {
+    switch (wallet) {
+      case Wallets.ledger:
+        return masterKey.derivePath("m/44'/313'/$n'/0'");
+      default:
+        throw Exception("unsupported wallet");
+    }
   }
 
   Uint8List hexToBytes(String hex) {

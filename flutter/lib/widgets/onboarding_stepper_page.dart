@@ -1,9 +1,9 @@
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:flutter/material.dart';
 
-import '../models/download_status.dart';
-import '../services/download_service.dart';
-import '../services/proof_service.dart';
+import 'package:zkp_recovery_app/models/download_status.dart';
+import 'package:zkp_recovery_app/services/download_service.dart';
+import 'package:zkp_recovery_app/services/proof_service.dart';
 import 'checklist_step_content.dart';
 import 'download_step_content.dart';
 import 'input_step_content.dart';
@@ -45,6 +45,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
   final _evmAddressController = TextEditingController();
   final _zilAddressController = TextEditingController();
   Language _mnemonicLanguage = Language.english;
+  Wallets _wallet = Wallets.ledger;
   bool _obscureMnemonic = true;
   bool _obscurePassword = true;
   bool _isComputingProof = false;
@@ -130,7 +131,9 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
         eAddress: _evmAddressController.text.trim(),
         zAddress: _zilAddressController.text.trim(),
         language: _mnemonicLanguage,
+        wallet: _wallet,
       );
+      _mnemonicController.clear();
       if (!mounted) return;
       setState(() {
         _proofResult = result;
@@ -221,6 +224,9 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
           obscureMnemonic: _obscureMnemonic,
           obscurePassword: _obscurePassword,
           isComputingProof: _isComputingProof,
+          onSelectedWallet: (Wallets? wallet) => {
+            setState(() => _wallet = wallet!),
+          },
           onSelectedLanguage: (Language? lang) => {
             setState(() => _mnemonicLanguage = lang!),
           },
