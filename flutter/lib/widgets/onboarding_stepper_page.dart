@@ -45,6 +45,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
   final _evmAddressController = TextEditingController();
   final _zilAddressController = TextEditingController();
   Language _mnemonicLanguage = Language.english;
+  Wallets _wallet = Wallets.ledger;
   bool _obscureMnemonic = true;
   bool _obscurePassword = true;
   bool _isComputingProof = false;
@@ -130,6 +131,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
         eAddress: _evmAddressController.text.trim(),
         zAddress: _zilAddressController.text.trim(),
         language: _mnemonicLanguage,
+        wallet: _wallet,
       );
       _mnemonicController.clear();
       if (!mounted) return;
@@ -222,6 +224,9 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
           obscureMnemonic: _obscureMnemonic,
           obscurePassword: _obscurePassword,
           isComputingProof: _isComputingProof,
+          onSelectedWallet: (Wallets? wallet) => {
+            setState(() => _wallet = wallet!),
+          },
           onSelectedLanguage: (Language? lang) => {
             setState(() => _mnemonicLanguage = lang!),
           },
