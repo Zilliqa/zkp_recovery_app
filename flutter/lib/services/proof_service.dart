@@ -7,6 +7,7 @@ import 'package:bip32_keys/bip32_keys.dart';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:flutter/foundation.dart';
+import 'package:zkp_recovery_app/models/download_status.dart';
 import 'package:zkp_recovery_app/services/download_service.dart';
 import 'package:mopro_flutter_bindings/src/rust/third_party/zkp_recovery_app.dart';
 
@@ -46,6 +47,7 @@ class ProofService {
     required String eAddress,
     required String zAddress,
     required Language language,
+    required Wallets wallet,
   }) async {
     await Future.delayed(Duration.zero); // yield to prevent UI freeze
     // Extract addresses
@@ -78,7 +80,7 @@ class ProofService {
     }
 
     // Find old account index; throws exception if not found
-    final parent = await findAccountParent(hdKey, zilAddress);
+    final parent = await findAccountParent(hdKey, zilAddress, wallet);
     if (parent == null) {
       throw Exception(
         "ZIL address does not seem to be derived from mnemonic-seed or master-key.",
@@ -142,23 +144,39 @@ class ProofService {
   Future<Bip32Keys?> findAccountParent(
     Bip32Keys masterKey,
     Uint8List knownAddress,
+    Wallets wallet,
   ) async {
-    // Derive m/44'/313'/n'/0'/0' for n = 0..1000 and compare
     for (int n = 0; n < 1000; n++) {
-      // verified against real key
-      final derivedKey = masterKey.derivePath("m/44'/313'/$n'/0'/0'");
-      final derivedAddress = Uint8List.fromList(
-        sha256.convert(derivedKey.public).bytes,
-      ).sublist(12);
-
+      final derivedAddress = _deriveAddress(masterKey, wallet, n);
       if (listEquals(knownAddress, derivedAddress)) {
         log("${bytesToHex(knownAddress)} found at $n");
-        final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
-        return parent;
+        return _deriveParent(masterKey, wallet, n);
       }
       await Future.delayed(Duration.zero); // yield to prevent UI freeze
     }
     return null;
+  }
+
+  // Derive m/44'/313'/n'/0'/0' for n = 0..1000 and compare
+  Uint8List _deriveAddress(Bip32Keys masterKey, Wallets wallet, int n) {
+    switch (wallet) {
+      case Wallets.ledger:
+        final derivedKey = masterKey.derivePath("m/44'/313'/$n'/0'/0'");
+        return Uint8List.fromList(
+          sha256.convert(derivedKey.public).bytes,
+        ).sublist(12);
+      default:
+        throw Exception("unsupported wallet");
+    }
+  }
+
+  Bip32Keys _deriveParent(Bip32Keys masterKey, Wallets wallet, int n) {
+    switch (wallet) {
+      case Wallets.ledger:
+        return masterKey.derivePath("m/44'/313'/$n'/0'");
+      default:
+        throw Exception("unsupported wallet");
+    }
   }
 
   Uint8List hexToBytes(String hex) {

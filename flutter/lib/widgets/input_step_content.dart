@@ -1,5 +1,6 @@
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:flutter/material.dart';
+import 'package:zkp_recovery_app/models/download_status.dart';
 
 class InputStepContent extends StatelessWidget {
   final GlobalKey<FormState> formKey;
@@ -14,6 +15,7 @@ class InputStepContent extends StatelessWidget {
   final VoidCallback onTogglePassword;
   final String? computeError;
   final void Function(Language?) onSelectedLanguage;
+  final void Function(Wallets?) onSelectedWallet;
 
   const InputStepContent({
     super.key,
@@ -28,6 +30,7 @@ class InputStepContent extends StatelessWidget {
     required this.onTogglePassword,
     required this.obscurePassword,
     required this.isComputingProof,
+    required this.onSelectedWallet,
     this.computeError,
   });
 
@@ -113,9 +116,27 @@ class InputStepContent extends StatelessWidget {
             enableSuggestions: false,
             keyboardType: TextInputType.visiblePassword,
           ),
+                    const SizedBox(height: 16),
+          Text(
+            'Original seed wallet',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          DropdownMenu<Wallets>(
+            enabled: !isComputingProof,
+            initialSelection: Wallets.ledger,
+            onSelected: onSelectedWallet,
+            dropdownMenuEntries: Wallets.values.map((Wallets wallet) {
+              return DropdownMenuEntry<Wallets>(
+                value: wallet,
+                label: wallet.name
+                    .toUpperCase(), // Prints readable text (ADMIN, EDITOR...)
+              );
+            }).toList(),
+          ),
           const SizedBox(height: 16),
           Text(
-            'Your seed phrase is only used locally on this device to compute the proof and is never transmitted.',
+            'Your mnemonic-seed/private-key is only used locally on this device to compute the proof and is never transmitted.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -125,7 +146,8 @@ class InputStepContent extends StatelessWidget {
             obscureText: (obscureMnemonic || isComputingProof),
             maxLines: 1,
             decoration: InputDecoration(
-              labelText: 'xprv… or 12/24-word mnemonic',
+              labelText: 'Mnemonic-seed or Private-key',
+              hint: const Text('xprv… or 12/24-word mnemonic'),
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -135,30 +157,6 @@ class InputStepContent extends StatelessWidget {
               ),
             ),
             validator: _validateMnemonic,
-            autocorrect: false,
-            enableSuggestions: false,
-            enableInteractiveSelection: false,
-            enableIMEPersonalizedLearning: false,
-            autofillHints: null,
-            keyboardType: TextInputType.visiblePassword,
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            enabled: !isComputingProof,
-            controller: passwordController,
-            obscureText: obscurePassword || isComputingProof,
-            maxLines: 1,
-            decoration: InputDecoration(
-              labelText: 'Passphrase (blank if none)',
-              border: const OutlineInputBorder(),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  obscurePassword ? Icons.visibility : Icons.visibility_off,
-                ),
-                onPressed: onTogglePassword,
-              ),
-            ),
-            // validator: _validateMnemonic,
             autocorrect: false,
             enableSuggestions: false,
             enableInteractiveSelection: false,
@@ -178,6 +176,31 @@ class InputStepContent extends StatelessWidget {
                     .toUpperCase(), // Prints readable text (ADMIN, EDITOR...)
               );
             }).toList(),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            enabled: !isComputingProof,
+            controller: passwordController,
+            obscureText: obscurePassword || isComputingProof,
+            maxLines: 1,
+            decoration: InputDecoration(
+              labelText: 'Passphrase',
+              hint: const Text('(blank if none)'),
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  obscurePassword ? Icons.visibility : Icons.visibility_off,
+                ),
+                onPressed: onTogglePassword,
+              ),
+            ),
+            // validator: _validateMnemonic,
+            autocorrect: false,
+            enableSuggestions: false,
+            enableInteractiveSelection: false,
+            enableIMEPersonalizedLearning: false,
+            autofillHints: null,
+            keyboardType: TextInputType.visiblePassword,
           ),
           const SizedBox(height: 16),
           Text(

@@ -44,3 +44,5 @@ class FileDownloadProgress {
     this.errorMessage,
   });
 }
+
+enum Wallets { atomic, ledger, moonlet, torch, trust, zillet, zilpay }
