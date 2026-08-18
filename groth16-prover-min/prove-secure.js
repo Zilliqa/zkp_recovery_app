@@ -1,16 +1,16 @@
 // HARDENED local prover (MINIMAL circuit). Run OFFLINE. Mnemonic via masked stdin; never argv/env/file.
-// Off-circuit: PBKDF2 + derive the m/44'/313'/n'/0' parent node (auto-scanning n to match oldAddr).
-// In-circuit: only the final hardened step (0') -> address, bound to newAddr + domain.
-// usage (via run-proof-secure.sh): node prove-secure.js <oldAddr> <newAddr> <domain>
+// Off-circuit: PBKDF2 + derive the level-4 parent node (auto-detecting the wallet's derivation style).
+// In-circuit: only the final CKD step (hardened Ledger 0', or non-hardened BIP-44 /i) -> address,
+// bound to newAddr + domain.  usage (via run-proof-secure.sh): node prove-secure.js <oldAddr> <newAddr> <domain>
 const snarkjs = require('snarkjs');
 const bip39s = require('@scure/bip39');
 const { HDKey } = require('@scure/bip32');
 let classic = null; try { classic = require('bip39'); } catch (e) {}
 const crypto = require('crypto');
 const fs = require('fs');
-const pathFull = n => `m/44'/313'/${n}'/0'/0'`;
-const pathParent = n => `m/44'/313'/${n}'/0'`;
-const MAX_ACCT = 100;
+const MAX_ACCT = 100;   // Ledger:  scan account n in m/44'/313'/n'/0'/0'
+const STD_ACCT = 5;     // BIP-44:   scan account a in m/44'/313'/a'/0/i
+const STD_IDX  = 100;   // BIP-44:   scan address_index i in m/44'/313'/a'/0/i
 const P = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 
 const oldArg = (process.argv[2] || '').trim();
@@ -41,22 +41,34 @@ function askHidden(promptText){return new Promise(resolve=>{const stdin=process.
 
   const seed = bip39s.mnemonicToSeedSync(mnemonic, pass);
   const master = HDKey.fromMasterSeed(seed);
-  const addrAt = n => crypto.createHash('sha256').update(Buffer.from(master.derive(pathFull(n)).publicKey)).digest().subarray(12);
-  let acct = -1;
-  for (let n = 0; n < MAX_ACCT; n++) { if (Buffer.compare(addrAt(n), wantOld) === 0) { acct = n; break; } }
-  if (acct < 0) { console.error(`ERROR: this seed does not derive the given OLD address in accounts 0..${MAX_ACCT - 1}.`); process.exit(1); }
-  const parent = master.derive(pathParent(acct));
+  const sha20 = node => crypto.createHash('sha256').update(Buffer.from(node.publicKey)).digest().subarray(12);
+
+  // Auto-detect the derivation style. Ledger (all-hardened) first, then standard BIP-44.
+  let found = null;
+  for (let n = 0; n < MAX_ACCT && !found; n++) {
+    if (Buffer.compare(sha20(master.derive(`m/44'/313'/${n}'/0'/0'`)), wantOld) === 0)
+      found = { isHardened: 1, parent: master.derive(`m/44'/313'/${n}'/0'`), addrIndex: 0, label: `m/44'/313'/${n}'/0'/0' (Ledger, all-hardened)` };
+  }
+  for (let a = 0; a < STD_ACCT && !found; a++) for (let i = 0; i < STD_IDX && !found; i++) {
+    if (Buffer.compare(sha20(master.derive(`m/44'/313'/${a}'/0/${i}`)), wantOld) === 0)
+      found = { isHardened: 0, parent: master.derive(`m/44'/313'/${a}'/0`), addrIndex: i, label: `m/44'/313'/${a}'/0/${i} (standard BIP-44)` };
+  }
+  if (!found) { console.error(`ERROR: this seed does not derive the given OLD address (Ledger n<${MAX_ACCT}, or BIP-44 a<${STD_ACCT}/i<${STD_IDX}).`); process.exit(1); }
+  const parent = found.parent;
 
   const msb = b => { let a = []; for (const x of b) for (let i = 7; i >= 0; i--) a.push((x >> i) & 1); return a; };
   const input = {
     parentPriv: msb(Buffer.from(parent.privateKey)),
     parentCC: msb(Buffer.from(parent.chainCode)),
+    addrIndex: String(found.addrIndex),
+    isHardened: String(found.isHardened),
     expectedAddr: BigInt('0x' + wantOld.toString('hex')).toString(),
     newAddr: BigInt('0x' + wantNew.toString('hex')).toString(),
     domain: dom.toString()
   };
   console.error('checksum + address OK.');
-  console.error('  old (proven)  : 0x' + wantOld.toString('hex') + '  (account index ' + acct + ')');
+  console.error('  old (proven)  : 0x' + wantOld.toString('hex'));
+  console.error('  matched path  : ' + found.label + '   (isHardened=' + found.isHardened + ')');
   console.error('  new (bound)   : 0x' + wantNew.toString('hex'));
   console.error('  domain (bound): ' + dom.toString());
   console.error('proving in memory (seed/parent node never hit disk)...');
