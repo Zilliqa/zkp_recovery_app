@@ -124,7 +124,7 @@ class InputStepContent extends StatelessWidget {
           const SizedBox(height: 16),
           DropdownMenu<Wallets>(
             enabled: !isComputingProof,
-            initialSelection: Wallets.ledger,
+            initialSelection: Wallets.others,
             onSelected: onSelectedWallet,
             dropdownMenuEntries: Wallets.values.map((Wallets wallet) {
               return DropdownMenuEntry<Wallets>(

@@ -28,7 +28,7 @@ class ProvingArtifacts {
     url:
         'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey',
     checksum:
-        'dc48de69b283cebdf2ca258c29a70e0480f398481f70c24437a4cabda82ce4d8',
+        '27ca56b8893568c9e3ac6e0e68bb78d7896d8704553776b470acb4b4b9f406ac',
   );
 }
 
@@ -45,4 +45,4 @@ class FileDownloadProgress {
   });
 }
 
-enum Wallets { atomic, ledger, moonlet, torch, trust, zillet, zilpay }
+enum Wallets { ledger, others }

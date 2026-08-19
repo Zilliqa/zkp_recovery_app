@@ -26,6 +26,18 @@ class ProofResult {
   });
 }
 
+class AccountData {
+  final Bip32Keys parent;
+  final int index;
+  final bool hardened;
+
+  const AccountData({
+    required this.parent,
+    required this.index,
+    required this.hardened,
+  });
+}
+
 class ProofService {
   ProofService._();
   static final ProofService instance = ProofService._();
@@ -80,8 +92,8 @@ class ProofService {
     }
 
     // Find old account index; throws exception if not found
-    final parent = await findAccountParent(hdKey, zilAddress, wallet);
-    if (parent == null) {
+    final account = await findAccountParent(hdKey, zilAddress, wallet);
+    if (account == null) {
       throw Exception(
         "ZIL address does not seem to be derived from mnemonic-seed or master-key.",
       );
@@ -91,8 +103,10 @@ class ProofService {
     // Arkworks uses a different encoding format than Rapidsnark.
     // This object serializes into the expected encoding format for Arkworks.
     final inputs = {
-      'parentPriv': expand256(parent.private!),
-      'parentCC': expand256(parent.chainCode),
+      'parentPriv': expand256(account.parent.private!),
+      'parentCC': expand256(account.parent.chainCode),
+      'addrIndex': [account.index.toString()],
+      'isHardened': [(account.hardened) ? '1' : '0'],
       'expectedAddr': [BigInt.parse(bytesToHex(zilAddress)).toString()],
       'newAddr': [BigInt.parse(bytesToHex(evmAddress)).toString()],
       'domain': [
@@ -141,41 +155,46 @@ class ProofService {
   /// Searches derivation indices m/44'/313'/n'/0'/0' for n in [0, 1000)
   /// and returns the matching index, or throws if none of the derived
   /// keys match [knownAddress]. This path is unique to Ledger-Zilliqa.
-  Future<Bip32Keys?> findAccountParent(
+  Future<AccountData?> findAccountParent(
     Bip32Keys masterKey,
     Uint8List knownAddress,
     Wallets wallet,
   ) async {
-    for (int n = 0; n < 1000; n++) {
-      final derivedAddress = _deriveAddress(masterKey, wallet, n);
-      if (listEquals(knownAddress, derivedAddress)) {
-        log("${bytesToHex(knownAddress)} found at $n");
-        return _deriveParent(masterKey, wallet, n);
-      }
-      await Future.delayed(Duration.zero); // yield to prevent UI freeze
-    }
-    return null;
-  }
-
-  // Derive m/44'/313'/n'/0'/0' for n = 0..1000 and compare
-  Uint8List _deriveAddress(Bip32Keys masterKey, Wallets wallet, int n) {
     switch (wallet) {
+      // Derive m/44'/313'/n'/0'/0'
       case Wallets.ledger:
-        final derivedKey = masterKey.derivePath("m/44'/313'/$n'/0'/0'");
-        return Uint8List.fromList(
-          sha256.convert(derivedKey.public).bytes,
-        ).sublist(12);
-      default:
-        throw Exception("unsupported wallet");
-    }
-  }
-
-  Bip32Keys _deriveParent(Bip32Keys masterKey, Wallets wallet, int n) {
-    switch (wallet) {
-      case Wallets.ledger:
-        return masterKey.derivePath("m/44'/313'/$n'/0'");
-      default:
-        throw Exception("unsupported wallet");
+        for (int n = 0; n < 100; n++) {
+          final derivedAddress = Uint8List.fromList(
+            sha256
+                .convert(masterKey.derivePath("m/44'/313'/$n'/0'/0'").public)
+                .bytes,
+          ).sublist(12);
+          if (listEquals(knownAddress, derivedAddress)) {
+            log("${bytesToHex(knownAddress)} found at $n");
+            final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
+            return AccountData(parent: parent, index: 0, hardened: true);
+          }
+          await Future.delayed(Duration.zero); // yield to prevent UI freeze
+        }
+        return null;
+      // Derive m/44'/313'/n'/0/i
+      case Wallets.others:
+        for (int n = 0; n < 5; n++) {
+          for (int i = 0; i < 100; i++) {
+            final derivedAddress = Uint8List.fromList(
+              sha256
+                  .convert(masterKey.derivePath("m/44'/313'/$n'/0/$i").public)
+                  .bytes,
+            ).sublist(12);
+            if (listEquals(knownAddress, derivedAddress)) {
+              log("${bytesToHex(knownAddress)} found at $n");
+              final parent = masterKey.derivePath("m/44'/313'/$n'/0");
+              return AccountData(parent: parent, index: i, hardened: false);
+            }
+            await Future.delayed(Duration.zero); // yield to prevent UI freeze
+          }
+        }
+        return null;
     }
   }
 
@@ -233,11 +252,11 @@ class ProofService {
   }
 
   Uint8List encodeCallData(CircomProofResult result) {
-    assert(result.inputs.length == 3, 'Expected exact inputs');
+    assert(result.inputs.length == 4, 'Expected exact inputs');
 
     final selector = hexToBytes(
       keccak256sum(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])',
+        'claim(uint256[2],uint256[2][2],uint256[2],uint256[4])',
       ).substring(0, 8),
     ); // hardcoded
 
@@ -253,6 +272,7 @@ class ProofService {
       result.inputs[0],
       result.inputs[1],
       result.inputs[2],
+      result.inputs[3],
     ];
 
     final builder = BytesBuilder();
