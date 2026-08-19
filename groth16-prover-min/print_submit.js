@@ -1,6 +1,6 @@
 // Prints instructions to submit proof.json/public.json to the on-chain verifier / claim contract.
 // Address/RPC are read from env (ZIL_VERIFIER, ZIL_RPC) so you can set them after deploy.
-// Stage-5 public signals order: [expectedAddr(old), newAddr, domain]
+// Public signals order: [expectedAddr(old), newAddr, domain, isHardened]  (uint[4])
 const snarkjs = require('snarkjs');
 const fs = require('fs');
 (async () => {
@@ -26,10 +26,11 @@ const fs = require('fs');
   L('   [0] old  (proven) : ' + pS[0] + '   (= ' + toHexAddr(pS[0]) + ')');
   L('   [1] new  (bound)  : ' + pS[1] + '   (= ' + toHexAddr(pS[1]) + ')');
   L('   [2] domain (bound): ' + pS[2]);
+  L('   [3] isHardened    : ' + pS[3] + '   (1 = Ledger all-hardened path, 0 = standard BIP-44)');
   L('');
   L('A) Read-only check that the proof verifies on-chain (Foundry cast):');
   L('   cast call ' + addr + ' \\');
-  L('     "verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])(bool)" \\');
+  L('     "verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[4])(bool)" \\');
   L("     '" + a0 + "' '" + a1 + "' '" + a2 + "' '" + a3 + "' \\");
   L('     --rpc-url ' + rpc);
   L('   (returns true only for THIS exact (old,new,domain) triple)');
@@ -41,11 +42,13 @@ const fs = require('fs');
   L('   public-signal array (do NOT pass a destination as a separate, unbound argument —');
   L('   that would reintroduce the redirection hole this stage closes). e.g.:');
   L('     cast send <CLAIM_CONTRACT> \\');
-  L('       "claim(uint256[2],uint256[2][2],uint256[2],uint256[3])" \\');
+  L('       "claim(uint256[2],uint256[2][2],uint256[2],uint256[4])" \\');
   L("       '" + a0 + "' '" + a1 + "' '" + a2 + "' '" + a3 + "' \\");
   L('       --rpc-url ' + rpc + ' --private-key <KEY>');
   L('   Inside claim(): require(_pubSignals[2]==DOMAIN); verifyProof(...); then migrate');
   L('   funds of address(_pubSignals[0]) -> address(_pubSignals[1]).');
+  L('   _pubSignals[3] is isHardened: for a Ledger biased-nonce address (leaked key), you can');
+  L('   require(_pubSignals[3]==1) so a weaker non-hardened proof cannot claim it.');
   L('');
   L('Set env before running to auto-fill:  ZIL_VERIFIER=0x...  ZIL_RPC=https://...');
   L('Files: proof.json, public.json, calldata.txt');

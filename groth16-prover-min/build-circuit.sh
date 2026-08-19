@@ -5,8 +5,8 @@
 #   (build it from https://github.com/iden3/circom at tag v2.2.3 -> target/release/circom).
 #
 # Verified reproducible — outputs are BYTE-IDENTICAL to the shipped artifacts:
-#   circuit.wasm : 6679561 bytes, md5 fd66c1a777909ae8c588241f7d7dad87
-#   circuit.r1cs : 105669796 bytes
+#   circuit.wasm : 7341545 bytes, md5 eae6f4ef350e63df5d6ed4adf8798d3b
+#   circuit.r1cs : 132766212 bytes   (~679k constraints: 523657 non-linear + 155302 linear)
 set -e
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WORK="${1:-/tmp/zil-min-circuit-build}"
@@ -31,5 +31,5 @@ circom circuits/circuit.circom --r1cs --wasm --O1 -o "$WORK" \
 # --- verify against the shipped artifacts ---
 echo; echo "=== reproducibility check ==="
 echo "wasm : $(stat -c%s "$WORK/circuit_js/circuit.wasm") bytes  md5 $(md5sum "$WORK/circuit_js/circuit.wasm" | cut -d' ' -f1)"
-echo "       expected 6679561 bytes  md5 fd66c1a777909ae8c588241f7d7dad87"
-echo "r1cs : $(stat -c%s "$WORK/circuit.r1cs") bytes   (expected 105669796)"
+echo "       expected 7341545 bytes  md5 eae6f4ef350e63df5d6ed4adf8798d3b"
+echo "r1cs : $(stat -c%s "$WORK/circuit.r1cs") bytes   (expected 132766212)"
