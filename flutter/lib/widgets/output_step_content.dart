@@ -23,23 +23,23 @@ class OutputStepContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'For added safety, you may remove this app and restart this device after submitting the proof.',
+          'Copy and paste the calldata / bytes argument into your wallet. Submit it to the published contract at the address below.',
           style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Copy and paste this directly as calldata / bytes argument in your wallet. Submit it to the published contract at the bottom.',
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 16),
-        const _CopyableField(
-          label: 'Contract address',
-          value: '0xDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEF',
         ),
         const SizedBox(height: 16),
         _CopyableField(
           label: 'Contract calldata',
           value: result.abiEncodedHex,
+        ),
+        const SizedBox(height: 16),
+        const _CopyableField(
+          label: 'Contract address',
+          value: '0x00000000005A494c31455343524f5750524f5859',
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'For added safety, you may remove this app and restart this device after submitting the proof.',
+          style: theme.textTheme.bodyMedium,
         ),
       ],
     );

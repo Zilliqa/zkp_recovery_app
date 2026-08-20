@@ -44,8 +44,8 @@ class InputStepContent extends StatelessWidget {
       return 'Invalid XPRV value';
     }
     final words = trimmed.split(RegExp(r'\s+'));
-    if (words.length != 12 && words.length != 24) {
-      return 'Expected 12/24 words, got ${words.length}';
+    if (words.length != 12 && words.length != 24 && words.length != 18) {
+      return 'Expected 12/18/24 words, got ${words.length}';
     }
     if (!words.every((w) => RegExp(r'^[a-z]+$').hasMatch(w))) {
       return 'Words should be lowercase letters only';
@@ -116,11 +116,8 @@ class InputStepContent extends StatelessWidget {
             enableSuggestions: false,
             keyboardType: TextInputType.visiblePassword,
           ),
-                    const SizedBox(height: 16),
-          Text(
-            'Original seed wallet',
-            style: theme.textTheme.bodyMedium,
-          ),
+          const SizedBox(height: 16),
+          Text('Original seed wallet', style: theme.textTheme.bodyMedium),
           const SizedBox(height: 16),
           DropdownMenu<Wallets>(
             enabled: !isComputingProof,

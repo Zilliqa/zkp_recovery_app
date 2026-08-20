@@ -15,21 +15,14 @@ import 'package:mopro_flutter_bindings/src/rust/third_party/zkp_recovery_app.dar
 /// public outputs it attests to, plus the combined Solidity
 /// `abi.encode(bytes,bytes)` payload ready to paste into a wallet.
 class ProofResult {
-  final String proof;
-  final String publicOutputs;
   final String abiEncodedHex;
-
-  const ProofResult({
-    required this.proof,
-    required this.publicOutputs,
-    required this.abiEncodedHex,
-  });
+  const ProofResult({required this.abiEncodedHex});
 }
 
 class AccountData {
   final Bip32Keys parent;
   final int index;
-  final bool hardened;
+  final int hardened;
 
   const AccountData({
     required this.parent,
@@ -106,7 +99,7 @@ class ProofService {
       'parentPriv': expand256(account.parent.private!),
       'parentCC': expand256(account.parent.chainCode),
       'addrIndex': [account.index.toString()],
-      'isHardened': [(account.hardened) ? '1' : '0'],
+      'isHardened': [account.hardened.toString()],
       'expectedAddr': [BigInt.parse(bytesToHex(zilAddress)).toString()],
       'newAddr': [BigInt.parse(bytesToHex(evmAddress)).toString()],
       'domain': [
@@ -129,11 +122,7 @@ class ProofService {
 
     // Encode the outputs
     final calldata = encodeCallData(result);
-    final output = ProofResult(
-      proof: "",
-      publicOutputs: "",
-      abiEncodedHex: bytesToHex(calldata),
-    );
+    final output = ProofResult(abiEncodedHex: bytesToHex(calldata));
 
     log(output.abiEncodedHex);
     return output;
@@ -161,8 +150,8 @@ class ProofService {
     Wallets wallet,
   ) async {
     switch (wallet) {
-      // Derive m/44'/313'/n'/0'/0'
       case Wallets.ledger:
+        // Derive m/44'/313'/n'/0'/0'
         for (int n = 0; n < 100; n++) {
           final derivedAddress = Uint8List.fromList(
             sha256
@@ -172,13 +161,13 @@ class ProofService {
           if (listEquals(knownAddress, derivedAddress)) {
             log("${bytesToHex(knownAddress)} found at $n");
             final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
-            return AccountData(parent: parent, index: 0, hardened: true);
+            return AccountData(parent: parent, index: 0, hardened: 1);
           }
           await Future.delayed(Duration.zero); // yield to prevent UI freeze
         }
-        return null;
-      // Derive m/44'/313'/n'/0/i
-      case Wallets.others:
+      case Wallets.bearby:
+      case Wallets.zilpay:
+        // Derive m/44'/313'/n'/0/i
         for (int n = 0; n < 5; n++) {
           for (int i = 0; i < 100; i++) {
             final derivedAddress = Uint8List.fromList(
@@ -187,15 +176,18 @@ class ProofService {
                   .bytes,
             ).sublist(12);
             if (listEquals(knownAddress, derivedAddress)) {
-              log("${bytesToHex(knownAddress)} found at $n");
+              log("${bytesToHex(knownAddress)} found at $n/$i");
               final parent = masterKey.derivePath("m/44'/313'/$n'/0");
-              return AccountData(parent: parent, index: i, hardened: false);
+              return AccountData(parent: parent, index: i, hardened: 0);
             }
             await Future.delayed(Duration.zero); // yield to prevent UI freeze
           }
         }
         return null;
+      default:
+        throw Exception('unsupported wallet');
     }
+    return null;
   }
 
   Uint8List hexToBytes(String hex) {

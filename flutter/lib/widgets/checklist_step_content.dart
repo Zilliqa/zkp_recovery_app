@@ -12,7 +12,7 @@ const List<ChecklistItemData> prepChecklistItems = [
   ChecklistItemData(
     title: 'Mnemonic seed phrase',
     subtitle:
-        'Have your 12 or 24-word mnemonic seed phrase ready to type in - you will need it in a later step.',
+        'Have your xprv private-key or 12/24-word mnemonic-seed ready to type in - you will need it in a later step.',
   ),
   ChecklistItemData(
     title: 'Fresh EVM-only account',
