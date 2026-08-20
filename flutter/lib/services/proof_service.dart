@@ -29,7 +29,7 @@ class ProofResult {
 class AccountData {
   final Bip32Keys parent;
   final int index;
-  final bool hardened;
+  final int hardened;
 
   const AccountData({
     required this.parent,
@@ -106,7 +106,7 @@ class ProofService {
       'parentPriv': expand256(account.parent.private!),
       'parentCC': expand256(account.parent.chainCode),
       'addrIndex': [account.index.toString()],
-      'isHardened': [(account.hardened) ? '1' : '0'],
+      'isHardened': [account.hardened.toString()],
       'expectedAddr': [BigInt.parse(bytesToHex(zilAddress)).toString()],
       'newAddr': [BigInt.parse(bytesToHex(evmAddress)).toString()],
       'domain': [
@@ -161,8 +161,8 @@ class ProofService {
     Wallets wallet,
   ) async {
     switch (wallet) {
-      // Derive m/44'/313'/n'/0'/0'
       case Wallets.ledger:
+        // Derive m/44'/313'/n'/0'/0' or Derive m/44'/313'/n'/0/i
         for (int n = 0; n < 100; n++) {
           final derivedAddress = Uint8List.fromList(
             sha256
@@ -172,13 +172,12 @@ class ProofService {
           if (listEquals(knownAddress, derivedAddress)) {
             log("${bytesToHex(knownAddress)} found at $n");
             final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
-            return AccountData(parent: parent, index: 0, hardened: true);
+            return AccountData(parent: parent, index: 0, hardened: 1);
           }
           await Future.delayed(Duration.zero); // yield to prevent UI freeze
         }
-        return null;
-      // Derive m/44'/313'/n'/0/i
-      case Wallets.others:
+      case Wallets.bearby:
+      case Wallets.zilpay:
         for (int n = 0; n < 5; n++) {
           for (int i = 0; i < 100; i++) {
             final derivedAddress = Uint8List.fromList(
@@ -187,14 +186,16 @@ class ProofService {
                   .bytes,
             ).sublist(12);
             if (listEquals(knownAddress, derivedAddress)) {
-              log("${bytesToHex(knownAddress)} found at $n");
+              log("${bytesToHex(knownAddress)} found at $n/$i");
               final parent = masterKey.derivePath("m/44'/313'/$n'/0");
-              return AccountData(parent: parent, index: i, hardened: false);
+              return AccountData(parent: parent, index: i, hardened: 0);
             }
             await Future.delayed(Duration.zero); // yield to prevent UI freeze
           }
         }
         return null;
+      default:
+        throw Exception('unsupported wallet');
     }
   }
 
