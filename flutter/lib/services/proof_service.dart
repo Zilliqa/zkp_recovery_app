@@ -165,8 +165,10 @@ class ProofService {
           }
           await Future.delayed(Duration.zero); // yield to prevent UI freeze
         }
+        return null;
       case Wallets.bearby:
       case Wallets.zilpay:
+      case Wallets.zillet:
         // Derive m/44'/313'/n'/0/i
         for (int n = 0; n < 5; n++) {
           for (int i = 0; i < 100; i++) {
@@ -187,7 +189,6 @@ class ProofService {
       default:
         throw Exception('unsupported wallet');
     }
-    return null;
   }
 
   Uint8List hexToBytes(String hex) {

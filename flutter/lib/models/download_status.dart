@@ -45,4 +45,4 @@ class FileDownloadProgress {
   });
 }
 
-enum Wallets { bearby, ledger, zilpay, others }
+enum Wallets { bearby, ledger, zillet, zilpay, others }
