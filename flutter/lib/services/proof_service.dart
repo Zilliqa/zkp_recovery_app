@@ -195,8 +195,6 @@ class ProofService {
           }
         }
         return null;
-      default:
-        throw Exception('unsupported wallet');
     }
   }
 

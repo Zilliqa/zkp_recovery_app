@@ -146,7 +146,7 @@ class InputStepContent extends StatelessWidget {
             obscureText: (obscureMnemonic || isComputingProof),
             maxLines: 1,
             decoration: InputDecoration(
-              labelText: 'Mnemonic-seed or Private-key',
+              labelText: 'Mnemonic-seed',
               hint: const Text('12/15/18/21/24-word mnemonic'),
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
