@@ -52,6 +52,9 @@ class InputStepContent extends StatelessWidget {
         words.length != 24) {
       return 'Expected 12/15/18/21/24 words, got ${words.length}';
     }
+    if (!words.every((w) => w == w.toLowerCase())) {
+      return 'Words should be lowercase letters only';
+    }
     return null;
   }
 
