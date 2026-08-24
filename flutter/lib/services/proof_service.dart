@@ -200,6 +200,11 @@ class ProofService {
       final byteStr = cleaned.substring(i * 2, i * 2 + 2);
       result[i] = int.parse(byteStr, radix: 16);
     }
+    if (result.length != 20) {
+      throw FormatException(
+        'expected a 20-byte address, got ${result.length} bytes',
+      );
+    }
     return result;
   }
 
@@ -224,8 +229,13 @@ class ProofService {
         bytes.add((buffer >> bits) & 0xFF);
       }
     }
-
-    return Uint8List.fromList(bytes);
+    final decoded = Uint8List.fromList(bytes);
+    if (decoded.length != 20) {
+      throw FormatException(
+        'expected a 20-byte address, got ${decoded.length} bytes',
+      );
+    }
+    return decoded;
   }
 
   Uint8List _bigIntToUint256(BigInt value) {
