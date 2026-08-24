@@ -255,6 +255,9 @@ class ProofService {
   }
 
   Uint8List _bigIntToUint256(BigInt value) {
+    if (value < BigInt.zero || value >= (BigInt.one << 256)) {
+      throw ArgumentError('value does not fit in 256 bits: $value');
+    }
     final bytes = Uint8List(32);
     var v = value;
     for (int i = 31; i >= 0; i--) {
