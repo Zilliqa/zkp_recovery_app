@@ -65,7 +65,7 @@ class ProofService {
     try {
       // Compute master key from seed/xprv; throws exception if invalid.
       if (mnemonic.startsWith("xprv")) {
-        hdKey = Bip32Keys.fromBase58(mnemonic);
+        throw Exception("XPRV key unsupported");
       } else {
         final bip39 = Mnemonic.fromSentence(
           mnemonic,
