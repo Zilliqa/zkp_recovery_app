@@ -1,4 +1,5 @@
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
+import 'package:eip55/eip55.dart';
 import 'package:flutter/material.dart';
 import 'package:zkp_recovery_app/models/download_status.dart';
 
@@ -59,6 +60,10 @@ class InputStepContent extends StatelessWidget {
     if (trimmed.isEmpty) return 'EVM address is required';
     if (!RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(trimmed)) {
       return 'Expected a 0x-prefixed address';
+    }
+    final eip55 = toEIP55Address(trimmed);
+    if (eip55 != trimmed) {
+      return 'Invalid EIP-55 address';
     }
     return null;
   }
