@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:zkp_recovery_app/services/proof_service.dart';
 
 class OutputStepContent extends StatelessWidget {
-  final ProofResult? result;
+  final String? result;
 
   const OutputStepContent({super.key, required this.result});
 
@@ -29,7 +28,7 @@ class OutputStepContent extends StatelessWidget {
         const SizedBox(height: 16),
         _CopyableField(
           label: 'Contract calldata',
-          value: result.abiEncodedHex,
+          value: result,
         ),
         const SizedBox(height: 16),
         const _CopyableField(

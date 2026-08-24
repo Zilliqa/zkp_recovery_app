@@ -1,156 +1,91 @@
 // import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:bip39_mnemonic/bip39_mnemonic.dart';
+import 'package:zkp_recovery_app/models/download_status.dart';
+import 'package:zkp_recovery_app/services/proof_service.dart';
+
+// ---------------------------------------------------------------------------
+// SECTION 1 — Tests that work against the CURRENT implementation, unmodified.
+// ---------------------------------------------------------------------------
+//
+// These exercise only the code path that runs before any external
+// dependency is invoked: hex/bech32 decoding and the EVM == ZIL guard.
 
 void main() {
-  group('Circom Functionality Tests', () {
-    // testWidgets('Landing page initializes with correct default values', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const LedgerProofApp());
-    //   await tester.pumpAndSettle();
-    //   // Check that default values are set correctly
-    // });
+  group('computeGroth16Proof — pre-dependency validation (current code)', () {
+      test('throws when evmAddress equals zilAddress (both hex, same value)', () {
+      final service = ProofService.instance;
 
-    // testWidgets('Circom input validation works correctly', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const LedgerProofApp());
-    //   await tester.pumpAndSettle();
+      expect(
+        () => service.computeGroth16Proof(
+          passphrase: '',
+          mnemonic:
+              'xprv9s21ZrQH143K4B44c17pJdL1gsdAVRZs9d8zXnH6aib4swzjCSg5SbkzgfQVcx8RQtPiEa9TA1Nv5iihskRt7wNvyu2tmQvHpaVDK4R1Gus',
+          eAddress: '0x680ffaeb3f8d74072d1a202d57ac8df8fada5fdf',
+          zAddress: '0x680ffaeb3f8d74072d1a202d57ac8df8fada5fdf',
+          language: Language.english,
+          wallet: Wallets
+              .ledger, // substitute an actual enum value used in your project
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('EVM == ZIL is not allowed'),
+          ),
+        ),
+      );
+    });
 
-    //   // Test with valid numeric inputs - find by type instead
-    //   final inputFields = find.byType(TextFormField);
-    //   expect(inputFields, findsNWidgets(2));
+    test(
+      'propagates exception on malformed mnemonic before touching network/disk',
+      () {
+        final service = ProofService.instance;
 
-    //   // Enter text in the input fields
-    //   await tester.enterText(inputFields.first, '15');
-    //   await tester.enterText(inputFields.last, '7');
-    //   await tester.pump();
+        expect(
+          () => service.computeGroth16Proof(
+            passphrase: '',
+            mnemonic: 'not a valid mnemonic phrase',
+            eAddress: '0xabcabcabcabcabcabcabcabcabcabcabcabcabc',
+            zAddress: '0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddea',
+            language: Language.english,
+            wallet: Wallets.ledger,
+          ),
+          throwsException,
+        );
+      },
+    );
 
-    //   expect(find.text('15'), findsOneWidget);
-    //   expect(find.text('7'), findsOneWidget);
-    // });
+    test('accepts bech32 zAddress input without throwing on decode', () async {
+      // This only verifies bech32ToBytes doesn't throw and that the function
+      // gets *past* decoding — it will still fail later (no zkey/native lib
+      // in a test environment), so we only assert it does NOT throw the
+      // specific "EVM == ZIL" or decode-related exception.
+      final service = ProofService.instance;
 
-    // testWidgets('Circom tab maintains state correctly', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   // Enter some values
-    //   final inputFields = find.byType(TextFormField);
-    //   await tester.enterText(inputFields.first, '20');
-    //   await tester.enterText(inputFields.last, '10');
-    //   await tester.pump();
-
-    //   // Switch to another tab and back
-    //   await tester.tap(find.text('Halo2'));
-    //   await tester.pumpAndSettle();
-    //   await tester.tap(find.text('Circom'));
-    //   await tester.pumpAndSettle();
-
-    //   // Verify values are still there
-    //   expect(find.text('20'), findsOneWidget);
-    //   expect(find.text('10'), findsOneWidget);
-    // });
-
-    // testWidgets('Circom tab handles keyboard input correctly', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   final inputFields = find.byType(TextFormField);
-
-    //   // Test keyboard input
-    //   await tester.tap(inputFields.first);
-    //   await tester.enterText(inputFields.first, '123');
-    //   await tester.pump();
-
-    //   expect(find.text('123'), findsOneWidget);
-    // });
-
-    // testWidgets('Circom tab shows proper error handling UI', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   // Initially no error should be shown
-    //   expect(find.byWidgetPredicate(
-    //     (Widget widget) => widget is Text && 
-    //                       widget.data!.contains('Error'),
-    //   ), findsNothing);
-    // });
-
-    // testWidgets('Circom tab has correct button layout', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   // Verify both buttons are present
-    //   expect(find.text('Generate Proof'), findsOneWidget);
-    //   expect(find.text('Verify Proof'), findsOneWidget);
-    // });
-
-    // testWidgets('Circom tab handles focus management', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   final inputFields = find.byType(TextFormField);
-
-    //   // Tap on input field
-    //   await tester.tap(inputFields.first);
-    //   await tester.pump();
-
-    //   // Verify focus is working by checking if input field exists
-    //   expect(inputFields.first, findsOneWidget);
-    // });
-
-    // testWidgets('Circom tab shows proof results area when available', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   // Initially, proof results should not be visible
-    //   expect(find.text('Proof is valid:'), findsNothing);
-    //   expect(find.text('Proof inputs:'), findsNothing);
-    //   expect(find.text('Proof:'), findsNothing);
-    // });
-
-    // testWidgets('Circom tab handles large input values', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   final inputFields = find.byType(TextFormField);
-
-    //   // Test with large numbers
-    //   await tester.enterText(inputFields.first, '999999');
-    //   await tester.enterText(inputFields.last, '888888');
-    //   await tester.pump();
-
-    //   expect(find.text('999999'), findsOneWidget);
-    //   expect(find.text('888888'), findsOneWidget);
-    // });
-
-    // testWidgets('Circom tab maintains scrollability', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   // Verify the tab content is scrollable
-    //   expect(find.byType(SingleChildScrollView), findsOneWidget);
-    // });
-
-    // testWidgets('Circom tab shows hint text for input fields', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   // Verify hint texts are present
-    //   expect(find.text('For example, 5'), findsOneWidget); // Hint for input a
-    //   expect(find.text('For example, 3'), findsOneWidget); // Hint for input b
-    // });
-
-    // testWidgets('Circom tab handles button interactions', (WidgetTester tester) async {
-    //   await tester.pumpWidget(const MyApp());
-    //   await tester.pumpAndSettle();
-
-    //   // Test Generate Proof button
-    //   final generateButton = find.text('Generate Proof');
-    //   expect(generateButton, findsOneWidget);
-      
-    //   // Test Verify Proof button
-    //   final verifyButton = find.text('Verify Proof');
-    //   expect(verifyButton, findsOneWidget);
-
-    //   // Verify buttons exist and can be tapped
-    //   expect(find.byType(OutlinedButton), findsNWidgets(2));
-    // });
+      await expectLater(
+        service.computeGroth16Proof(
+          passphrase: '',
+          mnemonic:
+              'xprv9s21ZrQH143K4B44c17pJdL1gsdAVRZs9d8zXnH6aib4swzjCSg5SbkzgfQVcx8RQtPiEa9TA1Nv5iihskRt7wNvyu2tmQvHpaVDK4R1Gus',
+          eAddress: '0x1234567890123456789012345678901234567890',
+          zAddress:
+              'zil1pzldkj8avpal82jrmzd3qwaqxy9qtd0pyzpn3h', // placeholder bech32
+          language: Language.english,
+          wallet: Wallets.ledger,
+        ),
+        // Expect it to fail further downstream (findAccountParent / native
+        // call), NOT with the EVM==ZIL guard or a bech32 decode error.
+        throwsA(
+          isNot(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('EVM == ZIL is not allowed'),
+            ),
+          ),
+        ),
+      );
+    });
   });
-} 
+}

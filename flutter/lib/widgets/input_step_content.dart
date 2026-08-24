@@ -36,7 +36,7 @@ class InputStepContent extends StatelessWidget {
 
   String? _validateMnemonic(String? value) {
     final trimmed = (value ?? '').trim();
-    if (trimmed.isEmpty) return 'Seed phrase is required';
+    if (trimmed.isEmpty) return 'Mnemonic-seed/Master-key is required';
     if (trimmed.startsWith("xprv")) {
       if (RegExp(r'^xprv[1-9A-HJ-NP-Za-km-z]{107}$').hasMatch(trimmed)) {
         return null;
@@ -44,11 +44,12 @@ class InputStepContent extends StatelessWidget {
       return 'Invalid XPRV value';
     }
     final words = trimmed.split(RegExp(r'\s+'));
-    if (words.length != 12 && words.length != 24 && words.length != 18) {
-      return 'Expected 12/18/24 words, got ${words.length}';
-    }
-    if (!words.every((w) => RegExp(r'^[a-z]+$').hasMatch(w))) {
-      return 'Words should be lowercase letters only';
+    if (words.length != 12 &&
+        words.length != 15 &&
+        words.length != 18 &&
+        words.length != 21 &&
+        words.length != 24) {
+      return 'Expected 12/15/18/21/24 words, got ${words.length}';
     }
     return null;
   }
@@ -121,7 +122,7 @@ class InputStepContent extends StatelessWidget {
           const SizedBox(height: 16),
           DropdownMenu<Wallets>(
             enabled: !isComputingProof,
-            initialSelection: Wallets.others,
+            initialSelection: Wallets.ledger,
             onSelected: onSelectedWallet,
             dropdownMenuEntries: Wallets.values.map((Wallets wallet) {
               return DropdownMenuEntry<Wallets>(

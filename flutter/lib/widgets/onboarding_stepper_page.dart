@@ -52,7 +52,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
   String? _computeError;
 
   // --- Output state ---
-  ProofResult? _proofResult;
+  String? _proofResult;
 
   @override
   void initState() {

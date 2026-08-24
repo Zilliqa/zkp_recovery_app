@@ -14,10 +14,6 @@ import 'package:mopro_flutter_bindings/src/rust/third_party/zkp_recovery_app.dar
 /// Result of a Groth16 proof computation: the proof itself and the
 /// public outputs it attests to, plus the combined Solidity
 /// `abi.encode(bytes,bytes)` payload ready to paste into a wallet.
-class ProofResult {
-  final String abiEncodedHex;
-  const ProofResult({required this.abiEncodedHex});
-}
 
 class AccountData {
   final Bip32Keys parent;
@@ -46,7 +42,7 @@ class ProofService {
   /// @param eAddress   The clean ECDSA address.
   /// @param zAddress   The old Schnorr address.
   /// @param language   The BIP39 language set to use.
-  Future<ProofResult> computeGroth16Proof({
+  Future<String> computeGroth16Proof({
     required String passphrase,
     required String mnemonic,
     required String eAddress,
@@ -88,7 +84,7 @@ class ProofService {
     final account = await findAccountParent(hdKey, zilAddress, wallet);
     if (account == null) {
       throw Exception(
-        "ZIL address does not seem to be derived from mnemonic-seed or master-key.",
+        "ZIL address does not seem to be derived from mnemonic-seed/master-key, or unsupported wallet.",
       );
     }
 
@@ -122,9 +118,9 @@ class ProofService {
 
     // Encode the outputs
     final calldata = encodeCallData(result);
-    final output = ProofResult(abiEncodedHex: bytesToHex(calldata));
+    final output = bytesToHex(calldata);
 
-    log(output.abiEncodedHex);
+    log(output);
     return output;
   }
 
@@ -166,9 +162,7 @@ class ProofService {
           await Future.delayed(Duration.zero); // yield to prevent UI freeze
         }
         return null;
-      case Wallets.bearby:
-      case Wallets.zilpay:
-      case Wallets.zillet:
+      case Wallets.others:
         // Derive m/44'/313'/n'/0/i
         for (int n = 0; n < 5; n++) {
           for (int i = 0; i < 100; i++) {
