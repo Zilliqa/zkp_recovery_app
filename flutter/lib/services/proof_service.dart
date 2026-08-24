@@ -229,6 +229,10 @@ class ProofService {
         bytes.add((buffer >> bits) & 0xFF);
       }
     }
+    final leftoverMask = (1 << bits) - 1;
+    if (bits >= 5 || (buffer & leftoverMask) != 0) {
+      throw const FormatException('bech32: non-canonical padding');
+    }
     final decoded = Uint8List.fromList(bytes);
     if (decoded.length != 20) {
       throw FormatException(
