@@ -67,14 +67,26 @@ class ProofService {
       if (mnemonic.startsWith("xprv")) {
         throw Exception("XPRV key unsupported");
       } else {
-        final bip39 = Mnemonic.fromSentence(
-          mnemonic,
-          language,
-          passphrase: passphrase,
-        );
-        hdKey = Bip32Keys.fromSeed(
-          Uint8List.fromList(bip39.seed),
-        ); // does not store seed
+        if (language == Language.japanese) {
+          final sentence = mnemonic.replaceAll(RegExp(r'[ 　]+'), '　').trim();
+          final bip39 = Mnemonic.fromSentence(
+            sentence,
+            Language.japanese,
+            passphrase: passphrase,
+          );
+          hdKey = Bip32Keys.fromSeed(
+            Uint8List.fromList(bip39.seed),
+          ); // does not store seed
+        } else {
+          final bip39 = Mnemonic.fromSentence(
+            mnemonic,
+            language,
+            passphrase: passphrase,
+          );
+          hdKey = Bip32Keys.fromSeed(
+            Uint8List.fromList(bip39.seed),
+          ); // does not store seed
+        }
       }
     } catch (_) {
       rethrow;
