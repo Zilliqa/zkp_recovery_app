@@ -59,22 +59,37 @@ class ProofService {
     if (listEquals(evmAddress, zilAddress)) {
       throw Exception("EVM == ZIL is not allowed");
     }
+    if (!evmAddress.any((b) => b != 0) || !zilAddress.any((b) => b != 0)) {
+      throw Exception("EVM/ZIL must both be non-zero address");
+    }
 
     // Master key, derived once - each path derivation walks down from here.
     Bip32Keys? hdKey;
     try {
       // Compute master key from seed/xprv; throws exception if invalid.
       if (mnemonic.startsWith("xprv")) {
-        hdKey = Bip32Keys.fromBase58(mnemonic);
+        throw Exception("XPRV key unsupported");
       } else {
-        final bip39 = Mnemonic.fromSentence(
-          mnemonic,
-          language,
-          passphrase: passphrase,
-        );
-        hdKey = Bip32Keys.fromSeed(
-          Uint8List.fromList(bip39.seed),
-        ); // does not store seed
+        if (language == Language.japanese) {
+          final sentence = mnemonic.replaceAll(RegExp(r'[ 　]+'), '　').trim();
+          final bip39 = Mnemonic.fromSentence(
+            sentence,
+            Language.japanese,
+            passphrase: passphrase,
+          );
+          hdKey = Bip32Keys.fromSeed(
+            Uint8List.fromList(bip39.seed),
+          ); // does not store seed
+        } else {
+          final bip39 = Mnemonic.fromSentence(
+            mnemonic,
+            language,
+            passphrase: passphrase,
+          );
+          hdKey = Bip32Keys.fromSeed(
+            Uint8List.fromList(bip39.seed),
+          ); // does not store seed
+        }
       }
     } catch (_) {
       rethrow;
@@ -200,6 +215,11 @@ class ProofService {
       final byteStr = cleaned.substring(i * 2, i * 2 + 2);
       result[i] = int.parse(byteStr, radix: 16);
     }
+    if (result.length != 20) {
+      throw FormatException(
+        'expected a 20-byte address, got ${result.length} bytes',
+      );
+    }
     return result;
   }
 
@@ -224,11 +244,23 @@ class ProofService {
         bytes.add((buffer >> bits) & 0xFF);
       }
     }
-
-    return Uint8List.fromList(bytes);
+    final leftoverMask = (1 << bits) - 1;
+    if (bits >= 5 || (buffer & leftoverMask) != 0) {
+      throw const FormatException('bech32: non-canonical padding');
+    }
+    final decoded = Uint8List.fromList(bytes);
+    if (decoded.length != 20) {
+      throw FormatException(
+        'expected a 20-byte address, got ${decoded.length} bytes',
+      );
+    }
+    return decoded;
   }
 
   Uint8List _bigIntToUint256(BigInt value) {
+    if (value < BigInt.zero || value >= (BigInt.one << 256)) {
+      throw ArgumentError('value does not fit in 256 bits: $value');
+    }
     final bytes = Uint8List(32);
     var v = value;
     for (int i = 31; i >= 0; i--) {
@@ -241,11 +273,9 @@ class ProofService {
   Uint8List encodeCallData(CircomProofResult result) {
     assert(result.inputs.length == 4, 'Expected exact inputs');
 
-    final selector = hexToBytes(
-      keccak256sum(
-        'claim(uint256[2],uint256[2][2],uint256[2],uint256[4])',
-      ).substring(0, 8),
-    ); // hardcoded
+    // https://4byte.sourcify.dev/?q=cf1c9461
+    // claim(uint256[2],uint256[2][2],uint256[2],uint256[4])
+    final selector = Uint8List.fromList([0xcf, 0x1c, 0x94, 0x61]);
 
     final words = [
       result.proof.a.x,
