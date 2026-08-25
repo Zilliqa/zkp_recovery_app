@@ -14,8 +14,8 @@ legacy Zilliqa wallet families:
 
 The two modes differ **only** in the HMAC-SHA512 preimage (`0x00‖privkey` vs `compress(privkey·G)`) and
 one index bit; everything after HMAC (child key → secp256k1 pubkey → SHA-256[-20:] address) is identical.
-Cost of configurability: one extra secp256k1 scalar-mult → **~679k constraints** (523,816 non-linear +
-155,303 linear), up from 427k. Proving ≈ 25–35 s at ~8 GB with a **~358 MB** key.
+Cost of configurability: one extra secp256k1 scalar-mult → **~679k constraints** (524,094 non-linear +
+155,324 linear), up from 427k. Proving ≈ 25–35 s at ~8 GB with a **~358 MB** key.
 
 ## What it proves
 `level-4 parent node --(final CKD step, hardened or not)--> key --secp256k1--> pubkey --SHA-256[-20:]--> address == <old>`, bound to `newAddr` + `domain`.
@@ -23,6 +23,8 @@ Cost of configurability: one extra secp256k1 scalar-mult → **~679k constraints
 - **Public inputs (`uint[4]`):** `[expectedAddr(old), newAddr, domain, isHardened]`.
 - **Canonical `domain`:** Zilliqa EVM mainnet chainId `32769` (or `keccak(chainId, claimContract)` once the claim contract is deployed).
 - **Off-circuit (in `prepare.js`/`prove-secure.js`):** PBKDF2, then auto-detect the wallet style — scan Ledger accounts `m/44'/313'/n'/0'/0'` (n<100), then standard BIP-44 leaves `m/44'/313'/a'/0/i` (a<5, i<100) — to match the old address, emitting the right parent + `isHardened` + `addrIndex`.
+- **Address range checks:** both `expectedAddr` and `newAddr` are constrained to 160 bits (a real 20-byte address), so the proof's committed destination matches the on-chain `address(uint256)` truncation. `domain` is a separator, not an address, so it is deliberately left unbounded.
+- **BIP-32 conformance:** the final CKD step rejects the (astronomically rare, ~2⁻¹²⁸) invalid cases — HMAC left half `IL ≥ n` or `childPriv == 0` — per the standard; `@scure`'s `HDKey.derive` mirrors the same rejection off-circuit.
 
 ### Security note — the two modes are NOT equally strong
 - **Hardened (`isHardened=1`)** proves knowledge of the `m/44'/313'/n'/0'` node. Because hardened
@@ -67,7 +69,7 @@ A proving key is public material (no secrets). `vk.json` + `verifier.sol` are in
 @ d87eb70, circomlib 2.0.2, Electron-Labs sha512 @ be9f01d). Prover-supplied bit inputs are
 `b*(b-1)===0` constrained (audit-hardening).
 - `./build-circuit.sh` — recompile from the pinned sources and confirm the `wasm`/`r1cs` are
-  **byte-identical** to the shipped ones (`circuit.wasm` md5 `e8b15e93…`, `circuit.r1cs` 132,792,372 B).
+  **byte-identical** to the shipped ones (`circuit.wasm` md5 `c4281b70…`, `circuit.r1cs` 132,857,964 B).
 - `node secure_core_test.js` — self-test on the throwaway all-zero mnemonic: proves **both** the Ledger
   hardened path **and** a standard BIP-44 non-hardened path (addrIndex 3) verify, and that tampering with
   `newAddr`/`domain` fails (binding). Needs the zkey.
