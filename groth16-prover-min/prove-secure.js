@@ -6,6 +6,8 @@ const snarkjs = require('snarkjs');
 const bip39s = require('@scure/bip39');
 const { validateMnemonic } = bip39s;
 const { HDKey } = require('@scure/bip32');
+const { bech32 } = require('@scure/base');
+let classic = null; try { classic = require('bip39'); } catch (e) {}
 const crypto = require('crypto');
 // Every BIP-39 wordlist @scure/bip39 ships. Checksum validation is MANDATORY and wordlist-agnostic:
 // a mnemonic is accepted only if it checksums against exactly one of these (see F-2026-19003).
@@ -35,11 +37,22 @@ const newArg = (process.argv[3] || '').trim();
 const domArg = (process.argv[4] || '').trim();
 if (!oldArg || !newArg || !domArg) { console.error('usage: ./run-proof-secure.sh <oldAddr> <newAddr> <domain>   (mnemonic typed at a hidden prompt)'); process.exit(1); }
 
-const CH = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
-function bech32dec(s){const dp=s.toLowerCase().split('1').pop();const v=[...dp].map(c=>CH.indexOf(c)).slice(0,-6);
-  let acc=0,bits=0,out=[];for(const x of v){acc=(acc<<5)|x;bits+=5;while(bits>=8){bits-=8;out.push((acc>>bits)&0xff);}}return Buffer.from(out);}
-function addr20(a){let w;try{w=(a.startsWith('0x')||/^[0-9a-fA-F]{40}$/.test(a))?Buffer.from(a.replace(/^0x/,''),'hex'):bech32dec(a);}catch(e){}
-  if(!w||w.length!==20){console.error('ERROR: bad address: '+a);process.exit(1);}return w;}
+// Decode a Zilliqa bech32 address with FULL checksum + HRP validation (BIP-173). @scure/base's
+// bech32.decodeToBytes throws on a bad checksum, invalid character, or non-canonical padding; we then
+// require the 'zil' HRP so a valid address from another network can't be silently accepted. F-2026-18999.
+function bech32dec(s){
+  const { prefix, bytes } = bech32.decodeToBytes(s);
+  if (prefix !== 'zil') throw new Error(`expected a "zil" address, got HRP "${prefix}"`);
+  return Buffer.from(bytes);
+}
+function addr20(a){
+  const isHex = a.startsWith('0x') || /^[0-9a-fA-F]{40}$/.test(a);
+  let w;
+  try { w = isHex ? Buffer.from(a.replace(/^0x/,''),'hex') : bech32dec(a); }
+  catch(e){ console.error('ERROR: bad address "'+a+'": '+(e && e.message ? e.message : e)); process.exit(1); }
+  if(!w||w.length!==20){console.error('ERROR: bad address "'+a+'": expected 20 bytes, got '+(w?w.length:0));process.exit(1);}
+  return w;
+}
 function domField(s){let v;try{v=BigInt(s);}catch(e){console.error('ERROR: bad domain: '+s);process.exit(1);}return((v%P)+P)%P;}
 
 function askHidden(promptText){return new Promise((resolve,reject)=>{const stdin=process.stdin;

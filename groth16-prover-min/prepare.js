@@ -5,6 +5,7 @@
 //   standard BIP-44        m/44'/313'/a'/0/i    -> isHardened=0, parent m/44'/313'/a'/0,   addrIndex i
 // usage: node prepare.js "<mnemonic>" <oldAddr 0x..|zil1..> <newAddr> <domain dec|0x> [passphrase]
 const bip39=require('@scure/bip39'); const {HDKey}=require('@scure/bip32');
+const { bech32 } = require('@scure/base');
 const crypto=require('crypto'); const fs=require('fs');
 const { validateMnemonic } = bip39;
 // Every BIP-39 wordlist @scure/bip39 ships. Checksum validation is MANDATORY and wordlist-agnostic:
@@ -31,14 +32,22 @@ const P=218882428718392752222464057452572750885483644004160343436982041865758084
 const mnemonic=(process.argv[2]||'').trim().replace(/\s+/g,' '); const oldA=(process.argv[3]||'').trim(); const newA=(process.argv[4]||'').trim();
 const domArg=(process.argv[5]||'').trim(); const pass=process.argv[6]||'';
 if(!mnemonic||!oldA||!newA||!domArg){console.error('usage: node prepare.js "<mnemonic>" <oldAddr> <newAddr> <domain dec|0x> [passphrase]');process.exit(1);}
-const languages=detectMnemonicLanguages(mnemonic);
-if(languages.length===0){console.error(`ERROR: BIP-39 checksum invalid in every supported wordlist (${Object.keys(WORDLISTS).join(', ')}) - likely a typo. Aborting.`);process.exit(1);}
-if(languages.length>1){console.error(`ERROR: mnemonic validates against multiple wordlists (${languages.join(', ')}) - ambiguous. Aborting.`);process.exit(1);}
-const CH="qpzry9x8gf2tvdw0s3jn54khce6mua7l";
-function bech32dec(s){const dp=s.toLowerCase().split('1').pop();const v=[...dp].map(c=>CH.indexOf(c)).slice(0,-6);
-  let acc=0,bits=0,out=[];for(const x of v){acc=(acc<<5)|x;bits+=5;while(bits>=8){bits-=8;out.push((acc>>bits)&0xff);}}return Buffer.from(out);}
-function addr20(a){let w;if(a.startsWith('0x')||/^[0-9a-fA-F]{40}$/.test(a))w=Buffer.from(a.replace(/^0x/,''),'hex');else w=bech32dec(a);
-  if(w.length!==20){console.error('bad address: '+a);process.exit(1);}return w;}
+// Decode a Zilliqa bech32 address with FULL checksum + HRP validation (BIP-173). @scure/base's
+// bech32.decodeToBytes throws on a bad checksum, invalid character, or non-canonical padding; we then
+// require the 'zil' HRP so a valid address from another network can't be silently accepted. F-2026-18999.
+function bech32dec(s){
+  const { prefix, bytes } = bech32.decodeToBytes(s);
+  if (prefix !== 'zil') throw new Error(`expected a "zil" address, got HRP "${prefix}"`);
+  return Buffer.from(bytes);
+}
+function addr20(a){
+  const isHex = a.startsWith('0x') || /^[0-9a-fA-F]{40}$/.test(a);
+  let w;
+  try { w = isHex ? Buffer.from(a.replace(/^0x/,''),'hex') : bech32dec(a); }
+  catch(e){ console.error('ERROR: bad address "'+a+'": '+(e && e.message ? e.message : e)); process.exit(1); }
+  if(w.length!==20){console.error('ERROR: bad address "'+a+'": expected 20 bytes, got '+w.length);process.exit(1);}
+  return w;
+}
 function domField(s){let v=BigInt(s);v=((v%P)+P)%P;return v;}
 const wantOld=addr20(oldA); const wantNew=addr20(newA); const dom=domField(domArg);
 const seed=bip39.mnemonicToSeedSync(mnemonic,pass);                 // PBKDF2, off-circuit
