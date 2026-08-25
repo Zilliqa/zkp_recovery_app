@@ -6,13 +6,34 @@
 // usage: node prepare.js "<mnemonic>" <oldAddr 0x..|zil1..> <newAddr> <domain dec|0x> [passphrase]
 const bip39=require('@scure/bip39'); const {HDKey}=require('@scure/bip32');
 const crypto=require('crypto'); const fs=require('fs');
+const { validateMnemonic } = bip39;
+// Every BIP-39 wordlist @scure/bip39 ships. Checksum validation is MANDATORY and wordlist-agnostic:
+// a mnemonic is accepted only if it checksums against exactly one of these (see F-2026-19003).
+const WORDLISTS = {
+  czech:                 require('@scure/bip39/wordlists/czech.js').wordlist,
+  english:               require('@scure/bip39/wordlists/english.js').wordlist,
+  french:                require('@scure/bip39/wordlists/french.js').wordlist,
+  italian:               require('@scure/bip39/wordlists/italian.js').wordlist,
+  japanese:              require('@scure/bip39/wordlists/japanese.js').wordlist,
+  korean:                require('@scure/bip39/wordlists/korean.js').wordlist,
+  portuguese:            require('@scure/bip39/wordlists/portuguese.js').wordlist,
+  spanish:               require('@scure/bip39/wordlists/spanish.js').wordlist,
+  'simplified-chinese':  require('@scure/bip39/wordlists/simplified-chinese.js').wordlist,
+  'traditional-chinese': require('@scure/bip39/wordlists/traditional-chinese.js').wordlist,
+};
+function detectMnemonicLanguages(mnemonic){
+  return Object.entries(WORDLISTS).filter(([, wl]) => validateMnemonic(mnemonic, wl)).map(([name]) => name);
+}
 const MAX_ACCT=100;   // Ledger:  scan account n in m/44'/313'/n'/0'/0'
 const STD_ACCT=5;     // BIP-44:   scan account a in m/44'/313'/a'/0/i
 const STD_IDX=100;    // BIP-44:   scan address_index i in m/44'/313'/a'/0/i
 const P=21888242871839275222246405745257275088548364400416034343698204186575808495617n;
-const mnemonic=process.argv[2]; const oldA=(process.argv[3]||'').trim(); const newA=(process.argv[4]||'').trim();
+const mnemonic=(process.argv[2]||'').trim().replace(/\s+/g,' '); const oldA=(process.argv[3]||'').trim(); const newA=(process.argv[4]||'').trim();
 const domArg=(process.argv[5]||'').trim(); const pass=process.argv[6]||'';
 if(!mnemonic||!oldA||!newA||!domArg){console.error('usage: node prepare.js "<mnemonic>" <oldAddr> <newAddr> <domain dec|0x> [passphrase]');process.exit(1);}
+const languages=detectMnemonicLanguages(mnemonic);
+if(languages.length===0){console.error(`ERROR: BIP-39 checksum invalid in every supported wordlist (${Object.keys(WORDLISTS).join(', ')}) - likely a typo. Aborting.`);process.exit(1);}
+if(languages.length>1){console.error(`ERROR: mnemonic validates against multiple wordlists (${languages.join(', ')}) - ambiguous. Aborting.`);process.exit(1);}
 const CH="qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 function bech32dec(s){const dp=s.toLowerCase().split('1').pop();const v=[...dp].map(c=>CH.indexOf(c)).slice(0,-6);
   let acc=0,bits=0,out=[];for(const x of v){acc=(acc<<5)|x;bits+=5;while(bits>=8){bits-=8;out.push((acc>>bits)&0xff);}}return Buffer.from(out);}
