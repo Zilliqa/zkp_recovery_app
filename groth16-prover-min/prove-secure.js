@@ -4,10 +4,28 @@
 // bound to newAddr + domain.  usage (via run-proof-secure.sh): node prove-secure.js <oldAddr> <newAddr> <domain>
 const snarkjs = require('snarkjs');
 const bip39s = require('@scure/bip39');
+const { validateMnemonic } = bip39s;
 const { HDKey } = require('@scure/bip32');
 const { bech32 } = require('@scure/base');
 let classic = null; try { classic = require('bip39'); } catch (e) {}
 const crypto = require('crypto');
+// Every BIP-39 wordlist @scure/bip39 ships. Checksum validation is MANDATORY and wordlist-agnostic:
+// a mnemonic is accepted only if it checksums against exactly one of these (see F-2026-19003).
+const WORDLISTS = {
+  czech:                 require('@scure/bip39/wordlists/czech.js').wordlist,
+  english:               require('@scure/bip39/wordlists/english.js').wordlist,
+  french:                require('@scure/bip39/wordlists/french.js').wordlist,
+  italian:               require('@scure/bip39/wordlists/italian.js').wordlist,
+  japanese:              require('@scure/bip39/wordlists/japanese.js').wordlist,
+  korean:                require('@scure/bip39/wordlists/korean.js').wordlist,
+  portuguese:            require('@scure/bip39/wordlists/portuguese.js').wordlist,
+  spanish:               require('@scure/bip39/wordlists/spanish.js').wordlist,
+  'simplified-chinese':  require('@scure/bip39/wordlists/simplified-chinese.js').wordlist,
+  'traditional-chinese': require('@scure/bip39/wordlists/traditional-chinese.js').wordlist,
+};
+function detectMnemonicLanguages(mnemonic) {
+  return Object.entries(WORDLISTS).filter(([, wl]) => validateMnemonic(mnemonic, wl)).map(([name]) => name);
+}
 const fs = require('fs');
 const MAX_ACCT = 100;   // Ledger:  scan account n in m/44'/313'/n'/0'/0'
 const STD_ACCT = 5;     // BIP-44:   scan account a in m/44'/313'/a'/0/i
@@ -37,18 +55,36 @@ function addr20(a){
 }
 function domField(s){let v;try{v=BigInt(s);}catch(e){console.error('ERROR: bad domain: '+s);process.exit(1);}return((v%P)+P)%P;}
 
-function askHidden(promptText){return new Promise(resolve=>{const stdin=process.stdin;process.stderr.write(promptText);
-  const raw=!!stdin.setRawMode;if(raw)stdin.setRawMode(true);stdin.resume();stdin.setEncoding('utf8');let buf='';
-  const finish=()=>{if(raw)stdin.setRawMode(false);stdin.pause();stdin.removeListener('data',onData);process.stderr.write('\n');resolve(buf);};
+function askHidden(promptText){return new Promise((resolve,reject)=>{const stdin=process.stdin;
+  // Only masks input when stdin is a real interactive terminal. If it isn't (piped/redirected, or a
+  // non-native TTY like Windows Git Bash/MinTTY), typed characters would be ECHOED IN CLEARTEXT, so we
+  // REFUSE rather than silently expose the mnemonic — unless explicitly overridden for automated tests
+  // (ALLOW_ECHOED_MNEMONIC=1). See F-2026-19001.
+  const canMask=!!stdin.isTTY && typeof stdin.setRawMode==='function';
+  if(!canMask && !process.env.ALLOW_ECHOED_MNEMONIC){
+    reject(new Error('Refusing to prompt: stdin is not an interactive terminal (TTY), so the mnemonic '+
+      'would be echoed in cleartext. Run this in a real terminal, or set ALLOW_ECHOED_MNEMONIC=1 to '+
+      'proceed anyway (e.g. for automated tests).'));return;}
+  process.stderr.write(promptText);
+  if(canMask)stdin.setRawMode(true);stdin.resume();stdin.setEncoding('utf8');let buf='';
+  const finish=()=>{if(canMask)stdin.setRawMode(false);stdin.pause();stdin.removeListener('data',onData);process.stderr.write('\n');resolve(buf);};
   const onData=chunk=>{for(const ch of chunk){const c=ch.charCodeAt(0);
-    if(c===13||c===10||c===4){finish();return;}else if(c===3){if(raw)stdin.setRawMode(false);process.stderr.write('\n');process.exit(1);}
+    if(c===13||c===10||c===4){finish();return;}else if(c===3){if(canMask)stdin.setRawMode(false);process.stderr.write('\n');process.exit(1);}
     else if(c===127||c===8){buf=buf.slice(0,-1);}else buf+=ch;}};
   stdin.on('data',onData);});}
 
 (async () => {
   const wantOld = addr20(oldArg), wantNew = addr20(newArg), dom = domField(domArg);
   const mnemonic = (await askHidden('Enter mnemonic (hidden): ')).trim().replace(/\s+/g, ' ');
-  if (classic && !classic.validateMnemonic(mnemonic)) { console.error('ERROR: BIP-39 checksum invalid - likely a typo. Aborting.'); process.exit(1); }
+  const languages = detectMnemonicLanguages(mnemonic);
+  if (languages.length === 0) {
+    console.error(`ERROR: BIP-39 checksum invalid in every supported wordlist (${Object.keys(WORDLISTS).join(', ')}) - likely a typo. Aborting.`);
+    process.exit(1);
+  }
+  if (languages.length > 1) {
+    console.error(`ERROR: mnemonic validates against multiple wordlists (${languages.join(', ')}) - ambiguous. Aborting.`);
+    process.exit(1);
+  }
   const pass = await askHidden('Passphrase (blank if none): ');
 
   const seed = bip39s.mnemonicToSeedSync(mnemonic, pass);
@@ -78,7 +114,7 @@ function askHidden(promptText){return new Promise(resolve=>{const stdin=process.
     newAddr: BigInt('0x' + wantNew.toString('hex')).toString(),
     domain: dom.toString()
   };
-  console.error('checksum + address OK.');
+  console.error('checksum OK (' + languages[0] + ' wordlist) + address matched.');
   console.error('  old (proven)  : 0x' + wantOld.toString('hex'));
   console.error('  matched path  : ' + found.label + '   (isHardened=' + found.isHardened + ')');
   console.error('  new (bound)   : 0x' + wantNew.toString('hex'));
@@ -94,4 +130,4 @@ function askHidden(promptText){return new Promise(resolve=>{const stdin=process.
   console.log('saved proof.json + public.json (non-sensitive).');
   if (ok) { try { require('child_process').execSync('node print_submit.js', { stdio: 'inherit' }); } catch (e) {} }
   process.exit(ok ? 0 : 1);
-})();
+})().catch((e) => { console.error('ERROR:', e && e.message ? e.message : e); process.exit(1); });

@@ -7,11 +7,29 @@
 const bip39=require('@scure/bip39'); const {HDKey}=require('@scure/bip32');
 const { bech32 } = require('@scure/base');
 const crypto=require('crypto'); const fs=require('fs');
+const { validateMnemonic } = bip39;
+// Every BIP-39 wordlist @scure/bip39 ships. Checksum validation is MANDATORY and wordlist-agnostic:
+// a mnemonic is accepted only if it checksums against exactly one of these (see F-2026-19003).
+const WORDLISTS = {
+  czech:                 require('@scure/bip39/wordlists/czech.js').wordlist,
+  english:               require('@scure/bip39/wordlists/english.js').wordlist,
+  french:                require('@scure/bip39/wordlists/french.js').wordlist,
+  italian:               require('@scure/bip39/wordlists/italian.js').wordlist,
+  japanese:              require('@scure/bip39/wordlists/japanese.js').wordlist,
+  korean:                require('@scure/bip39/wordlists/korean.js').wordlist,
+  portuguese:            require('@scure/bip39/wordlists/portuguese.js').wordlist,
+  spanish:               require('@scure/bip39/wordlists/spanish.js').wordlist,
+  'simplified-chinese':  require('@scure/bip39/wordlists/simplified-chinese.js').wordlist,
+  'traditional-chinese': require('@scure/bip39/wordlists/traditional-chinese.js').wordlist,
+};
+function detectMnemonicLanguages(mnemonic){
+  return Object.entries(WORDLISTS).filter(([, wl]) => validateMnemonic(mnemonic, wl)).map(([name]) => name);
+}
 const MAX_ACCT=100;   // Ledger:  scan account n in m/44'/313'/n'/0'/0'
 const STD_ACCT=5;     // BIP-44:   scan account a in m/44'/313'/a'/0/i
 const STD_IDX=100;    // BIP-44:   scan address_index i in m/44'/313'/a'/0/i
 const P=21888242871839275222246405745257275088548364400416034343698204186575808495617n;
-const mnemonic=process.argv[2]; const oldA=(process.argv[3]||'').trim(); const newA=(process.argv[4]||'').trim();
+const mnemonic=(process.argv[2]||'').trim().replace(/\s+/g,' '); const oldA=(process.argv[3]||'').trim(); const newA=(process.argv[4]||'').trim();
 const domArg=(process.argv[5]||'').trim(); const pass=process.argv[6]||'';
 if(!mnemonic||!oldA||!newA||!domArg){console.error('usage: node prepare.js "<mnemonic>" <oldAddr> <newAddr> <domain dec|0x> [passphrase]');process.exit(1);}
 // Decode a Zilliqa bech32 address with FULL checksum + HRP validation (BIP-173). @scure/base's
