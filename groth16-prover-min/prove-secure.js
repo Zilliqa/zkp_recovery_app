@@ -42,11 +42,21 @@ function addr20(a){let w;try{w=(a.startsWith('0x')||/^[0-9a-fA-F]{40}$/.test(a))
   if(!w||w.length!==20){console.error('ERROR: bad address: '+a);process.exit(1);}return w;}
 function domField(s){let v;try{v=BigInt(s);}catch(e){console.error('ERROR: bad domain: '+s);process.exit(1);}return((v%P)+P)%P;}
 
-function askHidden(promptText){return new Promise(resolve=>{const stdin=process.stdin;process.stderr.write(promptText);
-  const raw=!!stdin.setRawMode;if(raw)stdin.setRawMode(true);stdin.resume();stdin.setEncoding('utf8');let buf='';
-  const finish=()=>{if(raw)stdin.setRawMode(false);stdin.pause();stdin.removeListener('data',onData);process.stderr.write('\n');resolve(buf);};
+function askHidden(promptText){return new Promise((resolve,reject)=>{const stdin=process.stdin;
+  // Only masks input when stdin is a real interactive terminal. If it isn't (piped/redirected, or a
+  // non-native TTY like Windows Git Bash/MinTTY), typed characters would be ECHOED IN CLEARTEXT, so we
+  // REFUSE rather than silently expose the mnemonic — unless explicitly overridden for automated tests
+  // (ALLOW_ECHOED_MNEMONIC=1). See F-2026-19001.
+  const canMask=!!stdin.isTTY && typeof stdin.setRawMode==='function';
+  if(!canMask && !process.env.ALLOW_ECHOED_MNEMONIC){
+    reject(new Error('Refusing to prompt: stdin is not an interactive terminal (TTY), so the mnemonic '+
+      'would be echoed in cleartext. Run this in a real terminal, or set ALLOW_ECHOED_MNEMONIC=1 to '+
+      'proceed anyway (e.g. for automated tests).'));return;}
+  process.stderr.write(promptText);
+  if(canMask)stdin.setRawMode(true);stdin.resume();stdin.setEncoding('utf8');let buf='';
+  const finish=()=>{if(canMask)stdin.setRawMode(false);stdin.pause();stdin.removeListener('data',onData);process.stderr.write('\n');resolve(buf);};
   const onData=chunk=>{for(const ch of chunk){const c=ch.charCodeAt(0);
-    if(c===13||c===10||c===4){finish();return;}else if(c===3){if(raw)stdin.setRawMode(false);process.stderr.write('\n');process.exit(1);}
+    if(c===13||c===10||c===4){finish();return;}else if(c===3){if(canMask)stdin.setRawMode(false);process.stderr.write('\n');process.exit(1);}
     else if(c===127||c===8){buf=buf.slice(0,-1);}else buf+=ch;}};
   stdin.on('data',onData);});}
 
@@ -107,4 +117,4 @@ function askHidden(promptText){return new Promise(resolve=>{const stdin=process.
   console.log('saved proof.json + public.json (non-sensitive).');
   if (ok) { try { require('child_process').execSync('node print_submit.js', { stdio: 'inherit' }); } catch (e) {} }
   process.exit(ok ? 0 : 1);
-})();
+})().catch((e) => { console.error('ERROR:', e && e.message ? e.message : e); process.exit(1); });
