@@ -90,7 +90,12 @@ template SeedOwnershipMin(){
     component pack = Bits2Num(160);
     for (var i=0;i<160;i++) pack.in[i] <== a.addr[159-i];
     expectedAddr === pack.out;
-    signal nb; nb <== newAddr*newAddr;
+    // Range-check newAddr to 160 bits, mirroring expectedAddr's implicit bound (via pack.out < 2^160),
+    // so the proof's committed destination matches the on-chain address(uint256) truncation. Num2Bits
+    // also references newAddr in a constraint, so snarkjs won't prune the public signal. (F-2026-19026)
+    component newAddrBits = Num2Bits(160); newAddrBits.in <== newAddr;
+    // domain is a domain-separator (chainId, or keccak(chainId,claimContract) reduced mod p) — NOT a
+    // 160-bit address — so it gets no range check; square it only to keep the public signal alive.
     signal db; db <== domain*domain;
 }
 component main {public [expectedAddr, newAddr, domain, isHardened]} = SeedOwnershipMin();
