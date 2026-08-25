@@ -67,6 +67,21 @@ template CKDFinalStep(){
     component madd=ModAddN();
     for(var i=0;i<256;i++){ madd.a[i]<==parentPriv[255-i]; madd.b[i]<==h.out[255-i]; }
     for(var i=0;i<256;i++) childPriv[i]<==madd.c[255-i];
+    // --- BIP-32 conformance: reject the step if IL >= n or childPriv == 0 (F-2026-19024) ---
+    // (1) IL < n : compare the raw HMAC-SHA512 left half (IL = h.out[0..255], MSB-first) against the
+    //     secp256k1 group order n, as 4 little-endian 64-bit limbs (same limb order as CompressedPub).
+    component ilLimb[4]; signal ilVal[4];
+    for (var j=0;j<4;j++){ ilLimb[j]=Bits2Num(64);
+        for (var i=0;i<64;i++) ilLimb[j].in[i] <== h.out[(3-j)*64+(63-i)];
+        ilVal[j] <== ilLimb[j].out; }
+    var order[4] = [0xbfd25e8cd0364141, 0xbaaedce6af48a03b, 0xfffffffffffffffe, 0xffffffffffffffff];
+    component ilLt = BigLessThan(64,4);
+    for (var j=0;j<4;j++){ ilLt.a[j] <== ilVal[j]; ilLt.b[j] <== order[j]; }
+    ilLt.out === 1;                                        // require IL < n
+    // (2) childPriv != 0 : sum of the (boolean) child-key bits is 0 iff the key is 0.
+    var cpAcc = 0; for (var i=0;i<256;i++) cpAcc += childPriv[i];
+    signal cpSum; cpSum <== cpAcc;
+    component cpZero = IsZero(); cpZero.in <== cpSum; cpZero.out === 0;   // require childPriv != 0
 }
 template SeedOwnershipMin(){
     signal input parentPriv[256];   // private: level-4 parent-node priv key bits (MSB-first)
