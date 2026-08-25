@@ -53,16 +53,22 @@ const wantOld=addr20(oldA); const wantNew=addr20(newA); const dom=domField(domAr
 const seed=bip39.mnemonicToSeedSync(mnemonic,pass);                 // PBKDF2, off-circuit
 const master=HDKey.fromMasterSeed(seed);
 const sha20=node=>crypto.createHash('sha256').update(Buffer.from(node.publicKey)).digest().subarray(12);
+// BIP-32 conformance, mirroring the in-circuit F-2026-19024 checks: @scure's HDKey.derive throws when a
+// step's HMAC left half IL >= n or the child key is 0 — exactly the cases the circuit rejects. Treat such
+// (astronomically rare, ~2^-128) indices as non-matching and move on, per BIP-32's "skip to next index".
+const derive=p=>{try{return master.derive(p);}catch(e){return null;}};
 
 // Find which derivation matches the OLD address. Ledger (all-hardened) first, then standard BIP-44.
 let found=null;
 for(let n=0;n<MAX_ACCT && !found;n++){
-  if(Buffer.compare(sha20(master.derive(`m/44'/313'/${n}'/0'/0'`)),wantOld)===0)
-    found={isHardened:1,parent:master.derive(`m/44'/313'/${n}'/0'`),addrIndex:0,label:`m/44'/313'/${n}'/0'/0'  (Ledger, all-hardened)`};
+  const leaf=derive(`m/44'/313'/${n}'/0'/0'`);
+  if(leaf && Buffer.compare(sha20(leaf),wantOld)===0)
+    found={isHardened:1,parent:derive(`m/44'/313'/${n}'/0'`),addrIndex:0,label:`m/44'/313'/${n}'/0'/0'  (Ledger, all-hardened)`};
 }
 for(let a=0;a<STD_ACCT && !found;a++)for(let i=0;i<STD_IDX && !found;i++){
-  if(Buffer.compare(sha20(master.derive(`m/44'/313'/${a}'/0/${i}`)),wantOld)===0)
-    found={isHardened:0,parent:master.derive(`m/44'/313'/${a}'/0`),addrIndex:i,label:`m/44'/313'/${a}'/0/${i}  (standard BIP-44, non-hardened)`};
+  const leaf=derive(`m/44'/313'/${a}'/0/${i}`);
+  if(leaf && Buffer.compare(sha20(leaf),wantOld)===0)
+    found={isHardened:0,parent:derive(`m/44'/313'/${a}'/0`),addrIndex:i,label:`m/44'/313'/${a}'/0/${i}  (standard BIP-44, non-hardened)`};
 }
 if(!found){console.error(`ERROR: old address 0x${wantOld.toString('hex')} not found as a Ledger account (n<${MAX_ACCT}) or BIP-44 leaf (a<${STD_ACCT}, i<${STD_IDX}).`);process.exit(1);}
 const parent=found.parent;
