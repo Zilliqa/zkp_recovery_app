@@ -23,6 +23,8 @@ Cost of configurability: one extra secp256k1 scalar-mult → **~679k constraints
 - **Public inputs (`uint[4]`):** `[expectedAddr(old), newAddr, domain, isHardened]`.
 - **Canonical `domain`:** Zilliqa EVM mainnet chainId `32769` (or `keccak(chainId, claimContract)` once the claim contract is deployed).
 - **Off-circuit (in `prepare.js`/`prove-secure.js`):** PBKDF2, then auto-detect the wallet style — scan Ledger accounts `m/44'/313'/n'/0'/0'` (n<100), then standard BIP-44 leaves `m/44'/313'/a'/0/i` (a<5, i<100) — to match the old address, emitting the right parent + `isHardened` + `addrIndex`.
+- **Address range checks:** both `expectedAddr` and `newAddr` are constrained to 160 bits (a real 20-byte address), so the proof's committed destination matches the on-chain `address(uint256)` truncation. `domain` is a separator, not an address, so it is deliberately left unbounded.
+- **BIP-32 conformance:** the final CKD step rejects the (astronomically rare, ~2⁻¹²⁸) invalid cases — HMAC left half `IL ≥ n` or `childPriv == 0` — per the standard; `@scure`'s `HDKey.derive` mirrors the same rejection off-circuit.
 
 ### Security note — the two modes are NOT equally strong
 - **Hardened (`isHardened=1`)** proves knowledge of the `m/44'/313'/n'/0'` node. Because hardened
