@@ -7,5 +7,5 @@
 set -e
 cd "$(dirname "$0")"
 [ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm install --no-audit --no-fund snarkjs; }
-# large Node heap: the 247 MB minimal-circuit key needs several GB of RAM to transform
+# large Node heap: the ~358 MB minimal-circuit key needs several GB of RAM to transform
 node --max-old-space-size=16384 contribute.js "$@"

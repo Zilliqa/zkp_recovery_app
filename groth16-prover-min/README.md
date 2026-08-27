@@ -14,7 +14,7 @@ legacy Zilliqa wallet families:
 
 The two modes differ **only** in the HMAC-SHA512 preimage (`0x00‖privkey` vs `compress(privkey·G)`) and
 one index bit; everything after HMAC (child key → secp256k1 pubkey → SHA-256[-20:] address) is identical.
-Cost of configurability: one extra secp256k1 scalar-mult → **~679k constraints** (524,094 non-linear +
+Cost of configurability: one extra secp256k1 scalar-mult → **~679k constraints** (524,095 non-linear +
 155,324 linear), up from 427k. Proving ≈ 25–35 s at ~8 GB with a **~358 MB** key.
 
 ## What it proves
@@ -69,7 +69,7 @@ A proving key is public material (no secrets). `vk.json` + `verifier.sol` are in
 @ d87eb70, circomlib 2.0.2, Electron-Labs sha512 @ be9f01d). Prover-supplied bit inputs are
 `b*(b-1)===0` constrained (audit-hardening).
 - `./build-circuit.sh` — recompile from the pinned sources and confirm the `wasm`/`r1cs` are
-  **byte-identical** to the shipped ones (`circuit.wasm` md5 `c4281b70…`, `circuit.r1cs` 132,857,964 B).
+  **byte-identical** to the shipped ones (`circuit.wasm` md5 `a9803d52…`, `circuit.r1cs` 132,858,048 B).
 - `node secure_core_test.js` — self-test on the throwaway all-zero mnemonic: proves **both** the Ledger
   hardened path **and** a standard BIP-44 non-hardened path (addrIndex 3) verify, and that tampering with
   `newAddr`/`domain` fails (binding). Needs the zkey.
