@@ -53,7 +53,7 @@ manual CLI flow they're run by hand). All three need two public inputs — **`ci
 
 ```bash
 # minimal circuit r1cs (~127 MB) — or recompile ../groth16-prover-min/circuit.circom (circom 2.2.3 + pinned includes)
-curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/circuit.r1cs
+curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit.r1cs
 # canonical Hermez powers-of-tau, 2^21 (~2.3 GB); 2^20 is the minimum for this ~679k-constraint circuit
 curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
 snarkjs powersoftau verify pot.ptau   # confirm it's the genuine public ceremony
