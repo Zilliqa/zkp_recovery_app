@@ -46,6 +46,9 @@ template CKDFinalStep(){
     signal input addrIndex;             // final path component: 0 for Ledger, address_index for BIP-44; < 2^31
     signal output childPriv[256];
     isHardened*(isHardened-1) === 0;
+    // Ledger's final component is always 0' — so pin addrIndex to 0 whenever hardened (isHardened=1);
+    // for non-hardened (isHardened=0) the BIP-44 address_index stays free. (F-2026-19085)
+    isHardened * addrIndex === 0;
     // hardened preimage Ph = 0x00 || parentPriv
     signal Ph[264];
     for (var i=0;i<8;i++)   Ph[i]   <== 0;

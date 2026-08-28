@@ -7,7 +7,7 @@ setup to be secure, so it is worth doing carefully.
 
 ## Use it (3 steps — download & upload are manual)
 
-1. **Download** the ceremony's current key into this folder as **`current.zkey`** (~247 MB for
+1. **Download** the ceremony's current key into this folder as **`current.zkey`** (~358 MB for
    the minimal circuit), from wherever the operator published it.
 2. **Run:**
    ```bash
@@ -42,7 +42,7 @@ That's it — everything between download and upload is automated.
 ## Requirements
 
 - **Node.js**. First run installs `snarkjs` (or bundle `node_modules/` for offline use).
-- **~several GB free RAM** (the script sets a 16 GB Node heap) and ~247 MB disk for each of the
+- **~several GB free RAM** (the script sets a 16 GB Node heap) and ~358 MB disk for each of the
   input and output keys (minimal circuit). The contribution itself takes a few minutes.
 
 ## Operator: running the ceremony
@@ -52,9 +52,9 @@ manual CLI flow they're run by hand). All three need two public inputs — **`ci
 **`pot.ptau`** — large binaries, git-ignored here. Download both into this folder first:
 
 ```bash
-# minimal circuit r1cs (~101 MB) — or recompile ../groth16-prover-min/circuit.circom (circom 2.2.3 + pinned includes)
+# minimal circuit r1cs (~127 MB) — or recompile ../groth16-prover-min/circuit.circom (circom 2.2.3 + pinned includes)
 curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/circuit.r1cs
-# canonical Hermez powers-of-tau, 2^21 (~2.3 GB); 2^19 is the minimum for this ~427k-constraint circuit
+# canonical Hermez powers-of-tau, 2^21 (~2.3 GB); 2^20 is the minimum for this ~679k-constraint circuit
 curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
 snarkjs powersoftau verify pot.ptau   # confirm it's the genuine public ceremony
 ```
@@ -89,6 +89,13 @@ Produces, in this folder:
 - `final.zkey` — the **production proving key** (this is what ships in `../groth16-prover-min/` as `circuit_final.zkey`),
 - `vk.json` — the verification key,
 - `verifier.sol` — the on-chain verifier contract.
+
+> **Deploying into the zq2 escrow:** `finalize.sh` emits the **stock** snarkjs `verifier.sol` (a standalone
+> `Groth16Verifier` with `public verifyProof`). The zq2 escrow uses an **integrated** variant
+> (`verifyProof` is `internal`, inherited by the escrow, with a `bool isValid; … return isValid;` wrapper).
+> So **do not copy the file wholesale** — port only its **26 VK constants** (`alpha/beta/gamma/delta` +
+> `IC0..IC4`) into the escrow's integrated verifier, leaving the `internal`/`isValid` wrapper intact
+> (see `Zilliqa/zq2` PR #3744 for the exact swap).
 
 Publish those together with the **full contribution transcript** (every contributor's hash) and
 the **beacon value + iterations** used, so anyone can reproduce and verify the whole setup.
