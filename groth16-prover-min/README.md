@@ -67,9 +67,12 @@ A proving key is public material (no secrets). `vk.json` + `verifier.sol` are in
 ## Reproduce / verify the circuit
 `circuit.circom` + `bip32lib.circom` are the source; circom 2.2.3 + pinned includes (0xPARC circom-ecdsa
 @ d87eb70, circomlib 2.0.2, Electron-Labs sha512 @ be9f01d). Prover-supplied bit inputs are
-`b*(b-1)===0` constrained (audit-hardening).
+`b*(b-1)===0` constrained (audit-hardening). `build-circuit.sh` applies one committed patch to the
+pinned circom-ecdsa — `patches/circom-ecdsa-dummy-point.patch`, correcting `get_dummy_point` from
+`255*G` to the intended `2^255*G` (F-2026-19094(a)) — and `check-dummy-point.js` independently
+recomputes `2^255*G` and fails the build if the limbs don't match, so the fix can't silently regress.
 - `./build-circuit.sh` — recompile from the pinned sources and confirm the `wasm`/`r1cs` are
-  **byte-identical** to the shipped ones (`circuit.wasm` md5 `a9803d52…`, `circuit.r1cs` 132,858,048 B).
+  **byte-identical** to the shipped ones (`circuit.wasm` md5 `bae8fe8d…`, `circuit.r1cs` 132,858,048 B).
 - `node secure_core_test.js` — self-test on the throwaway all-zero mnemonic: proves **both** the Ledger
   hardened path **and** a standard BIP-44 non-hardened path (addrIndex 3) verify, and that tampering with
   `newAddr`/`domain` fails (binding). Needs the zkey.
