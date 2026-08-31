@@ -5,17 +5,23 @@ counterpart of the browser contributor. You download the current key, run one co
 in your randomness, and upload the result. Only one honest contributor is needed for the whole
 setup to be secure, so it is worth doing carefully.
 
-## Use it (3 steps — download & upload are manual)
+## Use it (4 steps — download & upload are manual)
 
-1. **Download** the ceremony's current key into this folder as **`current.zkey`** (~358 MB for
-   the minimal circuit), from wherever the operator published it.
-2. **Run:**
+1. **Download these four files** from this folder into one directory — they are all a contributor
+   needs (the operator scripts are not required):
+   - `contribute.sh` — the entry point you run
+   - `contribute.js` — the tool it invokes
+   - `package.json` + `package-lock.json` — the pinned, integrity-checked snarkjs dependency
+   (`npm ci` rebuilds `node_modules/` from these two — see **Running air-gapped** for offline use).
+2. **Download** the ceremony's current key into that same directory as **`current.zkey`** (~358 MB
+   for the minimal circuit), from wherever the operator published it.
+3. **Run:**
    ```bash
    ./contribute.sh
    ```
    It asks for your name/handle and some random text, mixes that with your machine's
    cryptographic RNG, and writes **`contribution.zkey`**. Takes a few minutes and several GB of RAM.
-3. **Upload** `contribution.zkey` to the coordinator, and **report the printed contribution hash**
+4. **Upload** `contribution.zkey` to the coordinator, and **report the printed contribution hash**
    to the operator so it can be checked against the public transcript.
 
 That's it — everything between download and upload is automated.
