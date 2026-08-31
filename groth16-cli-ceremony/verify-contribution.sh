@@ -9,7 +9,7 @@ ZKEY="$1"; R1CS="$2"; PTAU="$3"
 [ -n "$ZKEY" ] && [ -n "$R1CS" ] && [ -n "$PTAU" ] || {
   echo "usage: ./verify-contribution.sh <contribution.zkey> <circuit.r1cs> <pot21.ptau>"; exit 1; }
 for f in "$ZKEY" "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not found: $f"; exit 1; }; done
-[ -d node_modules ] || npm install --no-audit --no-fund snarkjs
+[ -d node_modules ] || npm ci --no-audit --no-fund
 S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
 
 R1CS_SHA=$(sha256sum "$R1CS" | cut -d' ' -f1)

@@ -42,22 +42,24 @@ That's it — everything between download and upload is automated.
 ## Running air-gapped (offline)
 
 The contribution itself makes **no network calls** — but `contribute.sh`'s *first* run does
-`npm install`, which **needs internet**. So on an air-gapped machine, bring the dependency with you:
+`npm ci`, which **needs internet**. So on an air-gapped machine, bring the dependency with you:
 
-1. **On a networked machine:** get this folder and run `npm install` (or `npm ci`) inside it —
-   that populates `node_modules/` with snarkjs.
+1. **On a networked machine:** get this folder and run `npm ci` inside it — that installs the
+   **exact, integrity-checked** snarkjs tree pinned in `package-lock.json` into `node_modules/`.
 2. Copy the **whole folder, now including `node_modules/`**, onto removable media, together with the
    ceremony's current `current.zkey`.
 3. **On the air-gapped machine:** copy it over and run `./contribute.sh`. It sees `node_modules/`
-   already present, **skips `npm install`**, and runs fully offline.
+   already present, **skips `npm ci`**, and runs fully offline.
 4. Carry `contribution.zkey` back out on the same media and upload it from a networked machine.
 
-(`node_modules/` is git-ignored and never committed, so you always bring your own copy.)
+(`node_modules/` is git-ignored and never committed — you always rebuild it from the committed
+`package.json` + `package-lock.json`, so every machine gets a byte-identical dependency tree.)
 
 ## Requirements
 
-- **Node.js**. First run installs `snarkjs`; for offline/air-gapped use, pre-bundle `node_modules/`
-  first — see **Running air-gapped** above.
+- **Node.js**. First run installs `snarkjs` via `npm ci` from the pinned `package-lock.json`
+  (exact, integrity-checked). For offline/air-gapped use, pre-bundle `node_modules/` first — see
+  **Running air-gapped** above.
 - **~several GB free RAM** (the script sets a 16 GB Node heap) and ~358 MB disk for each of the
   input and output keys (minimal circuit). The contribution itself takes a few minutes.
 

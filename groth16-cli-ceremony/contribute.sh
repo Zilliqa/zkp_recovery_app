@@ -6,6 +6,6 @@
 # usage: ./contribute.sh [inputKey=current.zkey] [outputKey=contribution.zkey]
 set -e
 cd "$(dirname "$0")"
-[ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm install --no-audit --no-fund snarkjs; }
+[ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm ci --no-audit --no-fund; }
 # large Node heap: the ~358 MB minimal-circuit key needs several GB of RAM to transform
 node --max-old-space-size=16384 contribute.js "$@"

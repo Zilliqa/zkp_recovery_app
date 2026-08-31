@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 R1CS="$1"; PTAU="$2"
 [ -n "$R1CS" ] && [ -n "$PTAU" ] || { echo "usage: ./init.sh <circuit.r1cs> <pot21.ptau>"; exit 1; }
 for f in "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not found: $f"; exit 1; }; done
-[ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm install --no-audit --no-fund snarkjs; }
+[ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm ci --no-audit --no-fund; }
 S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
 
 echo "generating the initial (0-contribution) key from circuit.r1cs + powers-of-tau..."

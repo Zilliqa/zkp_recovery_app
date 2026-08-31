@@ -29,7 +29,7 @@ for f in "$IN" "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not found:
 { [[ "$ITERS" =~ ^[0-9]{1,2}$ ]] && [ "$ITERS" -ge 10 ] && [ "$ITERS" -le 63 ]; } || {
   echo "ERROR: iterations must be an integer 10..63 (10 is typical)."; exit 1; }
 
-[ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm install --no-audit --no-fund snarkjs; }
+[ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm ci --no-audit --no-fund; }
 S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
 
 R1CS_SHA=$(sha256sum "$R1CS" | cut -d' ' -f1)
