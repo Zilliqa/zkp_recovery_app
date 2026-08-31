@@ -12,6 +12,8 @@ for f in "$ZKEY" "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not foun
 [ -d node_modules ] || npm install --no-audit --no-fund snarkjs
 S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
 
+R1CS_SHA=$(sha256sum "$R1CS" | cut -d' ' -f1)
+echo "circuit.r1cs sha256: $R1CS_SHA   (must equal the hash pinned in the published transcript)"
 echo "verifying $ZKEY (this takes a few minutes)..."
 OUT="$($S zkey verify "$R1CS" "$PTAU" "$ZKEY" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')"
 echo "$OUT" | grep -iE 'contribution #|ZKey Ok|INVALID' || true

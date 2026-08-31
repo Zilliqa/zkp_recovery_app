@@ -57,6 +57,7 @@ curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/g
 # canonical Hermez powers-of-tau, 2^21 (~2.3 GB); 2^20 is the minimum for this ~679k-constraint circuit
 curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
 snarkjs powersoftau verify pot.ptau   # confirm it's the genuine public ceremony
+sha256sum circuit.r1cs                 # record this — it pins the circuit in the transcript (init.sh also prints it)
 ```
 
 ### 1. Initialize — once, at the start
@@ -97,9 +98,13 @@ Produces, in this folder:
 > `IC0..IC4`) into the escrow's integrated verifier, leaving the `internal`/`isValid` wrapper intact
 > (see `Zilliqa/zq2` PR #3744 for the exact swap).
 
-Publish those together with the **full contribution transcript** (every contributor's hash) and
-the **beacon value + iterations** used, so anyone can reproduce and verify the whole setup.
-(`circuit.r1cs` and the 2^21 `pot.ptau` are the same public inputs used to build the ceremony.)
+Publish those together with the **`circuit.r1cs` sha256** (pins the exact circuit — `init.sh`,
+`verify-contribution.sh`, and `finalize.sh` all print it), the **full contribution transcript**
+(every contributor's hash) and the **beacon value + iterations** used, so anyone can reproduce and
+verify the whole setup. (`circuit.r1cs` and the 2^21 `pot.ptau` are the same public inputs used to
+build the ceremony.) An independent verifier reproduces the circuit, checks its `sha256` equals the
+published hash, then runs `snarkjs zkey verify circuit.r1cs pot.ptau final.zkey` and confirms the
+printed contribution chain matches the transcript.
 
 ## Files
 

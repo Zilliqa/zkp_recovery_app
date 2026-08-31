@@ -28,6 +28,8 @@ for f in "$IN" "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not found:
 [ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm install --no-audit --no-fund snarkjs; }
 S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
 
+R1CS_SHA=$(sha256sum "$R1CS" | cut -d' ' -f1)
+echo "[0/4] circuit.r1cs sha256: $R1CS_SHA"
 echo "[1/4] applying beacon (final, non-secret contribution)..."
 $S zkey beacon "$IN" final.zkey "$BEACON" "$ITERS" -n="final beacon"
 echo "[2/4] verifying final key against circuit.r1cs + pot.ptau..."
@@ -42,6 +44,7 @@ echo "================= CEREMONY FINALIZED ================="
 echo "Produced: final.zkey (production proving key), vk.json, verifier.sol"
 echo "Publish, so anyone can verify the whole setup:"
 echo "  - final.zkey / vk.json / verifier.sol"
+echo "  - the circuit.r1cs sha256 (pins the circuit):  $R1CS_SHA"
 echo "  - the full contribution transcript (all contributor hashes)"
 echo "  - the beacon value and iterations used:  $BEACON  ($ITERS)"
 echo "====================================================="
