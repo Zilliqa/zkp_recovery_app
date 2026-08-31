@@ -39,9 +39,25 @@ That's it — everything between download and upload is automated.
   cryptographic verification, `snarkjs zkey verify circuit.r1cs <ptau> current.zkey`, also needs
   the r1cs and the 2^21 powers-of-tau — optional; the coordinator re-verifies every upload anyway.)
 
+## Running air-gapped (offline)
+
+The contribution itself makes **no network calls** — but `contribute.sh`'s *first* run does
+`npm install`, which **needs internet**. So on an air-gapped machine, bring the dependency with you:
+
+1. **On a networked machine:** get this folder and run `npm install` (or `npm ci`) inside it —
+   that populates `node_modules/` with snarkjs.
+2. Copy the **whole folder, now including `node_modules/`**, onto removable media, together with the
+   ceremony's current `current.zkey`.
+3. **On the air-gapped machine:** copy it over and run `./contribute.sh`. It sees `node_modules/`
+   already present, **skips `npm install`**, and runs fully offline.
+4. Carry `contribution.zkey` back out on the same media and upload it from a networked machine.
+
+(`node_modules/` is git-ignored and never committed, so you always bring your own copy.)
+
 ## Requirements
 
-- **Node.js**. First run installs `snarkjs` (or bundle `node_modules/` for offline use).
+- **Node.js**. First run installs `snarkjs`; for offline/air-gapped use, pre-bundle `node_modules/`
+  first — see **Running air-gapped** above.
 - **~several GB free RAM** (the script sets a 16 GB Node heap) and ~358 MB disk for each of the
   input and output keys (minimal circuit). The contribution itself takes a few minutes.
 
@@ -78,9 +94,12 @@ chain equals your **published transcript + exactly one new entry** (rejects fork
 ### 3. Finalize — once, at the end (the beacon)
 
 After all contributions are collected, the operator applies the **beacon**. This is **not** a
-`contribute.sh` contribution: it applies a **public, externally-fixed** random value (a drand
-round or a future Bitcoin block hash — chosen *after* the last contribution) so the finalization
-is unbiasable and publicly verifiable. Then it verifies and exports the artifacts:
+`contribute.sh` contribution: it applies a **public random value from a pre-committed future
+source** — a drand round or a Bitcoin block hash whose round/height is chosen *after* contributions
+close (so you know they're complete) but still lies in the **future** at that moment, so the value
+is unknowable and no one — operator included — can grind or cherry-pick it. (What's fixed *after*
+the last contribution is only *which* future round/height; the *value* must not yet exist.) Then it
+verifies and exports the artifacts:
 
 ```bash
 ./finalize.sh <lastKey.zkey> <circuit.r1cs> <pot.ptau> <beaconHex64> [iterations=10]
@@ -89,7 +108,8 @@ is unbiasable and publicly verifiable. Then it verifies and exports the artifact
 Produces, in this folder:
 - `final.zkey` — the **production proving key** (this is what ships in `../groth16-prover-min/` as `circuit_final.zkey`),
 - `vk.json` — the verification key,
-- `verifier.sol` — the on-chain verifier contract.
+- `verifier.sol` — the on-chain verifier contract,
+- `transcript.md` — a **ready-to-publish transcript** (r1cs sha256, beacon value + iterations, final-artifact hashes, and the full ordered contribution chain from `zkey verify`). Fill in the two `[operator: …]` fields (ptau name, beacon source), then commit it to GitHub.
 
 > **Deploying into the zq2 escrow:** `finalize.sh` emits the **stock** snarkjs `verifier.sol` (a standalone
 > `Groth16Verifier` with `public verifyProof`). The zq2 escrow uses an **integrated** variant
@@ -98,13 +118,21 @@ Produces, in this folder:
 > `IC0..IC4`) into the escrow's integrated verifier, leaving the `internal`/`isValid` wrapper intact
 > (see `Zilliqa/zq2` PR #3744 for the exact swap).
 
-Publish those together with the **`circuit.r1cs` sha256** (pins the exact circuit — `init.sh`,
-`verify-contribution.sh`, and `finalize.sh` all print it), the **full contribution transcript**
-(every contributor's hash) and the **beacon value + iterations** used, so anyone can reproduce and
-verify the whole setup. (`circuit.r1cs` and the 2^21 `pot.ptau` are the same public inputs used to
-build the ceremony.) An independent verifier reproduces the circuit, checks its `sha256` equals the
-published hash, then runs `snarkjs zkey verify circuit.r1cs pot.ptau final.zkey` and confirms the
-printed contribution chain matches the transcript.
+**What goes where.** `transcript.md` is small text — **publish it on GitHub** (it carries the
+`circuit.r1cs` sha256 that pins the circuit, every contributor's hash, and the beacon value +
+iterations). The keys are large and exceed GitHub's 100 MB limit, so **host them on the bucket**:
+`final.zkey` is required for verification (it embeds the whole contribution chain); keeping each
+intermediary `current.zkey`/`contribution.zkey` there too is optional but recommended, so anyone can
+replay the chain step by step. (`circuit.r1cs` and the 2^21 `pot.ptau` are the same public inputs
+used to build the ceremony.)
+
+**Independent verification.** Anyone reproduces the circuit, checks its `sha256` equals the
+transcript's, then runs `snarkjs zkey verify circuit.r1cs pot.ptau final.zkey` — a `ZKey Ok!`
+cryptographically validates the entire contribution chain, and the printed **ordered contributor
+list** (names, newest first) must match the transcript. (`zkey verify` lists names/order and proves
+validity; it does not print per-contribution hashes.) **Each contributor** confirms their own step
+by hashing the intermediary key they produced and matching it to the receipt `contribute.sh` showed
+them — which is why the operator keeps every `current.zkey`/`contribution.zkey` on the bucket.
 
 ## Files
 
