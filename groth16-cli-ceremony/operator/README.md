@@ -84,7 +84,7 @@ unbiasable. Look up the announced block (first ETH mainnet block with timestamp 
 have 64 hex chars. Then verify + export:
 
 ```bash
-./finalize.sh <lastKey.zkey> circuit.r1cs pot.ptau <64-hex-block-hash-no-0x> 10
+./finalize.sh <contribution.zkey> circuit.r1cs pot.ptau <64-hex-block-hash-no-0x> 10
 ```
 
 Produces, in this folder:

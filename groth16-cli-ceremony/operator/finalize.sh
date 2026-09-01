@@ -10,7 +10,7 @@
 # unbiasable: no one, operator included, can grind or cherry-pick a value that isn't known yet.
 #
 # usage:
-#   ./finalize.sh <lastKey.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]
+#   ./finalize.sh <contribution.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]
 # outputs (in this folder):
 #   final.zkey     -> the production proving key (ships in ../../groth16-prover-min)
 #   vk.json        -> verification key
@@ -21,7 +21,7 @@ cd "$(dirname "$0")"
 IN="$1"; R1CS="$2"; PTAU="$3"; BEACON="$4"; ITERS="${5:-10}"
 
 [ -n "$IN" ] && [ -n "$R1CS" ] && [ -n "$PTAU" ] && [ -n "$BEACON" ] || {
-  echo "usage: ./finalize.sh <lastKey.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]"; exit 1; }
+  echo "usage: ./finalize.sh <contribution.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]"; exit 1; }
 for f in "$IN" "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not found: $f"; exit 1; }; done
 [[ "$BEACON" =~ ^[0-9a-fA-F]{64}$ ]] || {
   echo "ERROR: beacon must be 32-byte hex (64 chars). Use a PRE-COMMITTED public source whose value"
