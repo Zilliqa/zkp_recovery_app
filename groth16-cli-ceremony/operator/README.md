@@ -96,7 +96,7 @@ Produces, in this folder:
 - `final.zkey` — the **production proving key** (this is what ships in `../../groth16-prover-min/` as `circuit_final.zkey`),
 - `vk.json` — the verification key,
 - `verifier.sol` — the on-chain verifier contract,
-- `transcript.md` — a **ready-to-publish transcript** (r1cs sha256, beacon value + iterations, final-artifact hashes, and the full ordered contribution chain from `zkey verify`). It's fully auto-filled (r1cs/ptau/beacon/artifacts/chain) except each contributor's **reported hash** — paste those into the receipts table (replace the `[reported hash]` cells), then commit it to GitHub.
+- `transcript.md` — a **ready-to-publish transcript** (r1cs + ptau hashes, beacon value + iterations, final-artifact hashes, and the full `zkey verify` contribution chain — each step's name **and contribution hash**, plus the beacon params). Fully auto-filled; just commit it to GitHub.
 
 > **Deploying into the zq2 escrow:** `finalize.sh` emits the **stock** snarkjs `verifier.sol` (a standalone
 > `Groth16Verifier` with `public verifyProof`). The zq2 escrow uses an **integrated** variant
@@ -114,12 +114,12 @@ replay the chain step by step. (`circuit.r1cs` and the 2^21 `pot.ptau` are the s
 used to build the ceremony.)
 
 **Independent verification.** Anyone reproduces the circuit, checks its `sha256` equals the
-transcript's, then runs `snarkjs zkey verify circuit.r1cs pot.ptau final.zkey` — a `ZKey Ok!`
-cryptographically validates the entire contribution chain, and the printed **ordered contributor
-list** (names, newest first) must match the transcript. (`zkey verify` lists names/order and proves
-validity; it does not print per-contribution hashes.) **Each contributor** confirms their own step
-by hashing the intermediary key they produced and matching it to the receipt `contribute.sh` showed
-them — which is why the operator keeps every `current.zkey`/`contribution.zkey` on the bucket.
+transcript's, then runs `npx snarkjs zkey verify circuit.r1cs pot.ptau final.zkey` — a `ZKey Ok!`
+cryptographically validates the entire contribution chain, and the printed contributions, **per-step
+hashes**, and order must match the transcript. **Each contributor** confirms their own step directly:
+the hash `contribute.sh` printed to them appears verbatim at their entry in that output. (Keeping the
+intermediary `current.zkey`/`contribution.zkey` on the bucket is still useful for a full step-by-step
+replay, but a contributor doesn't need them to confirm their own hash.)
 
 ## Files
 

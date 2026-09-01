@@ -18,7 +18,7 @@ echo
 echo "Initial key written: current.zkey  (0 contributions)."
 echo "circuit.r1cs sha256: $R1CS_SHA"
 echo "  ^ PUBLISH this in the ceremony transcript. It pins the exact circuit every contributor and"
-echo "    every independent verifier must use; 'snarkjs zkey verify circuit.r1cs <ptau> <key>' is only"
+echo "    every independent verifier must use; 'npx snarkjs zkey verify circuit.r1cs <ptau> <key>' is only"
 echo "    meaningful against the r1cs with this hash."
 echo "Publish current.zkey for the first contributor to download. circuit.r1cs and the ptau are"
 echo "public too — contributors don't need them, but the operator needs them to verify uploads."

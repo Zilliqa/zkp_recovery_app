@@ -54,14 +54,11 @@ FINAL_SHA=$(sha256sum final.zkey  | cut -d' ' -f1)
 VK_SHA=$(sha256sum    vk.json      | cut -d' ' -f1)
 VER_SHA=$(sha256sum   verifier.sol | cut -d' ' -f1)
 PTAU_NAME=$(basename "$PTAU"); PTAU_B2=$(b2sum "$PTAU" | cut -d' ' -f1)   # ptau fingerprint (auto-filled)
-# zkey verify lists the contributions by index + name and prints "ZKey Ok!" (it does NOT print
-# per-contribution hashes) — capture that ordered name list + the validity line for the transcript.
-CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' | grep -iE 'contribution #|ZKey Ok' || echo "$VERIFY_OUT")"
-# one receipts row per human contributor (names from the chain; the beacon row excluded), sorted #1..#N
-RECEIPTS="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' \
-  | grep -iE 'contribution #[0-9]+ ' | grep -vi 'final beacon' \
-  | sed -E 's/.*contribution #([0-9]+) (.*):.*/\1|\2/' | sort -n \
-  | awk -F'|' '{printf "| %s | %s | [reported hash] |\n", $1, $2}')"
+# zkey verify prints, for each step, "contribution #N <name>:" FOLLOWED BY its contribution hash
+# (4 hex lines), plus the beacon's generator + iterations, ending in "ZKey Ok!". Capture that whole
+# block verbatim (snarkjs log prefixes stripped) — the authoritative, re-runnable per-contribution record.
+CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' | sed -n '/^contribution #/,/^ZKey Ok/p')"
+[ -n "$CHAIN" ] || CHAIN="$VERIFY_OUT"
 {
   echo "# Ceremony transcript — Zilliqa seed-ownership (minimal Groth16 circuit)"
   echo
@@ -81,29 +78,28 @@ RECEIPTS="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]
   echo "- \`verifier.sol\` sha256: \`$VER_SHA\`"
   echo
   echo "## Contribution chain"
-  echo "From \`snarkjs zkey verify circuit.r1cs pot.ptau final.zkey\` — the ordered contributor list and"
-  echo "the \`ZKey Ok!\` line that cryptographically validates the whole chain (verify lists names/order,"
-  echo "not per-contribution hashes):"
+  echo "Full output of \`npx snarkjs zkey verify circuit.r1cs pot.ptau final.zkey\` — for every step: the"
+  echo "contribution number, contributor name, and its **contribution hash** (the 4 hex lines), plus the"
+  echo "beacon's generator + iteration count, ending in \`ZKey Ok!\`. Re-running the command reproduces this"
+  echo "exactly (snarkjs log prefixes removed for readability)."
   echo
   echo '```'
   echo "$CHAIN"
   echo '```'
   echo
-  echo "## Contributor receipts (operator: paste the hash each contributor reported from \`contribute.sh\`)"
-  echo "| # | contributor (name/org from the chain) | reported contribution hash |"
-  echo "|---|---|---|"
-  echo "$RECEIPTS"
-  echo
-  echo "**Verify the chain:** re-run \`snarkjs zkey verify circuit.r1cs pot.ptau final.zkey\` — you must get"
-  echo "\`ZKey Ok!\` and the same ordered contributor list as above. **Confirm a specific contribution hash**"
-  echo "by hashing the intermediary key at that step (kept on the bucket) — which is why each"
-  echo "\`current.zkey\`/\`contribution.zkey\` is retained; a contributor matches the receipt they were shown."
+  echo "**How to verify:**"
+  echo "- Re-run \`npx snarkjs zkey verify circuit.r1cs pot.ptau final.zkey\`: you must get \`ZKey Ok!\` and the"
+  echo "  same contributions, hashes, and order as above."
+  echo "- **Each contributor** confirms their own step by matching the hash \`contribute.sh\` printed to them"
+  echo "  against their entry above (same 4-line format) — no need to trust anyone else."
+  echo "- The **beacon** (the \`final beacon\` entry) is reproducible: applying \`zkey beacon\` with the"
+  echo "  \`Beacon generator\` + \`Beacon iterations Exp\` shown to the previous contribution's key yields it."
 } > transcript.md
 
 echo
 echo "================= CEREMONY FINALIZED ================="
 echo "Produced: final.zkey (production proving key), vk.json, verifier.sol, transcript.md"
-echo "Next: paste each contributor's reported hash into transcript.md's receipts table (replace the [reported hash] cells), then publish on GitHub:"
+echo "Next: transcript.md is complete (r1cs + ptau hashes, beacon, full contribution chain with per-contribution hashes) — publish it on GitHub:"
 echo "  - transcript.md  (circuit r1cs sha256, contribution chain, beacon value + iterations)"
 echo "  - final.zkey / vk.json / verifier.sol  (keys on the bucket — too large for GitHub)"
 echo "circuit.r1cs sha256: $R1CS_SHA"
