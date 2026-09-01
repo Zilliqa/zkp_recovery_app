@@ -10,7 +10,7 @@
 # unbiasable: no one, operator included, can grind or cherry-pick a value that isn't known yet.
 #
 # usage:
-#   ./finalize.sh <contribution.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]
+#   ./finalize.sh <contribution.zkey> circuit.r1cs pot.ptau <beaconHex64> <iterations>
 # outputs (in this folder):
 #   final.zkey     -> the production proving key (ships in ../../groth16-prover-min)
 #   vk.json        -> verification key
@@ -18,17 +18,18 @@
 #   transcript.md  -> ready-to-publish ceremony transcript (r1cs hash, beacon, chain)
 set -e
 cd "$(dirname "$0")"
-IN="$1"; R1CS="$2"; PTAU="$3"; BEACON="$4"; ITERS="${5:-10}"
+IN="$1"; R1CS="$2"; PTAU="$3"; BEACON="$4"; ITERS="$5"   # iterations is REQUIRED — no silent default,
+# so the operator consciously passes the value pinned in the ceremony announcement (goes into the transcript).
 
-[ -n "$IN" ] && [ -n "$R1CS" ] && [ -n "$PTAU" ] && [ -n "$BEACON" ] || {
-  echo "usage: ./finalize.sh <contribution.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]"; exit 1; }
+[ -n "$IN" ] && [ -n "$R1CS" ] && [ -n "$PTAU" ] && [ -n "$BEACON" ] && [ -n "$ITERS" ] || {
+  echo "usage: ./finalize.sh <contribution.zkey> circuit.r1cs pot.ptau <beaconHex64> <iterations>"; exit 1; }
 for f in "$IN" "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not found: $f"; exit 1; }; done
 [[ "$BEACON" =~ ^[0-9a-fA-F]{64}$ ]] || {
   echo "ERROR: beacon must be 32-byte hex (64 chars). Use a PRE-COMMITTED public source whose value"
   echo "       is set by a FUTURE event (a drand round, or the hash of a future Bitcoin block) so it"
   echo "       is unknowable until after contributions close and cannot be ground/cherry-picked."; exit 1; }
 { [[ "$ITERS" =~ ^[0-9]{1,2}$ ]] && [ "$ITERS" -ge 10 ] && [ "$ITERS" -le 63 ]; } || {
-  echo "ERROR: iterations must be an integer 10..63 (10 is typical)."; exit 1; }
+  echo "ERROR: iterations is required — an integer 10..63; pass the value pinned in your ceremony announcement."; exit 1; }
 
 [ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm ci --no-audit --no-fund; }
 S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
