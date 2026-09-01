@@ -54,6 +54,9 @@ Creates **`current.zkey`** (0 contributions) via `groth16 setup`, and prints the
 sha256 to record in the transcript. Publish `current.zkey` for the **first** contributor to download.
 
 ## 2. After each upload — verify, then promote
+
+Retrieve the contributor's uploaded `contribution.zkey` from the **Google Drive folder** into this
+folder, then verify it **before** promoting:
 ```bash
 ./verify-contribution.sh <contribution.zkey> circuit.r1cs pot.ptau
 ```

@@ -60,7 +60,7 @@ CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//
   echo
   echo "## Circuit"
   echo "- \`circuit.r1cs\` sha256: \`$R1CS_SHA\`"
-  echo "- powers-of-tau: [operator: canonical ptau name, e.g. powersOfTau28_hez_final_21.ptau]"
+  echo "- powers-of-tau: [operator: canonical name + its blake2b, e.g. powersOfTau28_hez_final_21.ptau]"
   echo
   echo "## Beacon (pre-committed public future source)"
   echo "- source: [operator: e.g. hash of Bitcoin block height 900000 / drand round N — the source pre-committed before finalization]"
