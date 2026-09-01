@@ -1,4 +1,4 @@
-# Ceremony operator (terminal)
+# Ceremony operator
 
 The operator runs the Groth16 phase-2 trusted-setup ceremony: create the initial key, verify and
 promote each contribution, then apply the final beacon and publish the results. Three commands, run

@@ -1,4 +1,4 @@
-# Ceremony contributor (terminal)
+# Ceremony contributor
 
 Command-line tool to contribute to the Groth16 phase-2 trusted-setup ceremony. You download the
 current key, run one command to mix in your randomness, and upload the result. Only one honest
