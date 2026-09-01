@@ -46,6 +46,22 @@ with 54 contributions and a beacon can be found here"):
 A matching hash confirms you have the real file — instant, and independent of the slow `powersoftau
 verify`. Record this blake2b (and the filename) as the ptau's fingerprint in the transcript.
 
+## Beacon (pre-committed)
+
+The finalization **beacon** is fixed **here, before the ceremony begins** — so no one can cherry-pick it:
+
+> **Beacon = the hash of the first Ethereum mainnet block whose timestamp is ≥ `2026-09-04 14:00:00 UTC`,**
+> taken once that block is **finalized** (~2 epochs / ~13 min after it is produced). Expected height
+> ≈ **25,904,400** — an estimate only; the **timestamp rule, not the height, is binding**.
+
+The value is unknowable until that block exists, so neither any contributor nor the operator can predict
+or influence it. Collect and verify **all** contributions before that time; then apply it in step 3.
+
+The beacon is applied with a fixed **`numIterationsExp = 10`** (2¹⁰ hash iterations) — pinned here too, so
+the *whole* beacon is pre-committed, not just the block. Both values (the block hash and the iteration
+count) are recorded in the published `transcript.md`; a verifier needs **both** to re-derive and check the
+beacon step, which is what makes it publicly verifiable.
+
 ## 1. Initialize — once, at the start
 ```bash
 ./init.sh circuit.r1cs pot.ptau
@@ -66,22 +82,21 @@ chain equals your **published transcript + exactly one new entry** (rejects fork
 
 ## 3. Finalize — once, at the end (the beacon)
 
-After all contributions are collected, the operator applies the **beacon**. This is **not** a
-contributor step: it applies a **public random value from a pre-committed future source** — a drand
-round or a Bitcoin block hash whose round/height is chosen *after* contributions close (so you know
-they're complete) but still lies in the **future** at that moment, so the value is unknowable and no
-one — operator included — can grind or cherry-pick it. (What's fixed *after* the last contribution is
-only *which* future round/height; the *value* must not yet exist.) Then it verifies and exports:
+After all contributions are collected, apply the **pre-committed beacon** (see **Beacon
+(pre-committed)** above) — a public value from a future source fixed before the ceremony, so it's
+unbiasable. Look up the announced block (first ETH mainnet block with timestamp ≥ 2026-09-04
+14:00:00 UTC), **wait for it to finalize**, take its `0x…` block hash, and **drop the `0x`** so you
+have 64 hex chars. Then verify + export:
 
 ```bash
-./finalize.sh <lastKey.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]
+./finalize.sh <contribution.zkey> circuit.r1cs pot.ptau <64-hex-block-hash-no-0x> 10
 ```
 
 Produces, in this folder:
 - `final.zkey` — the **production proving key** (this is what ships in `../../groth16-prover-min/` as `circuit_final.zkey`),
 - `vk.json` — the verification key,
 - `verifier.sol` — the on-chain verifier contract,
-- `transcript.md` — a **ready-to-publish transcript** (r1cs sha256, beacon value + iterations, final-artifact hashes, and the full ordered contribution chain from `zkey verify`). Fill in the two `[operator: …]` fields (ptau name, beacon source), then commit it to GitHub.
+- `transcript.md` — a **ready-to-publish transcript** (r1cs + ptau hashes, beacon value + iterations, final-artifact hashes, and the full `zkey verify` contribution chain — each step's name **and contribution hash**, plus the beacon params). Fully auto-filled; just commit it to GitHub.
 
 > **Deploying into the zq2 escrow:** `finalize.sh` emits the **stock** snarkjs `verifier.sol` (a standalone
 > `Groth16Verifier` with `public verifyProof`). The zq2 escrow uses an **integrated** variant
@@ -99,12 +114,12 @@ replay the chain step by step. (`circuit.r1cs` and the 2^21 `pot.ptau` are the s
 used to build the ceremony.)
 
 **Independent verification.** Anyone reproduces the circuit, checks its `sha256` equals the
-transcript's, then runs `snarkjs zkey verify circuit.r1cs pot.ptau final.zkey` — a `ZKey Ok!`
-cryptographically validates the entire contribution chain, and the printed **ordered contributor
-list** (names, newest first) must match the transcript. (`zkey verify` lists names/order and proves
-validity; it does not print per-contribution hashes.) **Each contributor** confirms their own step
-by hashing the intermediary key they produced and matching it to the receipt `contribute.sh` showed
-them — which is why the operator keeps every `current.zkey`/`contribution.zkey` on the bucket.
+transcript's, then runs `npx snarkjs zkey verify circuit.r1cs pot.ptau final.zkey` — a `ZKey Ok!`
+cryptographically validates the entire contribution chain, and the printed contributions, **per-step
+hashes**, and order must match the transcript. **Each contributor** confirms their own step directly:
+the hash `contribute.sh` printed to them appears verbatim at their entry in that output. (Keeping the
+intermediary `current.zkey`/`contribution.zkey` on the bucket is still useful for a full step-by-step
+replay, but a contributor doesn't need them to confirm their own hash.)
 
 ## Files
 
