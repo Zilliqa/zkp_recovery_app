@@ -38,12 +38,20 @@ That's it — everything between download and upload is automated.
 - Run on a **clean machine, offline** if you can; **reboot afterwards** so your entropy doesn't
   linger in memory. (Less critical here than when handling an actual wallet seed — no wallet secret
   is involved in a contribution — but good practice.)
-- Before contributing, you can **verify the key you downloaded** matches the published transcript:
-  its latest contribution hash should equal the last entry the operator published. (Full
-  cryptographic verification — run `npm ci` once, then
-  `npx snarkjs zkey verify circuit.r1cs <ptau> current.zkey` — also needs the r1cs and the 2^21
-  powers-of-tau; optional, and the operator re-verifies every upload anyway. snarkjs is the pinned
-  local dependency, so use `npx`, not a bare `snarkjs`.)
+- Before contributing, you can optionally **verify the key you downloaded**: its latest contribution
+  hash should equal the last entry in the operator's published transcript. Full cryptographic
+  verification also needs the **`circuit.r1cs`** and the **2²¹ powers-of-tau** — get both like this,
+  then verify:
+  ```bash
+  npm ci                                  # once — installs the pinned local snarkjs
+  # circuit.r1cs: from the operator (usually published alongside current.zkey), or from the bucket:
+  curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit.r1cs
+  # the canonical 2^21 Hermez powers-of-tau (~2.3 GB):
+  curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
+  npx snarkjs zkey verify circuit.r1cs pot.ptau current.zkey   # expect "ZKey Ok!"
+  ```
+  This is **optional** — the operator re-verifies every upload anyway. (snarkjs is the pinned local
+  dependency, so `npx snarkjs`, not a bare `snarkjs`.)
 
 ## Running air-gapped (offline)
 
