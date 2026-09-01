@@ -40,8 +40,10 @@ That's it — everything between download and upload is automated.
   is involved in a contribution — but good practice.)
 - Before contributing, you can **verify the key you downloaded** matches the published transcript:
   its latest contribution hash should equal the last entry the operator published. (Full
-  cryptographic verification, `snarkjs zkey verify circuit.r1cs <ptau> current.zkey`, also needs the
-  r1cs and the 2^21 powers-of-tau — optional; the operator re-verifies every upload anyway.)
+  cryptographic verification — run `npm ci` once, then
+  `npx snarkjs zkey verify circuit.r1cs <ptau> current.zkey` — also needs the r1cs and the 2^21
+  powers-of-tau; optional, and the operator re-verifies every upload anyway. snarkjs is the pinned
+  local dependency, so use `npx`, not a bare `snarkjs`.)
 
 ## Running air-gapped (offline)
 
