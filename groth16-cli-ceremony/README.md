@@ -1,4 +1,4 @@
-# Groth16 phase-2 trusted-setup ceremony (terminal)
+# Groth16 phase-2 trusted-setup ceremony
 
 Command-line tooling for the Groth16 phase-2 trusted-setup ceremony of the Zilliqa seed-ownership
 circuit. There are two roles, each self-contained in its own folder with its own instructions:
