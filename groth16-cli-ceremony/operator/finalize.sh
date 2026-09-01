@@ -67,7 +67,7 @@ CIRCUIT_HASH="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:spac
   echo "## Circuit"
   echo "- \`circuit.r1cs\` sha256: \`$R1CS_SHA\` (SHA-256 of the r1cs file — reproduce by recompiling)"
   echo "- snarkjs circuit hash (blake2b-512): \`$CIRCUIT_HASH\` (what \`zkey verify\` binds the key to)"
-  echo "- powers-of-tau: $PTAU_NAME (blake2b $PTAU_B2)"
+  echo "- powers-of-tau: \`$PTAU_NAME\` (blake2b \`$PTAU_B2\`)"
   echo
   echo "## Beacon (pre-committed public future source)"
   # keep this rule in sync with the READMEs' "Beacon (pre-committed)" section
