@@ -15,6 +15,7 @@
 #   final.zkey     -> the production proving key (ships in ../../groth16-prover-min)
 #   vk.json        -> verification key
 #   verifier.sol   -> on-chain verifier contract
+#   transcript.md  -> ready-to-publish ceremony transcript (r1cs hash, beacon, chain)
 set -e
 cd "$(dirname "$0")"
 IN="$1"; R1CS="$2"; PTAU="$3"; BEACON="$4"; ITERS="${5:-10}"

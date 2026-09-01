@@ -19,7 +19,7 @@ not required.
    The first run installs snarkjs via `npm ci` (see **Running air-gapped** for offline use). It then
    asks for your name/handle and some random text, mixes that with your machine's cryptographic RNG,
    and writes **`contribution.zkey`**. Takes a few minutes and several GB of RAM.
-3. **Upload** `contribution.zkey` to the coordinator, and **report the printed contribution hash**
+3. **Upload** `contribution.zkey` to the operator, and **report the printed contribution hash**
    to the operator so it can be checked against the public transcript.
 
 That's it — everything between download and upload is automated.
@@ -36,12 +36,12 @@ That's it — everything between download and upload is automated.
 ## Recommended hygiene
 
 - Run on a **clean machine, offline** if you can; **reboot afterwards** so your entropy doesn't
-  linger in memory. (Less critical than the seed-proof runner — no wallet secret is involved — but
-  good practice.)
+  linger in memory. (Less critical here than when handling an actual wallet seed — no wallet secret
+  is involved in a contribution — but good practice.)
 - Before contributing, you can **verify the key you downloaded** matches the published transcript:
   its latest contribution hash should equal the last entry the operator published. (Full
   cryptographic verification, `snarkjs zkey verify circuit.r1cs <ptau> current.zkey`, also needs the
-  r1cs and the 2^21 powers-of-tau — optional; the coordinator re-verifies every upload anyway.)
+  r1cs and the 2^21 powers-of-tau — optional; the operator re-verifies every upload anyway.)
 
 ## Running air-gapped (offline)
 

@@ -2,7 +2,7 @@
 # Terminal ceremony contribution tool.
 #   1. Download the ceremony's current key into this folder as  current.zkey  (manual).
 #   2. Run this script — it mixes in fresh randomness and writes  contribution.zkey.
-#   3. Upload  contribution.zkey  to the coordinator and report the printed hash (manual).
+#   3. Upload  contribution.zkey  to the operator and report the printed hash (manual).
 # usage: ./contribute.sh [inputKey=current.zkey] [outputKey=contribution.zkey]
 set -e
 cd "$(dirname "$0")"
