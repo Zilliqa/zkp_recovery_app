@@ -29,9 +29,22 @@ git-ignored here. Download both into this folder first:
 curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit.r1cs
 # canonical Hermez powers-of-tau, 2^21 (~2.3 GB); 2^20 is the minimum for this ~679k-constraint circuit
 curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
-npx snarkjs powersoftau verify pot.ptau   # confirm it's the genuine public ceremony (needs Setup's npm ci)
+npx snarkjs powersoftau verify pot.ptau   # full cryptographic check (needs Setup's npm ci); slow (~30–90 min)
+b2sum pot.ptau                            # fast alternative: cross-check the blake2b vs the published value below
 sha256sum circuit.r1cs                    # record this — it pins the circuit in the transcript (init.sh also prints it)
 ```
+
+**Confirming `pot.ptau` is the genuine public file.** `b2sum pot.ptau` (BLAKE2b-512) must equal the value
+Hermez/iden3 publishes for `powersOfTau28_hez_final_21.ptau`. That reference is in the **snarkjs README**
+(<https://github.com/iden3/snarkjs>, the *Powers of Tau* NOTE — "Prepared (phase2) Ptau files for bn128
+with 54 contributions and a beacon can be found here"):
+
+```
+9aef0573cef4ded9c4a75f148709056bf989f80dad96876aadeb6f1c6d062391f07a394a9e756d16f7eb233198d5b69407cca44594c763ab4a5b67ae73254678
+```
+
+A matching hash confirms you have the real file — instant, and independent of the slow `powersoftau
+verify`. Record this blake2b (and the filename) as the ptau's fingerprint in the transcript.
 
 ## 1. Initialize — once, at the start
 ```bash
