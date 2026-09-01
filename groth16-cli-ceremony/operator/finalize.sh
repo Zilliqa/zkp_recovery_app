@@ -12,7 +12,7 @@
 # usage:
 #   ./finalize.sh <lastKey.zkey> <circuit.r1cs> <pot.ptau> <beaconHex64> [iterations=10]
 # outputs (in this folder):
-#   final.zkey     -> the production proving key (ships in ../groth16-prover-min)
+#   final.zkey     -> the production proving key (ships in ../../groth16-prover-min)
 #   vk.json        -> verification key
 #   verifier.sol   -> on-chain verifier contract
 set -e
