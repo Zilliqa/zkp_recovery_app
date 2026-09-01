@@ -5,8 +5,19 @@ promote each contribution, then apply the final beacon and publish the results. 
 by hand.
 
 Download the **whole `operator/` folder** (`init.sh`, `verify-contribution.sh`, `finalize.sh`,
-`package.json`, `package-lock.json`). The first run of any script installs snarkjs via `npm ci` from
-the pinned `package-lock.json`.
+`package.json`, `package-lock.json`).
+
+## Setup
+
+Once, from inside this folder:
+
+```bash
+npm ci   # installs the pinned snarkjs into node_modules/ (from package-lock.json)
+```
+
+snarkjs is a **local** dependency, not a global command — run any manual snarkjs command through
+`npx snarkjs …` (the scripts call the local copy directly). The scripts also run `npm ci` themselves
+on first use, but the manual pre-checks below need it done first.
 
 ## Public inputs
 
@@ -18,20 +29,36 @@ git-ignored here. Download both into this folder first:
 curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit.r1cs
 # canonical Hermez powers-of-tau, 2^21 (~2.3 GB); 2^20 is the minimum for this ~679k-constraint circuit
 curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
-snarkjs powersoftau verify pot.ptau   # confirm it's the genuine public ceremony
-sha256sum circuit.r1cs                 # record this — it pins the circuit in the transcript (init.sh also prints it)
+npx snarkjs powersoftau verify pot.ptau   # full cryptographic check (needs Setup's npm ci); slow (~30–90 min)
+b2sum pot.ptau                            # fast alternative: cross-check the blake2b vs the published value below
+sha256sum circuit.r1cs                    # record this — it pins the circuit in the transcript (init.sh also prints it)
 ```
+
+**Confirming `pot.ptau` is the genuine public file.** `b2sum pot.ptau` (BLAKE2b-512) must equal the value
+Hermez/iden3 publishes for `powersOfTau28_hez_final_21.ptau`. That reference is in the **snarkjs README**
+(<https://github.com/iden3/snarkjs>, the *Powers of Tau* NOTE — "Prepared (phase2) Ptau files for bn128
+with 54 contributions and a beacon can be found here"):
+
+```
+9aef0573cef4ded9c4a75f148709056bf989f80dad96876aadeb6f1c6d062391f07a394a9e756d16f7eb233198d5b69407cca44594c763ab4a5b67ae73254678
+```
+
+A matching hash confirms you have the real file — instant, and independent of the slow `powersoftau
+verify`. Record this blake2b (and the filename) as the ptau's fingerprint in the transcript.
 
 ## 1. Initialize — once, at the start
 ```bash
-./init.sh <circuit.r1cs> <pot21.ptau>
+./init.sh circuit.r1cs pot.ptau
 ```
 Creates **`current.zkey`** (0 contributions) via `groth16 setup`, and prints the `circuit.r1cs`
 sha256 to record in the transcript. Publish `current.zkey` for the **first** contributor to download.
 
 ## 2. After each upload — verify, then promote
+
+Retrieve the contributor's uploaded `contribution.zkey` from the **Google Drive folder** into this
+folder, then verify it **before** promoting:
 ```bash
-./verify-contribution.sh <contribution.zkey> <circuit.r1cs> <pot21.ptau>
+./verify-contribution.sh <contribution.zkey> circuit.r1cs pot.ptau
 ```
 Confirms the upload is a valid key for this circuit and prints its contribution chain. Check the
 chain equals your **published transcript + exactly one new entry** (rejects forks/rollbacks), then
@@ -47,7 +74,7 @@ one — operator included — can grind or cherry-pick it. (What's fixed *after*
 only *which* future round/height; the *value* must not yet exist.) Then it verifies and exports:
 
 ```bash
-./finalize.sh <lastKey.zkey> <circuit.r1cs> <pot.ptau> <beaconHex64> [iterations=10]
+./finalize.sh <lastKey.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]
 ```
 
 Produces, in this folder:
