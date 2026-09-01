@@ -57,6 +57,11 @@ The finalization **beacon** is fixed **here, before the ceremony begins** — so
 The value is unknowable until that block exists, so neither any contributor nor the operator can predict
 or influence it. Collect and verify **all** contributions before that time; then apply it in step 3.
 
+The beacon is applied with a fixed **`numIterationsExp = 10`** (2¹⁰ hash iterations) — pinned here too, so
+the *whole* beacon is pre-committed, not just the block. Both values (the block hash and the iteration
+count) are recorded in the published `transcript.md`; a verifier needs **both** to re-derive and check the
+beacon step, which is what makes it publicly verifiable.
+
 ## 1. Initialize — once, at the start
 ```bash
 ./init.sh circuit.r1cs pot.ptau

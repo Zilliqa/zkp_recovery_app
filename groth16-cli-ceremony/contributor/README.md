@@ -44,11 +44,13 @@ For transparency, the ceremony's finalization **beacon** is fixed in advance —
 any contribution, so it can't be cherry-picked:
 
 > the hash of the first **Ethereum mainnet** block with timestamp ≥ `2026-09-04 14:00:00 UTC`
-> (taken once finalized; expected height ≈ 25,904,400 — the timestamp rule is what's binding).
+> (taken once finalized; expected height ≈ 25,904,400 — the timestamp rule is what's binding),
+> applied with a fixed **2¹⁰ iterations**.
 
 You don't do anything with it — the operator applies it at the very end. But because it's public and
 unknowable until that block exists, you (or anyone) can later confirm the published final key was
-produced with **exactly this beacon** and nothing else.
+produced with **exactly this beacon** (block hash + iteration count, both published in the transcript)
+and nothing else.
 
 ## Recommended hygiene
 
