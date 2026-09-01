@@ -10,8 +10,12 @@ not required.
 
 ## Use it (3 steps — download & upload are manual)
 
-1. **Download** the ceremony's current key into this folder as **`current.zkey`** (~358 MB for the
-   minimal circuit), from wherever the operator published it.
+**All downloads come from the bucket; the Google Drive folder is for uploads only.**
+
+1. **Download `current.zkey`** into this folder — from the bucket (~358 MB for the minimal circuit):
+   ```bash
+   curl -L -o current.zkey https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/current.zkey
+   ```
 2. **Run:**
    ```bash
    ./contribute.sh
@@ -19,8 +23,9 @@ not required.
    The first run installs snarkjs via `npm ci` (see **Running air-gapped** for offline use). It then
    asks for your name/handle and some random text, mixes that with your machine's cryptographic RNG,
    and writes **`contribution.zkey`**. Takes a few minutes and several GB of RAM.
-3. **Upload** `contribution.zkey` to the operator, and **report the printed contribution hash**
-   to the operator so it can be checked against the public transcript.
+3. **Upload `contribution.zkey`** to the ceremony's **Google Drive folder** —
+   <https://drive.google.com/drive/folders/18Et2q7lXeH4IhCwGlWIMTHT7npFLp5ji> — and **report the
+   printed contribution hash** to the operator so it can be checked against the public transcript.
 
 That's it — everything between download and upload is automated.
 
@@ -44,7 +49,7 @@ That's it — everything between download and upload is automated.
   then verify:
   ```bash
   npm ci                                  # once — installs the pinned local snarkjs
-  # circuit.r1cs: from the operator (usually published alongside current.zkey), or from the bucket:
+  # circuit.r1cs — from the bucket (same source as current.zkey):
   curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit.r1cs
   # the canonical 2^21 Hermez powers-of-tau (~2.3 GB):
   curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
