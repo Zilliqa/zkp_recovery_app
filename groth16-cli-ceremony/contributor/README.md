@@ -38,6 +38,18 @@ That's it — everything between download and upload is automated.
 - The **contribution hash** is your public receipt: it lets anyone confirm your contribution is in
   the chain, and lets you confirm the operator didn't drop or alter it.
 
+## Beacon (pre-committed)
+
+For transparency, the ceremony's finalization **beacon** is fixed in advance — announced here before
+any contribution, so it can't be cherry-picked:
+
+> the hash of the first **Ethereum mainnet** block with timestamp ≥ `2026-09-04 14:00:00 UTC`
+> (taken once finalized; expected height ≈ 25,904,400 — the timestamp rule is what's binding).
+
+You don't do anything with it — the operator applies it at the very end. But because it's public and
+unknowable until that block exists, you (or anyone) can later confirm the published final key was
+produced with **exactly this beacon** and nothing else.
+
 ## Recommended hygiene
 
 - Run on a **clean machine, offline** if you can; **reboot afterwards** so your entropy doesn't

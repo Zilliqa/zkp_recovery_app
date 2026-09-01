@@ -46,6 +46,17 @@ with 54 contributions and a beacon can be found here"):
 A matching hash confirms you have the real file — instant, and independent of the slow `powersoftau
 verify`. Record this blake2b (and the filename) as the ptau's fingerprint in the transcript.
 
+## Beacon (pre-committed)
+
+The finalization **beacon** is fixed **here, before the ceremony begins** — so no one can cherry-pick it:
+
+> **Beacon = the hash of the first Ethereum mainnet block whose timestamp is ≥ `2026-09-04 14:00:00 UTC`,**
+> taken once that block is **finalized** (~2 epochs / ~13 min after it is produced). Expected height
+> ≈ **25,904,400** — an estimate only; the **timestamp rule, not the height, is binding**.
+
+The value is unknowable until that block exists, so neither any contributor nor the operator can predict
+or influence it. Collect and verify **all** contributions before that time; then apply it in step 3.
+
 ## 1. Initialize — once, at the start
 ```bash
 ./init.sh circuit.r1cs pot.ptau
@@ -66,15 +77,14 @@ chain equals your **published transcript + exactly one new entry** (rejects fork
 
 ## 3. Finalize — once, at the end (the beacon)
 
-After all contributions are collected, the operator applies the **beacon**. This is **not** a
-contributor step: it applies a **public random value from a pre-committed future source** — a drand
-round or a Bitcoin block hash whose round/height is chosen *after* contributions close (so you know
-they're complete) but still lies in the **future** at that moment, so the value is unknowable and no
-one — operator included — can grind or cherry-pick it. (What's fixed *after* the last contribution is
-only *which* future round/height; the *value* must not yet exist.) Then it verifies and exports:
+After all contributions are collected, apply the **pre-committed beacon** (see **Beacon
+(pre-committed)** above) — a public value from a future source fixed before the ceremony, so it's
+unbiasable. Look up the announced block (first ETH mainnet block with timestamp ≥ 2026-09-04
+14:00:00 UTC), **wait for it to finalize**, take its `0x…` block hash, and **drop the `0x`** so you
+have 64 hex chars. Then verify + export:
 
 ```bash
-./finalize.sh <lastKey.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]
+./finalize.sh <lastKey.zkey> circuit.r1cs pot.ptau <64-hex-block-hash-no-0x> 10
 ```
 
 Produces, in this folder:
