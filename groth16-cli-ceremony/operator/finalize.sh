@@ -49,10 +49,11 @@ $S zkey export verificationkey final.zkey vk.json
 echo "[4/4] exporting on-chain verifier contract -> verifier.sol..."
 $S zkey export solidityverifier final.zkey verifier.sol
 
-# assemble a ready-to-publish transcript.md — operator fills in the two [bracketed] fields, commits it.
+# assemble a ready-to-publish transcript.md — only the [beacon source] field is left for the operator.
 FINAL_SHA=$(sha256sum final.zkey  | cut -d' ' -f1)
 VK_SHA=$(sha256sum    vk.json      | cut -d' ' -f1)
 VER_SHA=$(sha256sum   verifier.sol | cut -d' ' -f1)
+PTAU_NAME=$(basename "$PTAU"); PTAU_B2=$(b2sum "$PTAU" | cut -d' ' -f1)   # ptau fingerprint (auto-filled)
 # zkey verify lists the contributions by index + name and prints "ZKey Ok!" (it does NOT print
 # per-contribution hashes) — capture that ordered name list + the validity line for the transcript.
 CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' | grep -iE 'contribution #|ZKey Ok' || echo "$VERIFY_OUT")"
@@ -61,7 +62,7 @@ CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//
   echo
   echo "## Circuit"
   echo "- \`circuit.r1cs\` sha256: \`$R1CS_SHA\`"
-  echo "- powers-of-tau: [operator: canonical name + its blake2b, e.g. powersOfTau28_hez_final_21.ptau]"
+  echo "- powers-of-tau: $PTAU_NAME (blake2b $PTAU_B2)"
   echo
   echo "## Beacon (pre-committed public future source)"
   echo "- source: [operator: e.g. hash of Bitcoin block height 900000 / drand round N — the source pre-committed before finalization]"
@@ -96,7 +97,7 @@ CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//
 echo
 echo "================= CEREMONY FINALIZED ================="
 echo "Produced: final.zkey (production proving key), vk.json, verifier.sol, transcript.md"
-echo "Next: fill in the two [operator: ...] fields in transcript.md, then publish on GitHub:"
+echo "Next: fill in the one [operator: beacon source] field in transcript.md, then publish on GitHub:"
 echo "  - transcript.md  (circuit r1cs sha256, contribution chain, beacon value + iterations)"
 echo "  - final.zkey / vk.json / verifier.sol  (keys on the bucket — too large for GitHub)"
 echo "circuit.r1cs sha256: $R1CS_SHA"

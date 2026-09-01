@@ -96,7 +96,7 @@ Produces, in this folder:
 - `final.zkey` — the **production proving key** (this is what ships in `../../groth16-prover-min/` as `circuit_final.zkey`),
 - `vk.json` — the verification key,
 - `verifier.sol` — the on-chain verifier contract,
-- `transcript.md` — a **ready-to-publish transcript** (r1cs sha256, beacon value + iterations, final-artifact hashes, and the full ordered contribution chain from `zkey verify`). Fill in the two `[operator: …]` fields (ptau name, beacon source), then commit it to GitHub.
+- `transcript.md` — a **ready-to-publish transcript** (r1cs sha256, beacon value + iterations, final-artifact hashes, and the full ordered contribution chain from `zkey verify`). Fill in the one remaining `[operator: …]` field (the beacon source description — the ptau name + blake2b are auto-filled), then commit it to GitHub.
 
 > **Deploying into the zq2 escrow:** `finalize.sh` emits the **stock** snarkjs `verifier.sol` (a standalone
 > `Groth16Verifier` with `public verifyProof`). The zq2 escrow uses an **integrated** variant
