@@ -48,14 +48,14 @@ verify`. Record this blake2b (and the filename) as the ptau's fingerprint in the
 
 ## 1. Initialize — once, at the start
 ```bash
-./init.sh <circuit.r1cs> <pot21.ptau>
+./init.sh circuit.r1cs pot.ptau
 ```
 Creates **`current.zkey`** (0 contributions) via `groth16 setup`, and prints the `circuit.r1cs`
 sha256 to record in the transcript. Publish `current.zkey` for the **first** contributor to download.
 
 ## 2. After each upload — verify, then promote
 ```bash
-./verify-contribution.sh <contribution.zkey> <circuit.r1cs> <pot21.ptau>
+./verify-contribution.sh <contribution.zkey> circuit.r1cs pot.ptau
 ```
 Confirms the upload is a valid key for this circuit and prints its contribution chain. Check the
 chain equals your **published transcript + exactly one new entry** (rejects forks/rollbacks), then
@@ -71,7 +71,7 @@ one — operator included — can grind or cherry-pick it. (What's fixed *after*
 only *which* future round/height; the *value* must not yet exist.) Then it verifies and exports:
 
 ```bash
-./finalize.sh <lastKey.zkey> <circuit.r1cs> <pot.ptau> <beaconHex64> [iterations=10]
+./finalize.sh <lastKey.zkey> circuit.r1cs pot.ptau <beaconHex64> [iterations=10]
 ```
 
 Produces, in this folder:

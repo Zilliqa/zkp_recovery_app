@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # OPERATOR-ONLY, run ONCE at the start: create the INITIAL (zero-contribution) key that the
 # FIRST contributor downloads. It's a deterministic function of the public circuit + powers-of-tau.
-# usage:  ./init.sh <circuit.r1cs> <pot21.ptau>
+# usage:  ./init.sh circuit.r1cs pot.ptau
 # output: current.zkey   (publish this for the first contributor; it has 0 contributions)
 set -e
 cd "$(dirname "$0")"
 R1CS="$1"; PTAU="$2"
-[ -n "$R1CS" ] && [ -n "$PTAU" ] || { echo "usage: ./init.sh <circuit.r1cs> <pot21.ptau>"; exit 1; }
+[ -n "$R1CS" ] && [ -n "$PTAU" ] || { echo "usage: ./init.sh circuit.r1cs pot.ptau"; exit 1; }
 for f in "$R1CS" "$PTAU"; do [ -f "$f" ] || { echo "ERROR: file not found: $f"; exit 1; }; done
 [ -d node_modules ] || { echo "installing snarkjs (first run)..."; npm ci --no-audit --no-fund; }
 S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
