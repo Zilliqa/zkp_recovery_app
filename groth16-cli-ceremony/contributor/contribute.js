@@ -57,13 +57,13 @@ async function gather() {
   const hex = Buffer.from(hash).toString('hex');
 
   console.log('\n\n================= CONTRIBUTION COMPLETE =================');
-  console.log('New key written : ' + OUT + '   <-- UPLOAD THIS FILE to the coordinator');
+  console.log('New key written : ' + OUT + '   <-- UPLOAD THIS FILE to the operator');
   console.log('Contributor     : ' + name);
   console.log('Your contribution hash (report this so it can be checked against the public transcript):');
   console.log('  ' + hex.replace(/(.{8})/g, '$1 ').trim());
   console.log('========================================================\n');
   console.log('Next steps:');
-  console.log('  1. Upload ' + OUT + ' to the coordinator (manual).');
+  console.log('  1. Upload ' + OUT + ' to the operator (manual).');
   console.log('  2. Send the contribution hash above to the ceremony operator.');
   console.log('  3. Reboot / wipe this machine\'s memory so your entropy does not linger.\n');
   process.exit(0);

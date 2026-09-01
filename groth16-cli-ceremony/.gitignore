@@ -6,10 +6,11 @@ node_modules/
 #   current.zkey / contribution.zkey / final.zkey  (keys)
 #   circuit.r1cs                                    (the compiled circuit)
 #   pot.ptau                                        (2^21 powers-of-tau)
-#   vk.json / verifier.sol                          (finalize outputs)
+#   vk.json / verifier.sol / transcript.md          (finalize outputs)
 *.zkey
 *.ptau
 *.r1cs
+transcript.md
 vk.json
 verifier.sol
 *.log
