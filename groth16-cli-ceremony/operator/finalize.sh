@@ -59,11 +59,14 @@ PTAU_NAME=$(basename "$PTAU"); PTAU_B2=$(b2sum "$PTAU" | cut -d' ' -f1)   # ptau
 # block verbatim (snarkjs log prefixes stripped) — the authoritative, re-runnable per-contribution record.
 CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' | sed -n '/^contribution #/,/^ZKey Ok/p')"
 [ -n "$CHAIN" ] || CHAIN="$VERIFY_OUT"
+# snarkjs' own circuit fingerprint (blake2b-512 of the constraint system) — distinct from sha256(r1cs)
+CIRCUIT_HASH="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' | awk 'tolower($0) ~ /^circuit hash:/{f=1;next} f&&/^[[:space:]]*[0-9a-f ]+$/{gsub(/[^0-9a-f]/,"");printf "%s",$0;n++;if(n==4){print"";exit}}')"
 {
   echo "# Ceremony transcript — Zilliqa seed-ownership (minimal Groth16 circuit)"
   echo
   echo "## Circuit"
-  echo "- \`circuit.r1cs\` sha256: \`$R1CS_SHA\`"
+  echo "- \`circuit.r1cs\` sha256: \`$R1CS_SHA\` (SHA-256 of the r1cs file — reproduce by recompiling)"
+  echo "- snarkjs circuit hash (blake2b-512): \`$CIRCUIT_HASH\` (what \`zkey verify\` binds the key to)"
   echo "- powers-of-tau: $PTAU_NAME (blake2b $PTAU_B2)"
   echo
   echo "## Beacon (pre-committed public future source)"
