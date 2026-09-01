@@ -5,25 +5,31 @@ promote each contribution, then apply the final beacon and publish the results. 
 by hand.
 
 Download the **whole `operator/` folder** (`init.sh`, `verify-contribution.sh`, `finalize.sh`,
-`package.json`, `package-lock.json`). The first run of any script installs snarkjs via `npm ci` from
-the pinned `package-lock.json`.
+`package.json`, `package-lock.json`).
+
+## Setup
+
+Once, from inside this folder:
+
+```bash
+npm ci   # installs the pinned snarkjs into node_modules/ (from package-lock.json)
+```
+
+snarkjs is a **local** dependency, not a global command — run any manual snarkjs command through
+`npx snarkjs …` (the scripts call the local copy directly). The scripts also run `npm ci` themselves
+on first use, but the manual pre-checks below need it done first.
 
 ## Public inputs
 
 All three steps need two public inputs — **`circuit.r1cs`** and **`pot.ptau`** — large binaries,
 git-ignored here. Download both into this folder first:
 
-snarkjs here is the **pinned local dependency**, not a global command — install it once with `npm ci`,
-then run manual snarkjs commands through `npx` (the scripts call the local copy directly, so you only
-need this for the manual pre-checks below):
-
 ```bash
-npm ci                                    # once — installs the pinned local snarkjs from package-lock.json
 # minimal circuit r1cs (~127 MB) — or recompile ../../groth16-prover-min/circuit.circom (circom 2.2.3 + pinned includes)
 curl -L -o circuit.r1cs https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit.r1cs
 # canonical Hermez powers-of-tau, 2^21 (~2.3 GB); 2^20 is the minimum for this ~679k-constraint circuit
 curl -L -o pot.ptau https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_21.ptau
-npx snarkjs powersoftau verify pot.ptau   # confirm it's the genuine public ceremony
+npx snarkjs powersoftau verify pot.ptau   # confirm it's the genuine public ceremony (needs Setup's npm ci)
 sha256sum circuit.r1cs                    # record this — it pins the circuit in the transcript (init.sh also prints it)
 ```
 
