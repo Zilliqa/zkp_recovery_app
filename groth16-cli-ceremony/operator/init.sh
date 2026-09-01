@@ -14,8 +14,11 @@ S="node --max-old-space-size=16384 node_modules/snarkjs/build/cli.cjs"
 echo "generating the initial (0-contribution) key from circuit.r1cs + powers-of-tau..."
 $S groth16 setup "$R1CS" "$PTAU" current.zkey
 R1CS_SHA=$(sha256sum "$R1CS" | cut -d' ' -f1)
+ZKEY_SHA=$(sha256sum current.zkey | cut -d' ' -f1)
 echo
 echo "Initial key written: current.zkey  (0 contributions)."
+echo "current.zkey sha256: $ZKEY_SHA"
+echo "  ^ the ceremony's STARTING key — publish it so the first contributor can verify what they download."
 echo "circuit.r1cs sha256: $R1CS_SHA"
 echo "  ^ PUBLISH this in the ceremony transcript. It pins the exact circuit every contributor and"
 echo "    every independent verifier must use; 'npx snarkjs zkey verify circuit.r1cs <ptau> <key>' is only"
