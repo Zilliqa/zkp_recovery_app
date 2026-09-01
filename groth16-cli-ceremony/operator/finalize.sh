@@ -57,6 +57,11 @@ PTAU_NAME=$(basename "$PTAU"); PTAU_B2=$(b2sum "$PTAU" | cut -d' ' -f1)   # ptau
 # zkey verify lists the contributions by index + name and prints "ZKey Ok!" (it does NOT print
 # per-contribution hashes) — capture that ordered name list + the validity line for the transcript.
 CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' | grep -iE 'contribution #|ZKey Ok' || echo "$VERIFY_OUT")"
+# one receipts row per human contributor (names from the chain; the beacon row excluded), sorted #1..#N
+RECEIPTS="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' \
+  | grep -iE 'contribution #[0-9]+ ' | grep -vi 'final beacon' \
+  | sed -E 's/.*contribution #([0-9]+) (.*):.*/\1|\2/' | sort -n \
+  | awk -F'|' '{printf "| %s | %s | [reported hash] |\n", $1, $2}')"
 {
   echo "# Ceremony transcript — Zilliqa seed-ownership (minimal Groth16 circuit)"
   echo
@@ -65,7 +70,8 @@ CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//
   echo "- powers-of-tau: $PTAU_NAME (blake2b $PTAU_B2)"
   echo
   echo "## Beacon (pre-committed public future source)"
-  echo "- source: [operator: e.g. hash of Bitcoin block height 900000 / drand round N — the source pre-committed before finalization]"
+  # keep this rule in sync with the READMEs' "Beacon (pre-committed)" section
+  echo "- source: pre-committed (announced before the ceremony) — the finalized hash of the first Ethereum mainnet block with timestamp >= 2026-09-04 14:00:00 UTC; the block is the one whose hash is the value below."
   echo "- value: \`$BEACON\`"
   echo "- iterations: $ITERS"
   echo
@@ -84,9 +90,9 @@ CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//
   echo '```'
   echo
   echo "## Contributor receipts (operator: paste the hash each contributor reported from \`contribute.sh\`)"
-  echo "| # | contributor (org) | reported contribution hash |"
+  echo "| # | contributor (name/org from the chain) | reported contribution hash |"
   echo "|---|---|---|"
-  echo "| 1 | [name / org] | [hash] |"
+  echo "$RECEIPTS"
   echo
   echo "**Verify the chain:** re-run \`snarkjs zkey verify circuit.r1cs pot.ptau final.zkey\` — you must get"
   echo "\`ZKey Ok!\` and the same ordered contributor list as above. **Confirm a specific contribution hash**"
@@ -97,7 +103,7 @@ CHAIN="$(echo "$VERIFY_OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//
 echo
 echo "================= CEREMONY FINALIZED ================="
 echo "Produced: final.zkey (production proving key), vk.json, verifier.sol, transcript.md"
-echo "Next: fill in the one [operator: beacon source] field in transcript.md, then publish on GitHub:"
+echo "Next: paste each contributor's reported hash into transcript.md's receipts table (replace the [reported hash] cells), then publish on GitHub:"
 echo "  - transcript.md  (circuit r1cs sha256, contribution chain, beacon value + iterations)"
 echo "  - final.zkey / vk.json / verifier.sol  (keys on the bucket — too large for GitHub)"
 echo "circuit.r1cs sha256: $R1CS_SHA"
