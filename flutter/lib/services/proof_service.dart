@@ -31,10 +31,6 @@ class ProofService {
   ProofService._();
   static final ProofService instance = ProofService._();
 
-  Future<Directory> _getCacheDir() async {
-    return DownloadService.instance.getCacheDir();
-  }
-
   /// Computes the Groth16 Proof
   ///
   /// @param passphrase (optional) passphrase
@@ -118,9 +114,16 @@ class ProofService {
       ], // Hard-coded domain separator
     };
 
+    // Verify ZKEY file before use
+    if (!await DownloadService.instance.verifyArtifact()) {
+      throw StateError(
+        'Proving key failed integrity check; re-download required.',
+      );
+    }
+
     // Compute the Circom proof
+    final zkeyPath = await DownloadService.instance.pathFor();
     CircomProofResult? result;
-    final zkeyPath = '${(await _getCacheDir()).path}/groth_final.zkey';
     // Groth16 (~1GB RAM):
     //  - FCN_sprout    : <6m
     //  - emu64xa       : <2m
@@ -132,7 +135,11 @@ class ProofService {
     );
 
     // check the result
-    final check = await verifyCircomProof(zkeyPath: zkeyPath, proofResult: result, proofLib: ProofLib.arkworks);
+    final check = await verifyCircomProof(
+      zkeyPath: zkeyPath,
+      proofResult: result,
+      proofLib: ProofLib.arkworks,
+    );
     if (!check) {
       throw Exception('Generated proof is invalid');
     }
