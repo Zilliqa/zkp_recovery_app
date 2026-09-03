@@ -131,6 +131,12 @@ class ProofService {
       proofLib: ProofLib.arkworks,
     );
 
+    // check the result
+    final check = await verifyCircomProof(zkeyPath: zkeyPath, proofResult: result, proofLib: ProofLib.arkworks);
+    if (!check) {
+      throw Exception('Generated proof is invalid');
+    }
+
     // Encode the outputs
     final calldata = encodeCallData(result);
     final output = bytesToHex(calldata);
