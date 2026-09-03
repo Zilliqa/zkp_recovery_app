@@ -26,18 +26,21 @@ compromised relayer key can at worst stop relaying or waste its own gas.
 4. **Install & run:**
    ```bash
    npm install
-   node relay.js          # one batch
+   node relay.js --dry-run   # simulate + report every new row; sends nothing, cursor untouched
+   node relay.js             # real batch: submit the rows that pass simulation
    ```
 5. **Schedule** — run daily via cron, e.g.:
    ```
    0 6 * * *  cd /path/to/claim-relayer && /usr/bin/node relay.js >> relay.log 2>&1
    ```
 
-## Assumptions (adjust to your setup)
-- **Calldata = full tx data.** The form field is assumed to contain the complete `0x…` transaction
-  data for the escrow's `claim()` call (what the Flutter app produces). The script sends it verbatim
-  as `tx.data`, so it needs no ABI. If your form instead stores the raw proof components, encode them
-  with an `ethers.Interface` for `claim(...)` before the simulate step.
+## Calldata format (confirmed)
+The form field is the **complete `0x…` transaction data** for the escrow's `claim()` — verified against
+the Flutter app (`proof_service.dart` `encodeCallData`): 4-byte selector `0xcf1c9461`
+(`claim(uint256[2],uint256[2][2],uint256[2],uint256[4])`) + ABI-encoded proof (a,b,c) + 4 public inputs.
+The script checks the selector and sends the bytes verbatim as `tx.data` — no ABI/Interface needed.
+
+## Other assumptions
 - **Append-only responses.** Form submissions only append, so a row's position is a stable cursor key.
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces). Fine for a
   daily batch; parallelize with explicit nonce management if volume grows.

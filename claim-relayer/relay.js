@@ -5,12 +5,13 @@
 // escrow, and submit the ones that would succeed. The relayer key ONLY pays gas — every proof binds
 // its own destination (newAddr is a public input), so this script cannot redirect anyone's funds.
 //
-// ASSUMPTION: the form's calldata field holds the COMPLETE 0x-hex transaction data for the escrow's
-// claim() call (what the Flutter app emits via exportSolidityCallData → ABI-encoded claim(...)). We
-// send it verbatim as tx.data, so we don't need the claim() ABI here. If your form instead stores the
-// raw proof components, encode them into calldata with an ethers Interface before the simulate step.
+// The form's calldata field holds the COMPLETE 0x-hex transaction data for the escrow's claim() call.
+// Confirmed against the Flutter app (proof_service.dart `encodeCallData`): it is the 4-byte selector
+// 0xcf1c9461 = claim(uint256[2],uint256[2][2],uint256[2],uint256[4]) followed by the ABI-encoded proof
+// (a,b,c) + 4 public inputs. All args are fixed-size, so it's valid ABI calldata and we send it
+// verbatim as tx.data — no ABI/Interface needed here.
 //
-// Config: environment variables (see .env.example). Run: `node relay.js`. Wire to cron for daily runs.
+// Config: environment variables (see .env.example). Run: `node relay.js [--dry-run]`. Cron it for daily runs.
 
 import 'dotenv/config';
 import fs from 'node:fs';
@@ -31,6 +32,10 @@ const {
 for (const [k, v] of Object.entries({ RPC_URL, ESCROW_ADDRESS, RELAYER_PRIVATE_KEY, SHEET_ID })) {
   if (!v) { console.error(`Missing required env: ${k}`); process.exit(1); }
 }
+
+const DRY_RUN = process.argv.includes('--dry-run') || process.env.DRY_RUN === '1';
+const CLAIM_SELECTOR = '0xcf1c9461'; // claim(uint256[2],uint256[2][2],uint256[2],uint256[4])
+if (DRY_RUN) console.log('[dry-run] will simulate and report only — no transactions sent, cursor not advanced');
 
 // --- Read response rows from the Form's linked Sheet (service-account, read-only) ---
 async function readRows() {
@@ -64,9 +69,9 @@ async function main() {
   for (const { index, calldata } of fresh) {
     const tag = `row ${index + 2}`; // +2: 1 header row, and sheets are 1-based
 
-    // Basic shape check — never send non-hex to the chain.
-    if (!/^0x[0-9a-fA-F]*$/.test(calldata) || calldata.length < 10) {
-      console.warn(`${tag}: not valid calldata, skipping`);
+    // Shape check: must be hex AND start with the claim() selector — rejects pasted junk / wrong data.
+    if (!/^0x[0-9a-fA-F]+$/.test(calldata) || !calldata.toLowerCase().startsWith(CLAIM_SELECTOR)) {
+      console.warn(`${tag}: not a claim() calldata (must start with ${CLAIM_SELECTOR}), skipping`);
       cursor = index + 1;
       continue;
     }
@@ -81,7 +86,11 @@ async function main() {
       continue;
     }
 
-    // 2) Submit and wait for the receipt (sequential → simple, correct nonce handling).
+    // 2) Submit (or, in --dry-run, just report). Sequential → simple, correct nonce handling.
+    if (DRY_RUN) {
+      console.log(`${tag}: [dry-run] simulation passed — would submit ${(calldata.length - 2) / 2} bytes to ${ESCROW_ADDRESS}`);
+      continue; // do NOT advance cursor in dry-run (see the guarded writeCursor below)
+    }
     try {
       const txReq = { to: ESCROW_ADDRESS, data: calldata };
       // Optional: const gas = await provider.estimateGas({ ...txReq, from: wallet.address });
@@ -97,8 +106,12 @@ async function main() {
     }
   }
 
-  writeCursor(cursor);
-  console.log(`cursor -> ${cursor}`);
+  if (DRY_RUN) {
+    console.log('[dry-run] done — cursor NOT persisted; re-run without --dry-run to submit');
+  } else {
+    writeCursor(cursor);
+    console.log(`cursor -> ${cursor}`);
+  }
 }
 
 main().catch((e) => { console.error('fatal:', e.message || e); process.exit(1); });
