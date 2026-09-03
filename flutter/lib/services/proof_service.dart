@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:bech32/bech32.dart';
 import 'package:bip32_keys/bip32_keys.dart';
@@ -31,10 +30,6 @@ class ProofService {
   ProofService._();
   static final ProofService instance = ProofService._();
 
-  Future<Directory> _getCacheDir() async {
-    return DownloadService.instance.getCacheDir();
-  }
-
   /// Computes the Groth16 Proof
   ///
   /// @param passphrase (optional) passphrase
@@ -57,10 +52,10 @@ class ProofService {
         ? hexToBytes(zAddress)
         : bech32ToBytes(zAddress));
     if (listEquals(evmAddress, zilAddress)) {
-      throw Exception("EVM == ZIL is not allowed");
+      throw UnsupportedError("EVM == ZIL is not allowed");
     }
     if (!evmAddress.any((b) => b != 0) || !zilAddress.any((b) => b != 0)) {
-      throw Exception("EVM/ZIL must both be non-zero address");
+      throw UnsupportedError("EVM/ZIL must be non-zero");
     }
 
     // Master key, derived once - each path derivation walks down from here.
@@ -68,7 +63,7 @@ class ProofService {
     try {
       // Compute master key from seed/xprv; throws exception if invalid.
       if (mnemonic.startsWith("xprv")) {
-        throw Exception("XPRV key unsupported");
+        throw UnsupportedError("XPRV key unsupported");
       } else {
         if (language == Language.japanese) {
           final sentence = mnemonic.replaceAll(RegExp(r'[ 　]+'), '　').trim();
@@ -98,8 +93,8 @@ class ProofService {
     // Find old account index; throws exception if not found
     final account = await findAccountParent(hdKey, zilAddress, wallet);
     if (account == null) {
-      throw Exception(
-        "ZIL address does not seem to be derived from mnemonic-seed/master-key, or unsupported wallet.",
+      throw UnsupportedError(
+        "ZIL address does not seem to be derived from mnemonic-seed, or unsupported wallet.",
       );
     }
 
@@ -118,9 +113,16 @@ class ProofService {
       ], // Hard-coded domain separator
     };
 
+    // Verify ZKEY file before use
+    if (!await DownloadService.instance.verifyArtifact()) {
+      throw StateError(
+        'Proving key failed integrity check; re-download required.',
+      );
+    }
+
     // Compute the Circom proof
+    final zkeyPath = await DownloadService.instance.pathFor();
     CircomProofResult? result;
-    final zkeyPath = '${(await _getCacheDir()).path}/groth_final.zkey';
     // Groth16 (~1GB RAM):
     //  - FCN_sprout    : <6m
     //  - emu64xa       : <2m
@@ -130,6 +132,16 @@ class ProofService {
       circuitInputs: jsonEncode(inputs),
       proofLib: ProofLib.arkworks,
     );
+
+    // check the result
+    final check = await verifyCircomProof(
+      zkeyPath: zkeyPath,
+      proofResult: result,
+      proofLib: ProofLib.arkworks,
+    );
+    if (!check) {
+      throw Exception('Generated proof is invalid');
+    }
 
     // Encode the outputs
     final calldata = encodeCallData(result);
@@ -163,7 +175,7 @@ class ProofService {
     switch (wallet) {
       case Wallets.ledger:
         // Derive m/44'/313'/n'/0'/0'
-        for (int n = 0; n < 100; n++) {
+        for (int n = 0; n < 1000; n++) {
           final derivedAddress = Uint8List.fromList(
             sha256
                 .convert(masterKey.derivePath("m/44'/313'/$n'/0'/0'").public)
@@ -179,7 +191,7 @@ class ProofService {
         return null;
       case Wallets.others:
         // Derive m/44'/313'/n'/0/i
-        for (int n = 0; n < 5; n++) {
+        for (int n = 0; n < 10; n++) {
           for (int i = 0; i < 100; i++) {
             final derivedAddress = Uint8List.fromList(
               sha256
