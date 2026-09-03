@@ -1,0 +1,15 @@
+{
+  "name": "claim-relayer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily relayer: read claim calldata from the Google Form's linked Sheet, simulate against the escrow, and submit the valid ones.",
+  "scripts": {
+    "start": "node relay.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.2",
+    "googleapis": "^144.0.0"
+  }
+}
