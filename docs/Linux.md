@@ -1,12 +1,13 @@
-# ZKP Recovery App on Linux
+# ZKP Migration on Linux (AMD64).
 
-![Linux desktop screenshot](image.png)
+![Linux desktop screenshot](linux.png)
 
-This guide provides a step-by-step instruction for downloading, verifying and running the ZKP recovery app.
+This guide provides a step-by-step instruction for downloading, verifying and running the ZKP recovery app. It has been built and tested on Ubuntu 24.04.
 
 ## Step 1: Download and Verify the Archive
 
 Visit the official Github [releases](https://github.com/Zilliqa/zkp_recovery_app/releases) page to get the download link for the latest version of the Linux desktop app.
+**DO NOT DOWNLOAD** the application from any other source.
 
 1. Use Wget from the Ubuntu terminal to download the ZKP archive:
    ```bash
