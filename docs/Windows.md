@@ -1,5 +1,7 @@
 # Installing Ubuntu 24.04 with WSL2 and GUI Support
 
+![Windows desktop screenshot](windows.png)
+
 This guide provides step-by-step instructions for installing Ubuntu 24.04 using Windows Subsystem for Linux 2 (WSL2) and setting up a graphical user interface (GUI) application (`gnome-text-editor`) to ensure WSLg (Windows Subsystem for Linux GUI) is working correctly.
 
 ## ⚠️ Requirements and Prerequisites
