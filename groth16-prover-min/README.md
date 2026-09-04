@@ -49,7 +49,7 @@ No path/index argument — it auto-detects the derivation style, account, and in
 `circuit_final.zkey` (**~358 MB**) exceeds GitHub's 100 MB limit, so it's hosted in the external bucket
 (GCS). Download it into this folder before running:
 ```
-curl -L -o circuit_final.zkey https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey
+curl -L -o circuit_final.zkey https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/final.zkey
 sha256sum circuit_final.zkey   # compare to the published checksum
 ```
 A proving key is public material (no secrets). `vk.json` + `verifier.sol` are in the repo.
