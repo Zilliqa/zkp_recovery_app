@@ -26,7 +26,7 @@ class ProvingArtifacts {
     displayName: 'Circuit Key File',
     fileName: 'groth_final.zkey',
     url:
-        'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey',
+        'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/final.zkey',
     checksum:
         '87191dc220d5cb0111442273a3232267d9029755674da0ee76f4a332b456d97d',
   );
