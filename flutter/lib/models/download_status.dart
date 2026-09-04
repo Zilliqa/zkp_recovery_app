@@ -28,7 +28,7 @@ class ProvingArtifacts {
     url:
         'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey',
     checksum:
-        'fa4d81cd120c5c7301f0e6e18be59f7cfa1fb4ba725c9d04ef2721bfd3d272bf',
+        '87191dc220d5cb0111442273a3232267d9029755674da0ee76f4a332b456d97d',
   );
 }
 

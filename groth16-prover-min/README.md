@@ -54,11 +54,12 @@ sha256sum circuit_final.zkey   # compare to the published checksum
 ```
 A proving key is public material (no secrets). `vk.json` + `verifier.sol` are in the repo.
 
-> **⚠ The bucket key must be the CEREMONY output.** The zkey produced by `build-circuit.sh` + a local
-> `snarkjs zkey contribute` is a **single-contributor DEV key — not safe for production** (its toxic
-> waste wasn't destroyed by an N-party ceremony). The production key comes from running the Groth16
-> phase-2 ceremony (Zilliqa + Hacken + others) on `circuit.r1cs`; regenerate `vk.json` + `verifier.sol`
-> from that final zkey before deploying.
+> **✅ The bucket key is now the CEREMONY output.** The production proving key is the `final.zkey` from
+> the completed Groth16 phase-2 ceremony (10 contributors + a pre-committed Ethereum-block beacon) on
+> `circuit.r1cs` — sha256 `87191dc2…`. `vk.json` and `verifier.sol` here are regenerated from it. The
+> full record (contributor hashes, beacon, artifact hashes) is in
+> [`../groth16-cli-ceremony/TRANSCRIPT.md`](../groth16-cli-ceremony/TRANSCRIPT.md). (A `build-circuit.sh`
+> + local `snarkjs zkey contribute` key is a single-contributor DEV key — never deploy that.)
 
 ## Requirements
 - Node.js (first run installs `@scure/bip39`, `@scure/bip32`, `bip39`, `snarkjs` 0.7.x).
