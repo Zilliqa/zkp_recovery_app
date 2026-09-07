@@ -1,39 +1,91 @@
-// Local only. Run offline. MINIMAL circuit: the seed -> ... -> m/44'/313'/n'/0' parent node is
-// derived OFF-circuit; the circuit proves only the final hardened step (0') -> address.
+// Local only. Run offline. MINIMAL circuit: the seed -> ... -> level-4 parent node is derived
+// OFF-circuit; the circuit proves only the final CKD step (hardened OR non-hardened) -> address.
+// Auto-detects the wallet's derivation style and emits `isHardened` + `addrIndex` accordingly:
+//   Ledger (all-hardened)  m/44'/313'/n'/0'/0'  -> isHardened=1, parent m/44'/313'/n'/0', addrIndex 0
+//   standard BIP-44        m/44'/313'/a'/0/i    -> isHardened=0, parent m/44'/313'/a'/0,   addrIndex i
 // usage: node prepare.js "<mnemonic>" <oldAddr 0x..|zil1..> <newAddr> <domain dec|0x> [passphrase]
 const bip39=require('@scure/bip39'); const {HDKey}=require('@scure/bip32');
+const { bech32 } = require('@scure/base');
 const crypto=require('crypto'); const fs=require('fs');
-const pathFull  =n=>`m/44'/313'/${n}'/0'/0'`;   // full account path (to find which account matches)
-const pathParent=n=>`m/44'/313'/${n}'/0'`;      // the level-4 parent node fed to the circuit
-const MAX_ACCT=100;
+const { validateMnemonic } = bip39;
+// Every BIP-39 wordlist @scure/bip39 ships. Checksum validation is MANDATORY and wordlist-agnostic:
+// a mnemonic is accepted only if it checksums against exactly one of these (see F-2026-19003).
+const WORDLISTS = {
+  czech:                 require('@scure/bip39/wordlists/czech.js').wordlist,
+  english:               require('@scure/bip39/wordlists/english.js').wordlist,
+  french:                require('@scure/bip39/wordlists/french.js').wordlist,
+  italian:               require('@scure/bip39/wordlists/italian.js').wordlist,
+  japanese:              require('@scure/bip39/wordlists/japanese.js').wordlist,
+  korean:                require('@scure/bip39/wordlists/korean.js').wordlist,
+  portuguese:            require('@scure/bip39/wordlists/portuguese.js').wordlist,
+  spanish:               require('@scure/bip39/wordlists/spanish.js').wordlist,
+  'simplified-chinese':  require('@scure/bip39/wordlists/simplified-chinese.js').wordlist,
+  'traditional-chinese': require('@scure/bip39/wordlists/traditional-chinese.js').wordlist,
+};
+function detectMnemonicLanguages(mnemonic){
+  return Object.entries(WORDLISTS).filter(([, wl]) => validateMnemonic(mnemonic, wl)).map(([name]) => name);
+}
+const MAX_ACCT=100;   // Ledger:  scan account n in m/44'/313'/n'/0'/0'
+const STD_ACCT=5;     // BIP-44:   scan account a in m/44'/313'/a'/0/i
+const STD_IDX=100;    // BIP-44:   scan address_index i in m/44'/313'/a'/0/i
 const P=21888242871839275222246405745257275088548364400416034343698204186575808495617n;
-const mnemonic=process.argv[2]; const oldA=(process.argv[3]||'').trim(); const newA=(process.argv[4]||'').trim();
+const mnemonic=(process.argv[2]||'').trim().replace(/\s+/g,' '); const oldA=(process.argv[3]||'').trim(); const newA=(process.argv[4]||'').trim();
 const domArg=(process.argv[5]||'').trim(); const pass=process.argv[6]||'';
 if(!mnemonic||!oldA||!newA||!domArg){console.error('usage: node prepare.js "<mnemonic>" <oldAddr> <newAddr> <domain dec|0x> [passphrase]');process.exit(1);}
-const CH="qpzry9x8gf2tvdw0s3jn54khce6mua7l";
-function bech32dec(s){const dp=s.toLowerCase().split('1').pop();const v=[...dp].map(c=>CH.indexOf(c)).slice(0,-6);
-  let acc=0,bits=0,out=[];for(const x of v){acc=(acc<<5)|x;bits+=5;while(bits>=8){bits-=8;out.push((acc>>bits)&0xff);}}return Buffer.from(out);}
-function addr20(a){let w;if(a.startsWith('0x')||/^[0-9a-fA-F]{40}$/.test(a))w=Buffer.from(a.replace(/^0x/,''),'hex');else w=bech32dec(a);
-  if(w.length!==20){console.error('bad address: '+a);process.exit(1);}return w;}
+// Decode a Zilliqa bech32 address with FULL checksum + HRP validation (BIP-173). @scure/base's
+// bech32.decodeToBytes throws on a bad checksum, invalid character, or non-canonical padding; we then
+// require the 'zil' HRP so a valid address from another network can't be silently accepted. F-2026-18999.
+function bech32dec(s){
+  const { prefix, bytes } = bech32.decodeToBytes(s);
+  if (prefix !== 'zil') throw new Error(`expected a "zil" address, got HRP "${prefix}"`);
+  return Buffer.from(bytes);
+}
+function addr20(a){
+  const isHex = a.startsWith('0x') || /^[0-9a-fA-F]{40}$/.test(a);
+  let w;
+  try { w = isHex ? Buffer.from(a.replace(/^0x/,''),'hex') : bech32dec(a); }
+  catch(e){ console.error('ERROR: bad address "'+a+'": '+(e && e.message ? e.message : e)); process.exit(1); }
+  if(w.length!==20){console.error('ERROR: bad address "'+a+'": expected 20 bytes, got '+w.length);process.exit(1);}
+  return w;
+}
 function domField(s){let v=BigInt(s);v=((v%P)+P)%P;return v;}
 const wantOld=addr20(oldA); const wantNew=addr20(newA); const dom=domField(domArg);
 const seed=bip39.mnemonicToSeedSync(mnemonic,pass);                 // PBKDF2, off-circuit
 const master=HDKey.fromMasterSeed(seed);
-const addrAt=n=>crypto.createHash('sha256').update(Buffer.from(master.derive(pathFull(n)).publicKey)).digest().subarray(12);
-let acct=-1;
-for(let n=0;n<MAX_ACCT;n++){ if(Buffer.compare(addrAt(n),wantOld)===0){acct=n;break;} }
-if(acct<0){console.error(`ERROR: old address 0x${wantOld.toString('hex')} not found in accounts 0..${MAX_ACCT-1}.`);process.exit(1);}
-const parent=master.derive(pathParent(acct));                      // level-4 node: private input
+const sha20=node=>crypto.createHash('sha256').update(Buffer.from(node.publicKey)).digest().subarray(12);
+// BIP-32 conformance, mirroring the in-circuit F-2026-19024 checks: @scure's HDKey.derive throws when a
+// step's HMAC left half IL >= n or the child key is 0 — exactly the cases the circuit rejects. Treat such
+// (astronomically rare, ~2^-128) indices as non-matching and move on, per BIP-32's "skip to next index".
+const derive=p=>{try{return master.derive(p);}catch(e){return null;}};
+
+// Find which derivation matches the OLD address. Ledger (all-hardened) first, then standard BIP-44.
+let found=null;
+for(let n=0;n<MAX_ACCT && !found;n++){
+  const leaf=derive(`m/44'/313'/${n}'/0'/0'`);
+  if(leaf && Buffer.compare(sha20(leaf),wantOld)===0)
+    found={isHardened:1,parent:derive(`m/44'/313'/${n}'/0'`),addrIndex:0,label:`m/44'/313'/${n}'/0'/0'  (Ledger, all-hardened)`};
+}
+for(let a=0;a<STD_ACCT && !found;a++)for(let i=0;i<STD_IDX && !found;i++){
+  const leaf=derive(`m/44'/313'/${a}'/0/${i}`);
+  if(leaf && Buffer.compare(sha20(leaf),wantOld)===0)
+    found={isHardened:0,parent:derive(`m/44'/313'/${a}'/0`),addrIndex:i,label:`m/44'/313'/${a}'/0/${i}  (standard BIP-44, non-hardened)`};
+}
+if(!found){console.error(`ERROR: old address 0x${wantOld.toString('hex')} not found as a Ledger account (n<${MAX_ACCT}) or BIP-44 leaf (a<${STD_ACCT}, i<${STD_IDX}).`);process.exit(1);}
+const parent=found.parent;
 const msb=b=>{let a=[];for(const x of b)for(let i=7;i>=0;i--)a.push((x>>i)&1);return a;};
 fs.writeFileSync('circuit_in.json',JSON.stringify({
   parentPriv:msb(Buffer.from(parent.privateKey)),
   parentCC:msb(Buffer.from(parent.chainCode)),
+  addrIndex:String(found.addrIndex),
+  isHardened:String(found.isHardened),
   expectedAddr:BigInt('0x'+wantOld.toString('hex')).toString(),
   newAddr:BigInt('0x'+wantNew.toString('hex')).toString(),
   domain:dom.toString()
 }));
 console.log('old (expected) : 0x'+wantOld.toString('hex'));
-console.log('account index  : '+acct+"   (parent node m/44'/313'/"+acct+"'/0' fed to circuit)");
+console.log('matched path   : '+found.label);
+console.log('isHardened     : '+found.isHardened+'   (public input; 1=Ledger, 0=BIP-44)');
+console.log('parent -> circ : priv+chaincode of the level-4 node; final step done in-circuit');
 console.log('derived==old   : true');
 console.log('new (dest)     : 0x'+wantNew.toString('hex'));
 console.log('domain (field) : '+dom.toString());

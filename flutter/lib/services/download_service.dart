@@ -221,6 +221,20 @@ class DownloadService {
     }
   }
 
+  Future<bool> verifyArtifact() async {
+    final dir = await getCacheDir();
+    final File file = _fileFor(dir, ProvingArtifacts.artifact.fileName);
+
+    final input = sha256.createSink();
+    await for (final chunk in file.openRead()) {
+      input.add(chunk);
+      await Future.delayed(Duration.zero);
+    }
+
+    final checksum = input.digest().toString();
+    return _hashMatches(checksum, ProvingArtifacts.artifact.checksum);
+  }
+
   Future<String> pathFor() async {
     final dir = await getCacheDir();
     return _fileFor(dir, ProvingArtifacts.artifact.fileName).path;

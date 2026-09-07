@@ -17,7 +17,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.widgetWithText(Card, 'Ledger Security Incident'),
+      find.widgetWithText(Card, 'Legacy Account Migration'),
       findsAtLeastNWidgets(1),
     );
     // Verify that our counter starts at 0.

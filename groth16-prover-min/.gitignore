@@ -11,3 +11,4 @@ public.json
 calldata.txt
 circuit_in.json
 *.wtns
+package-lock.json

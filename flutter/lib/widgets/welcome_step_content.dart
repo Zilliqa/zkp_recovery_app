@@ -33,10 +33,16 @@ const List<InfoCardData> welcomeInfoCards = [
         'In Step 4, enable Flight mode and disable WiFi for added safety.',
   ),
   InfoCardData(
+    icon: Icons.savings,
+    title: 'Lodge your balance',
+    body:
+        'Send your entire legacy account balance to the Escrow contract.',
+  ),
+  InfoCardData(
     icon: Icons.upload_file,
     title: 'Submit the calldata',
     body:
-        'In Step 5, copy the calldata and submit it to the Escrow contract.',
+        'Copy the calldata and submit it to the Escrow contract to claim your funds.',
   ),
 ];
 

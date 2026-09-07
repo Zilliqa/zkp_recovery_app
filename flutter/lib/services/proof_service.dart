@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:bech32/bech32.dart';
 import 'package:bip32_keys/bip32_keys.dart';
@@ -14,25 +13,22 @@ import 'package:mopro_flutter_bindings/src/rust/third_party/zkp_recovery_app.dar
 /// Result of a Groth16 proof computation: the proof itself and the
 /// public outputs it attests to, plus the combined Solidity
 /// `abi.encode(bytes,bytes)` payload ready to paste into a wallet.
-class ProofResult {
-  final String proof;
-  final String publicOutputs;
-  final String abiEncodedHex;
 
-  const ProofResult({
-    required this.proof,
-    required this.publicOutputs,
-    required this.abiEncodedHex,
+class AccountData {
+  final Bip32Keys parent;
+  final int index;
+  final int hardened;
+
+  const AccountData({
+    required this.parent,
+    required this.index,
+    required this.hardened,
   });
 }
 
 class ProofService {
   ProofService._();
   static final ProofService instance = ProofService._();
-
-  Future<Directory> _getCacheDir() async {
-    return DownloadService.instance.getCacheDir();
-  }
 
   /// Computes the Groth16 Proof
   ///
@@ -41,7 +37,7 @@ class ProofService {
   /// @param eAddress   The clean ECDSA address.
   /// @param zAddress   The old Schnorr address.
   /// @param language   The BIP39 language set to use.
-  Future<ProofResult> computeGroth16Proof({
+  Future<String> computeGroth16Proof({
     required String passphrase,
     required String mnemonic,
     required String eAddress,
@@ -56,7 +52,10 @@ class ProofService {
         ? hexToBytes(zAddress)
         : bech32ToBytes(zAddress));
     if (listEquals(evmAddress, zilAddress)) {
-      throw Exception("EVM == ZIL is not allowed");
+      throw UnsupportedError("EVM == ZIL is not allowed");
+    }
+    if (!evmAddress.any((b) => b != 0) || !zilAddress.any((b) => b != 0)) {
+      throw UnsupportedError("EVM/ZIL must be non-zero");
     }
 
     // Master key, derived once - each path derivation walks down from here.
@@ -64,35 +63,53 @@ class ProofService {
     try {
       // Compute master key from seed/xprv; throws exception if invalid.
       if (mnemonic.startsWith("xprv")) {
-        hdKey = Bip32Keys.fromBase58(mnemonic);
+        throw UnsupportedError("XPRV key unsupported");
       } else {
-        final bip39 = Mnemonic.fromSentence(
-          mnemonic,
-          language,
-          passphrase: passphrase,
-        );
-        hdKey = Bip32Keys.fromSeed(
-          Uint8List.fromList(bip39.seed),
-        ); // does not store seed
+        if (language == Language.japanese) {
+          final sentence = mnemonic.replaceAll(RegExp(r'[ 　]+'), '　').trim();
+          final bip39 = Mnemonic.fromSentence(
+            sentence,
+            Language.japanese,
+            passphrase: passphrase,
+          );
+          hdKey = Bip32Keys.fromSeed(
+            Uint8List.fromList(bip39.seed),
+          ); // does not store seed
+        } else {
+          final bip39 = Mnemonic.fromSentence(
+            mnemonic,
+            language,
+            passphrase: passphrase,
+          );
+          hdKey = Bip32Keys.fromSeed(
+            Uint8List.fromList(bip39.seed),
+          ); // does not store seed
+        }
       }
     } catch (_) {
       rethrow;
     }
+    log("BIP39 fingerprint ${bytesToHex(hdKey.fingerprint)}");
 
     // Find old account index; throws exception if not found
-    final parent = await findAccountParent(hdKey, zilAddress, wallet);
-    if (parent == null) {
-      throw Exception(
-        "ZIL address does not seem to be derived from mnemonic-seed or master-key.",
+    final account = await findAccountParent(hdKey, zilAddress, wallet);
+    if (account == null) {
+      throw UnsupportedError(
+        "ZIL address does not seem to be derived from mnemonic-seed, or unsupported wallet.",
       );
     }
+    log(
+      "Parent fingerprint ${bytesToHex(account.parent.fingerprint)}",
+    );
 
     // Encode the Circom inputs in the Arkworks format.
     // Arkworks uses a different encoding format than Rapidsnark.
     // This object serializes into the expected encoding format for Arkworks.
     final inputs = {
-      'parentPriv': expand256(parent.private!),
-      'parentCC': expand256(parent.chainCode),
+      'parentPriv': expand256(account.parent.private!),
+      'parentCC': expand256(account.parent.chainCode),
+      'addrIndex': [account.index.toString()],
+      'isHardened': [account.hardened.toString()],
       'expectedAddr': [BigInt.parse(bytesToHex(zilAddress)).toString()],
       'newAddr': [BigInt.parse(bytesToHex(evmAddress)).toString()],
       'domain': [
@@ -100,9 +117,17 @@ class ProofService {
       ], // Hard-coded domain separator
     };
 
+    // Verify ZKEY file before use
+    if (!await DownloadService.instance.verifyArtifact()) {
+      throw StateError(
+        'Proving key failed integrity check; re-download required.',
+      );
+    }
+    log("ZKEY checksum ${ProvingArtifacts.artifact.checksum}");
+
     // Compute the Circom proof
+    final zkeyPath = await DownloadService.instance.pathFor();
     CircomProofResult? result;
-    final zkeyPath = '${(await _getCacheDir()).path}/groth_final.zkey';
     // Groth16 (~1GB RAM):
     //  - FCN_sprout    : <6m
     //  - emu64xa       : <2m
@@ -112,16 +137,23 @@ class ProofService {
       circuitInputs: jsonEncode(inputs),
       proofLib: ProofLib.arkworks,
     );
+    log("GROTH16 proof ${result.proof.protocol}/${result.proof.curve}");
+
+    // check the result
+    final check = await verifyCircomProof(
+      zkeyPath: zkeyPath,
+      proofResult: result,
+      proofLib: ProofLib.arkworks,
+    );
+    if (!check) {
+      throw Exception('Generated proof is invalid');
+    }
+    log("GROTH16 validated $check");
 
     // Encode the outputs
     final calldata = encodeCallData(result);
-    final output = ProofResult(
-      proof: "",
-      publicOutputs: "",
-      abiEncodedHex: bytesToHex(calldata),
-    );
-
-    log(output.abiEncodedHex);
+    final output = bytesToHex(calldata);
+    log("CALLDATA $output");
     return output;
   }
 
@@ -141,41 +173,44 @@ class ProofService {
   /// Searches derivation indices m/44'/313'/n'/0'/0' for n in [0, 1000)
   /// and returns the matching index, or throws if none of the derived
   /// keys match [knownAddress]. This path is unique to Ledger-Zilliqa.
-  Future<Bip32Keys?> findAccountParent(
+  Future<AccountData?> findAccountParent(
     Bip32Keys masterKey,
     Uint8List knownAddress,
     Wallets wallet,
   ) async {
-    for (int n = 0; n < 1000; n++) {
-      final derivedAddress = _deriveAddress(masterKey, wallet, n);
-      if (listEquals(knownAddress, derivedAddress)) {
-        log("${bytesToHex(knownAddress)} found at $n");
-        return _deriveParent(masterKey, wallet, n);
-      }
-      await Future.delayed(Duration.zero); // yield to prevent UI freeze
-    }
-    return null;
-  }
-
-  // Derive m/44'/313'/n'/0'/0' for n = 0..1000 and compare
-  Uint8List _deriveAddress(Bip32Keys masterKey, Wallets wallet, int n) {
     switch (wallet) {
       case Wallets.ledger:
-        final derivedKey = masterKey.derivePath("m/44'/313'/$n'/0'/0'");
-        return Uint8List.fromList(
-          sha256.convert(derivedKey.public).bytes,
-        ).sublist(12);
-      default:
-        throw Exception("unsupported wallet");
-    }
-  }
-
-  Bip32Keys _deriveParent(Bip32Keys masterKey, Wallets wallet, int n) {
-    switch (wallet) {
-      case Wallets.ledger:
-        return masterKey.derivePath("m/44'/313'/$n'/0'");
-      default:
-        throw Exception("unsupported wallet");
+        // Derive m/44'/313'/n'/0'/0'
+        for (int n = 0; n < 1000; n++) {
+          final derivedAddress = Uint8List.fromList(
+            sha256
+                .convert(masterKey.derivePath("m/44'/313'/$n'/0'/0'").public)
+                .bytes,
+          ).sublist(12);
+          if (listEquals(knownAddress, derivedAddress)) {
+            final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
+            return AccountData(parent: parent, index: 0, hardened: 1);
+          }
+          await Future.delayed(Duration.zero); // yield to prevent UI freeze
+        }
+        return null;
+      case Wallets.others:
+        // Derive m/44'/313'/n'/0/i
+        for (int n = 0; n < 10; n++) {
+          for (int i = 0; i < 100; i++) {
+            final derivedAddress = Uint8List.fromList(
+              sha256
+                  .convert(masterKey.derivePath("m/44'/313'/$n'/0/$i").public)
+                  .bytes,
+            ).sublist(12);
+            if (listEquals(knownAddress, derivedAddress)) {
+              final parent = masterKey.derivePath("m/44'/313'/$n'/0");
+              return AccountData(parent: parent, index: i, hardened: 0);
+            }
+            await Future.delayed(Duration.zero); // yield to prevent UI freeze
+          }
+        }
+        return null;
     }
   }
 
@@ -193,6 +228,11 @@ class ProofService {
     for (int i = 0; i < result.length; i++) {
       final byteStr = cleaned.substring(i * 2, i * 2 + 2);
       result[i] = int.parse(byteStr, radix: 16);
+    }
+    if (result.length != 20) {
+      throw FormatException(
+        'expected a 20-byte address, got ${result.length} bytes',
+      );
     }
     return result;
   }
@@ -218,11 +258,23 @@ class ProofService {
         bytes.add((buffer >> bits) & 0xFF);
       }
     }
-
-    return Uint8List.fromList(bytes);
+    final leftoverMask = (1 << bits) - 1;
+    if (bits >= 5 || (buffer & leftoverMask) != 0) {
+      throw const FormatException('bech32: non-canonical padding');
+    }
+    final decoded = Uint8List.fromList(bytes);
+    if (decoded.length != 20) {
+      throw FormatException(
+        'expected a 20-byte address, got ${decoded.length} bytes',
+      );
+    }
+    return decoded;
   }
 
   Uint8List _bigIntToUint256(BigInt value) {
+    if (value < BigInt.zero || value >= (BigInt.one << 256)) {
+      throw ArgumentError('value does not fit in 256 bits: $value');
+    }
     final bytes = Uint8List(32);
     var v = value;
     for (int i = 31; i >= 0; i--) {
@@ -233,13 +285,11 @@ class ProofService {
   }
 
   Uint8List encodeCallData(CircomProofResult result) {
-    assert(result.inputs.length == 3, 'Expected exact inputs');
+    assert(result.inputs.length == 4, 'Expected exact inputs');
 
-    final selector = hexToBytes(
-      keccak256sum(
-        'verifyProof(uint256[2],uint256[2][2],uint256[2],uint256[3])',
-      ).substring(0, 8),
-    ); // hardcoded
+    // https://4byte.sourcify.dev/?q=cf1c9461
+    // claim(uint256[2],uint256[2][2],uint256[2],uint256[4])
+    final selector = Uint8List.fromList([0xcf, 0x1c, 0x94, 0x61]);
 
     final words = [
       result.proof.a.x,
@@ -253,6 +303,7 @@ class ProofService {
       result.inputs[0],
       result.inputs[1],
       result.inputs[2],
+      result.inputs[3],
     ];
 
     final builder = BytesBuilder();

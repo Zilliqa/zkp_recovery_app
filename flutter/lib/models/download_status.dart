@@ -17,18 +17,15 @@ class RemoteFileSpec {
   });
 }
 
-/// Hardcoded GCS public bucket locations for the proving artifacts.
-///
-/// TODO: Replace with pinned values.
-/// Use a semver naming convention for the file e.g. ledger_26.8.7.zkey
+/// Hardcoded GCS public bucket location for the proving artifacts.
 class ProvingArtifacts {
   static const RemoteFileSpec artifact = RemoteFileSpec(
     displayName: 'Circuit Key File',
     fileName: 'groth_final.zkey',
     url:
-        'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey',
+        'https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/final.zkey',
     checksum:
-        'dc48de69b283cebdf2ca258c29a70e0480f398481f70c24437a4cabda82ce4d8',
+        '87191dc220d5cb0111442273a3232267d9029755674da0ee76f4a332b456d97d',
   );
 }
 
@@ -45,4 +42,4 @@ class FileDownloadProgress {
   });
 }
 
-enum Wallets { atomic, ledger, moonlet, torch, trust, zillet, zilpay }
+enum Wallets { ledger, others }

@@ -1,4 +1,5 @@
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
+import 'package:eip55/eip55.dart';
 import 'package:flutter/material.dart';
 import 'package:zkp_recovery_app/models/download_status.dart';
 
@@ -36,18 +37,16 @@ class InputStepContent extends StatelessWidget {
 
   String? _validateMnemonic(String? value) {
     final trimmed = (value ?? '').trim();
-    if (trimmed.isEmpty) return 'Seed phrase is required';
-    if (trimmed.startsWith("xprv")) {
-      if (RegExp(r'^xprv[1-9A-HJ-NP-Za-km-z]{107}$').hasMatch(trimmed)) {
-        return null;
-      }
-      return 'Invalid XPRV value';
-    }
+    if (trimmed.isEmpty) return 'Mnemonic-seed is required';
     final words = trimmed.split(RegExp(r'\s+'));
-    if (words.length != 12 && words.length != 24) {
-      return 'Expected 12/24 words, got ${words.length}';
+    if (words.length != 12 &&
+        words.length != 15 &&
+        words.length != 18 &&
+        words.length != 21 &&
+        words.length != 24) {
+      return 'Expected 12/15/18/21/24 words, got ${words.length}';
     }
-    if (!words.every((w) => RegExp(r'^[a-z]+$').hasMatch(w))) {
+    if (!words.every((w) => w == w.toLowerCase())) {
       return 'Words should be lowercase letters only';
     }
     return null;
@@ -58,6 +57,10 @@ class InputStepContent extends StatelessWidget {
     if (trimmed.isEmpty) return 'EVM address is required';
     if (!RegExp(r'^0x[0-9a-fA-F]{40}$').hasMatch(trimmed)) {
       return 'Expected a 0x-prefixed address';
+    }
+    final eip55 = toEIP55Address(trimmed);
+    if (eip55 != trimmed) {
+      return 'Invalid EIP-55 address';
     }
     return null;
   }
@@ -116,11 +119,8 @@ class InputStepContent extends StatelessWidget {
             enableSuggestions: false,
             keyboardType: TextInputType.visiblePassword,
           ),
-                    const SizedBox(height: 16),
-          Text(
-            'Original seed wallet',
-            style: theme.textTheme.bodyMedium,
-          ),
+          const SizedBox(height: 16),
+          Text('Original seed wallet', style: theme.textTheme.bodyMedium),
           const SizedBox(height: 16),
           DropdownMenu<Wallets>(
             enabled: !isComputingProof,
@@ -146,8 +146,8 @@ class InputStepContent extends StatelessWidget {
             obscureText: (obscureMnemonic || isComputingProof),
             maxLines: 1,
             decoration: InputDecoration(
-              labelText: 'Mnemonic-seed or Private-key',
-              hint: const Text('xprv… or 12/24-word mnemonic'),
+              labelText: 'Mnemonic-seed',
+              hint: const Text('Mnemonic-seed phrase'),
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: Icon(
