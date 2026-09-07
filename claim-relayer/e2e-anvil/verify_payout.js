@@ -18,11 +18,15 @@ async function main() {
   const escrow = new ethers.Contract(escrowAddr, ['function balanceOf(address) view returns (uint256)'], provider);
   const remaining = await escrow.balanceOf(oldAddr);
   const dstBal = await provider.getBalance(newAddr);
+  // Compare the CHANGE in the destination balance, not its absolute value, so re-running against a
+  // still-running anvil (where newAddr already holds a previous payout) still passes.
+  const before = BigInt(fs.readFileSync(path.join(HERE, '.dst_before'), 'utf8').trim());
+  const delta = dstBal - before;
 
   const drained = remaining === 0n;
-  const paid = dstBal === LODGE_WEI; // newAddr is a fresh address that started at 0
-  console.log(`escrow.balances[${oldAddr}] = ${remaining} (want 0)      -> ${drained ? 'OK' : 'FAIL'}`);
-  console.log(`balance(${newAddr}) = ${ethers.formatEther(dstBal)} ETH (want ${ethers.formatEther(LODGE_WEI)}) -> ${paid ? 'OK' : 'FAIL'}`);
+  const paid = delta === LODGE_WEI;
+  console.log(`escrow.balanceOf(${oldAddr}) = ${remaining} (want 0)      -> ${drained ? 'OK' : 'FAIL'}`);
+  console.log(`dst received Δ = ${ethers.formatEther(delta)} ZIL (want ${ethers.formatEther(LODGE_WEI)}) -> ${paid ? 'OK' : 'FAIL'}`);
   if (drained && paid) { console.log('\n✅ e2e PASS — relayer claimed and funds moved to the proof-bound destination'); }
   else { console.error('\n❌ e2e FAIL'); process.exit(1); }
 }

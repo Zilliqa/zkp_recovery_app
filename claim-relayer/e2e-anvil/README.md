@@ -44,7 +44,7 @@ anvil --chain-id 32769
 ./run.sh
 ```
 
-`run.sh` compiles the escrow, deploys it, lodges 1 ETH for the source address (impersonated), runs the
+`run.sh` compiles the escrow, deploys it, lodges 1 ZIL for the source address (impersonated), runs the
 **real `relay.js`** against anvil, then asserts the payout. Expected tail:
 
 ```
@@ -82,5 +82,6 @@ To exercise Form → Sheet → relayer instead of the local file:
 
 - The relayer key only pays gas; every proof binds its own destination (`newAddr` is a public input),
   so the relayer cannot redirect funds.
-- Re-running: restart anvil for a clean slate (a fresh escrow + zeroed balances), or the destination will
-  already hold the previous payout and the balance assertion won't match.
+- Re-running is safe without restarting anvil: each run deploys a fresh escrow, and the payout check
+  compares the destination's balance **change** (snapshotted before the claim), not its absolute value —
+  so an accumulating `newAddr` balance (1 → 2 → 3 ZIL across runs) still passes.

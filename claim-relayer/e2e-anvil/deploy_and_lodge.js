@@ -51,13 +51,16 @@ async function main() {
   const lodged = await escrow.balanceOf(oldAddr);
   if (lodged !== LODGE_WEI) throw new Error(`lodge failed: balanceOf(old)=${lodged}, expected ${LODGE_WEI}`);
 
-  // 3) Emit outputs for the next steps (relay + verify).
+  // 3) Emit outputs for the next steps (relay + verify). Snapshot the destination balance BEFORE the
+  //    claim so verify_payout can assert the CHANGE — re-runs on shared anvil state then still pass.
+  const dstBefore = await provider.getBalance(newAddr);
   fs.writeFileSync(path.join(HERE, '.escrow_addr'), escrowAddr);
+  fs.writeFileSync(path.join(HERE, '.dst_before'), dstBefore.toString());
   fs.writeFileSync(path.join(HERE, 'calldata.txt'), calldata + '\n'); // paste-into-Form content / relay source
 
   console.log('escrow deployed :', escrowAddr);
-  console.log('lodged          :', ethers.formatEther(LODGE_WEI), 'ETH for src', oldAddr);
-  console.log('dst (newAddr)   :', newAddr, '(currently', ethers.formatEther(await provider.getBalance(newAddr)), 'ETH)');
+  console.log('lodged          :', ethers.formatEther(LODGE_WEI), 'ZIL for src', oldAddr);
+  console.log('dst (newAddr)   :', newAddr, '(currently', ethers.formatEther(dstBefore), 'ZIL)');
   console.log('calldata written:', path.join(HERE, 'calldata.txt'));
   console.log('\nNext: run relay.js against this escrow (see README), or paste calldata.txt into the Google Form.');
 }
