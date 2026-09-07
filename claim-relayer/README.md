@@ -41,13 +41,13 @@ that constraint.)
    0 6 * * *  cd /path/to/claim-relayer && /usr/bin/node relay.js >> relay.log 2>&1
    ```
 
-## Calldata format (confirmed)
-The form field is the **complete `0x…` transaction data** for the escrow's `claim()` — verified against
-the Flutter app (`proof_service.dart` `encodeCallData`): 4-byte selector `0xcf1c9461`
-(`claim(uint256[2],uint256[2][2],uint256[2],uint256[4])`) + ABI-encoded proof (a,b,c) + 4 public inputs.
-The script checks the selector and sends the bytes verbatim as `tx.data` — no ABI/Interface needed.
+## Calldata format
+The form field is the **complete `0x…` transaction data** for the escrow's `claim()`: 4-byte selector
+`0xcf1c9461` (`claim(uint256[2],uint256[2][2],uint256[2],uint256[4])`) + ABI-encoded proof (a,b,c) +
+4 public inputs — **388 bytes**. The relayer checks the selector and exact length, then sends the bytes
+verbatim as `tx.data` (no ABI/Interface needed).
 
-## Other assumptions
+## Assumptions
 - **Append-only responses.** Form submissions only append, so a row's position is a stable cursor key.
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces). Fine for a
   daily batch; parallelize with explicit nonce management if volume grows.
