@@ -33,7 +33,7 @@ contract EscrowE2E {
         vm.deal(OLD, AMOUNT);
         vm.prank(OLD);
         escrow.lodge{value: AMOUNT}();
-        require(escrow.balances(OLD) == AMOUNT, "lodge did not credit the legacy address");
+        require(escrow.balanceOf(OLD) == AMOUNT, "lodge did not credit the legacy address");
         require(NEW.balance == 0, "destination should start empty");
 
         // 2) CLAIM — submit the app calldata verbatim (exactly what the relayer sends)
@@ -42,7 +42,7 @@ contract EscrowE2E {
 
         // 3) ASSERT — funds moved to the proof-bound destination; source balance zeroed
         require(NEW.balance == AMOUNT, "funds did not reach newAddr");
-        require(escrow.balances(OLD) == 0, "source balance not cleared");
+        require(escrow.balanceOf(OLD) == 0, "source balance not cleared");
     }
 
     function test_replay_moves_nothing() public {

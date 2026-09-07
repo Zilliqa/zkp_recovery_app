@@ -8,7 +8,12 @@ import {Groth16Verifier} from "./verifier.sol";
 // self-call (this.verifyProof) only so its assembly `return` yields a correct bool — the real escrow
 // uses the integrated `internal verifyProof`. The logic (domain check, verify, balance move) is identical.
 contract Escrow is Groth16Verifier {
-    mapping(address => uint256) public balances;
+    mapping(address => uint256) internal balances;
+
+    // Matches the real zq2 escrow's accessor — relay.js and the anvil harness read via balanceOf().
+    function balanceOf(address account) external view returns (uint256) {
+        return balances[account];
+    }
 
     event Deposited(address indexed from, uint256 amount);
     event Released(address indexed src, address indexed dst, uint256 amount);
