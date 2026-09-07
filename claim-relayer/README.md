@@ -10,10 +10,17 @@ compromised relayer key can at worst stop relaying or waste its own gas.
 
 ## How it works
 1. Reads the Form's **linked Google Sheet** (one row per submission) via a service account.
-2. For each new row: shape-checks the calldata, **simulates** `claim()` with `eth_call` (catches
-   invalid proof / already-claimed / missing deposit — no gas spent), and only then **submits** it.
+2. For each new row: **shape-checks** the calldata (hex, `claim()` selector `0xcf1c9461`, exact
+   388-byte fixed length) → **balance guard** (`balanceOf(srcAddress) > 0`) → **simulates** `claim()`
+   with `eth_call` (no gas spent) → and only then **submits** it.
 3. Tracks a local **cursor** (rows processed) so it never re-submits; on-chain "already claimed" is the
    backstop, so a duplicate would just revert in simulation and be skipped.
+
+The **balance guard** reproduces `require(amount > 0)` relay-side, so no gas is wasted on zero-value
+claims **even if the escrow doesn't revert on them**. ⚠ It treats `balance == 0` as final (skip + advance
+the cursor) — so **users must deposit *before* pasting their calldata into the form**; a claim submitted
+before its deposit lands is dropped and not retried. (A per-row retry model — see below — would remove
+that constraint.)
 
 ## Setup
 1. **Link the Form to a Sheet** — Form editor → Responses → *Link to Sheets*. Note the column header
@@ -46,10 +53,12 @@ The script checks the selector and sends the bytes verbatim as `tx.data` — no 
   daily batch; parallelize with explicit nonce management if volume grows.
 
 ## Not in this sketch (add for production)
+- **Per-row retry state** (instead of the single linear cursor) so `balance == 0` rows can be retried
+  later — removes the "deposit before submitting" constraint above.
 - Alerting/metrics (submitted / skipped / reverted counts), structured logs.
 - Relayer gas-balance monitoring and top-up.
 - Optional: write a `status` column back to the Sheet per row (needs a read/write scope).
-- Rate-limit / batch-size caps and a dry-run mode.
+- Rate-limit / batch-size caps.
 
 ## Security notes
 - `service-account.json` and `.env` (with `RELAYER_PRIVATE_KEY`) are secrets — git-ignored here; store

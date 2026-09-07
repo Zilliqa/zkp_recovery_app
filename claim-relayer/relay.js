@@ -35,6 +35,7 @@ for (const [k, v] of Object.entries({ RPC_URL, ESCROW_ADDRESS, RELAYER_PRIVATE_K
 
 const DRY_RUN = process.argv.includes('--dry-run') || process.env.DRY_RUN === '1';
 const CLAIM_SELECTOR = '0xcf1c9461'; // claim(uint256[2],uint256[2][2],uint256[2],uint256[4])
+const CLAIM_HEX_LEN = 778;           // fixed size: '0x' + 4-byte selector + 12×32-byte words = 388 bytes
 if (DRY_RUN) console.log('[dry-run] will simulate and report only — no transactions sent, cursor not advanced');
 
 // --- Read response rows from the Form's linked Sheet (service-account, read-only) ---
@@ -59,6 +60,8 @@ const writeCursor = (n) => fs.writeFileSync(CURSOR_FILE, String(n));
 async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = new ethers.Wallet(RELAYER_PRIVATE_KEY, provider);
+  const claimIface = new ethers.Interface(['function claim(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[4] pub)']);
+  const escrow = new ethers.Contract(ESCROW_ADDRESS, ['function balanceOf(address) view returns (uint256)'], provider);
 
   const rows = await readRows();
   const start = readCursor();
@@ -69,11 +72,25 @@ async function main() {
   for (const { index, calldata } of fresh) {
     const tag = `row ${index + 2}`; // +2: 1 header row, and sheets are 1-based
 
-    // Shape check: must be hex AND start with the claim() selector — rejects pasted junk / wrong data.
-    if (!/^0x[0-9a-fA-F]+$/.test(calldata) || !calldata.toLowerCase().startsWith(CLAIM_SELECTOR)) {
-      console.warn(`${tag}: not a claim() calldata (must start with ${CLAIM_SELECTOR}), skipping`);
+    // Shape check: hex, correct selector, AND the exact fixed length (claim() args are all fixed-size).
+    if (!/^0x[0-9a-fA-F]+$/.test(calldata) || !calldata.toLowerCase().startsWith(CLAIM_SELECTOR) || calldata.length !== CLAIM_HEX_LEN) {
+      console.warn(`${tag}: not a well-formed claim() calldata (selector ${CLAIM_SELECTOR}, exactly ${CLAIM_HEX_LEN} chars), skipping`);
       cursor = index + 1;
       continue;
+    }
+
+    // Balance guard: skip if the source address has nothing lodged. Reproduces on-chain `require(amount>0)`
+    // RELAY-SIDE, so we never waste gas on a zero-value claim even if the escrow doesn't revert on it.
+    // srcAddress = pubSignals[0]. NOTE: balance==0 is treated as final (skip + advance) — so a claim
+    // pasted BEFORE its deposit lands is dropped and not retried; users must deposit first (see README).
+    try {
+      const pub = claimIface.decodeFunctionData('claim', calldata)[3];
+      const src = ethers.getAddress('0x' + (pub[0] & ((1n << 160n) - 1n)).toString(16).padStart(40, '0'));
+      const bal = await escrow.balanceOf(src);
+      if (bal === 0n) { console.warn(`${tag}: no balance lodged for ${src} — skipping`); cursor = index + 1; continue; }
+    } catch (e) {
+      console.warn(`${tag}: balance check failed (${e.shortMessage || e.message}) — skipping`);
+      cursor = index + 1; continue;
     }
 
     // 1) Simulate. Catches invalid proof, already-claimed, missing deposit, etc. — WITHOUT spending gas.
