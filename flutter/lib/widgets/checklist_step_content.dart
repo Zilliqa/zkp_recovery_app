@@ -20,9 +20,9 @@ const List<ChecklistItemData> prepChecklistItems = [
         'Have a EVM-only account ready - this new account will be the destination for your funds.',
   ),
   ChecklistItemData(
-    title: 'Agree to Terms of Use',
+    title: 'Agree to Software License',
     subtitle:
-        'You are deemed to have agreed to terms of use at https://www.zilliqa.com/ledger-incident/',
+        'You are deemed to have agreed to the terms of the GPLv3 at https://www.gnu.org/licenses/gpl-3.0.html',
   ),
 ];
 
