@@ -26,10 +26,13 @@ const {
   SHEET_RANGE = 'Form Responses 1!A:Z',
   CALLDATA_COLUMN = 'Calldata',
   CURSOR_FILE = './.cursor',
+  CALLDATA_FILE, // e2e/local testing ONLY: read calldata from this file instead of the Google Sheet
   // GOOGLE_APPLICATION_CREDENTIALS = path to the service-account JSON key (read by google-auth)
 } = process.env;
 
-for (const [k, v] of Object.entries({ RPC_URL, ESCROW_ADDRESS, RELAYER_PRIVATE_KEY, SHEET_ID })) {
+// SHEET_ID is required only for the real Google-Sheet source; CALLDATA_FILE mode doesn't need it.
+const required = { RPC_URL, ESCROW_ADDRESS, RELAYER_PRIVATE_KEY, ...(CALLDATA_FILE ? {} : { SHEET_ID }) };
+for (const [k, v] of Object.entries(required)) {
   if (!v) { console.error(`Missing required env: ${k}`); process.exit(1); }
 }
 
@@ -38,8 +41,14 @@ const CLAIM_SELECTOR = '0xcf1c9461'; // claim(uint256[2],uint256[2][2],uint256[2
 const CLAIM_HEX_LEN = 778;           // fixed size: '0x' + 4-byte selector + 12×32-byte words = 388 bytes
 if (DRY_RUN) console.log('[dry-run] will simulate and report only — no transactions sent, cursor not advanced');
 
-// --- Read response rows from the Form's linked Sheet (service-account, read-only) ---
+// --- Read response rows: from a local file (e2e/local testing) if CALLDATA_FILE is set, else the Sheet ---
 async function readRows() {
+  if (CALLDATA_FILE) {
+    // Testing source: one 0x-hex claim() calldata per non-empty line, in submission order. Same rows
+    // shape as the Sheet path, so every downstream check (shape, balance, simulate, submit) is identical.
+    const lines = fs.readFileSync(CALLDATA_FILE, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
+    return lines.map((calldata, i) => ({ index: i, calldata }));
+  }
   const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'], // uses GOOGLE_APPLICATION_CREDENTIALS
   });

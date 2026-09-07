@@ -47,6 +47,10 @@ The form field is the **complete `0x…` transaction data** for the escrow's `cl
 4 public inputs — **388 bytes**. The relayer checks the selector and exact length, then sends the bytes
 verbatim as `tx.data` (no ABI/Interface needed).
 
+## Testing
+- **`e2e/`** — `forge test` over the escrow + production verifier (proof → `lodge` → `claim` → funds move), in-process, no node.
+- **`e2e-anvil/`** — full path against a live anvil chain (id `32769`): deploy → impersonate-lodge → the **real `relay.js`** → payout assertion. See `e2e-anvil/README.md`.
+
 ## Assumptions
 - **Append-only responses.** Form submissions only append, so a row's position is a stable cursor key.
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces). Fine for a
