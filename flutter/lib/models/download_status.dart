@@ -17,10 +17,7 @@ class RemoteFileSpec {
   });
 }
 
-/// Hardcoded GCS public bucket locations for the proving artifacts.
-///
-/// TODO: Replace with pinned values.
-/// Use a semver naming convention for the file e.g. ledger_26.8.7.zkey
+/// Hardcoded GCS public bucket location for the proving artifacts.
 class ProvingArtifacts {
   static const RemoteFileSpec artifact = RemoteFileSpec(
     displayName: 'Circuit Key File',
@@ -45,4 +42,4 @@ class FileDownloadProgress {
   });
 }
 
-enum Wallets { ledger, others, }
+enum Wallets { ledger, others }
