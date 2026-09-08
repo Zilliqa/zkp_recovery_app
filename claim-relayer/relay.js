@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Claim relayer — SKETCH / starting point (review & harden before production).
+// Claim relayer — starting point (review & harden before production).
 //
 // Once a day: read new claim entries from the Google Form's linked Sheet, simulate each against the
 // escrow, and submit the ones that would succeed. The relayer key ONLY pays gas — every proof binds

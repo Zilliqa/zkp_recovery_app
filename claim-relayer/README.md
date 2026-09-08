@@ -1,12 +1,12 @@
-# Claim relayer (sketch)
+# Claim relayer
 
-Daily job that reads claim **calldata** users paste into a Google Form, checks each one against the
+Script that reads claim **calldata** users paste into a Google Form, checks each one against the
 escrow, and submits the valid ones. The relayer key **only pays gas** — every proof binds its own
 destination (`newAddr` is a public input), so this script **cannot redirect anyone's funds**; a
 compromised relayer key can at worst stop relaying or waste its own gas.
 
-> **Status: sketch.** Review and harden before production (monitoring, key management, gas policy,
-> retry/alerting). See "Assumptions" below.
+> **Review and harden before production** (monitoring, key management, gas policy, retry/alerting).
+> See "Assumptions" and "Not implemented yet" below.
 
 ## How it works
 1. Reads the Form's **linked Google Sheet** (one row per submission) via a service account.
@@ -16,8 +16,9 @@ compromised relayer key can at worst stop relaying or waste its own gas.
 3. Tracks a local **cursor** (rows processed) so it never re-submits; on-chain "already claimed" is the
    backstop, so a duplicate would just revert in simulation and be skipped.
 
-The **balance guard** reproduces `require(amount > 0)` relay-side, so no gas is wasted on zero-value
-claims **even if the escrow doesn't revert on them**. ⚠ It treats `balance == 0` as final (skip + advance
+The **balance guard** reproduces the escrow's on-chain `require(amount > 0, "No balance lodged")`
+relay-side, so no gas is wasted submitting a zero-value claim that would certainly revert. ⚠ It treats
+`balance == 0` as final (skip + advance
 the cursor) — so **users must deposit *before* pasting their calldata into the form**; a claim submitted
 before its deposit lands is dropped and not retried. (A per-row retry model — see below — would remove
 that constraint.)
@@ -56,7 +57,7 @@ verbatim as `tx.data` (no ABI/Interface needed).
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces). Fine for a
   daily batch; parallelize with explicit nonce management if volume grows.
 
-## Not in this sketch (add for production)
+## Not implemented yet (add for production)
 - **Per-row retry state** (instead of the single linear cursor) so `balance == 0` rows can be retried
   later — removes the "deposit before submitting" constraint above.
 - Alerting/metrics (submitted / skipped / reverted counts), structured logs.
@@ -66,5 +67,6 @@ verbatim as `tx.data` (no ABI/Interface needed).
 
 ## Security notes
 - `service-account.json` and `.env` (with `RELAYER_PRIVATE_KEY`) are secrets — git-ignored here; store
-  them securely. Keep the relayer key **separate** from any escrow-admin key.
+  them securely. The relayer key has **no privilege over the escrow** (a system contract, upgradeable
+  only by `address(0)`) — it only pays gas — so fund it with just what relaying needs.
 - Calldata is **public data** (a proof + public inputs) — nothing secret transits the form.
