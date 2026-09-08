@@ -60,23 +60,38 @@ ESCROW_ADDRESS=$(cat .escrow_addr) \
 RPC_URL=http://127.0.0.1:8545 \
 RELAYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
 CALLDATA_FILE=./calldata.txt CURSOR_FILE=$(mktemp) \
-  node ../relay.js                                 # the real relayer: shape check -> balanceOf guard -> simulate -> submit
+  node ../relay.js                                 # the real relayer: shape check -> simulate -> submit
 node verify_payout.js                              # balances[src]==0 and balance(dst)==lodged
 ```
 
 `CALLDATA_FILE` is a testing-only source in `relay.js`: one `0x` calldata per line, run through the
-**same** shape/balance/simulate/submit path as the Sheet. Everything but the row source is identical.
+**same** shape/simulate/submit path as the Sheet. Everything but the row source is identical.
 
-## Testing the REAL Google Form path too
+## Testing the REAL Google Form + Sheet path
 
-To exercise Form → Sheet → relayer instead of the local file:
+`sheet_demo.js` drives **3 committed example claims** (`examples.json` — accounts 0/1/2 of the public
+test seed, paying 1/2/3 ZIL to distinct destinations) through a real **link-readable** sheet:
 
-1. Create a Google Form with a short-answer **Calldata** question; link it to a responses Sheet.
-2. Submit the contents of `calldata.txt` as one response.
-3. Share the Sheet (Viewer) with your service account and set `RPC_URL`, `ESCROW_ADDRESS`,
-   `RELAYER_PRIVATE_KEY`, `SHEET_ID`, `GOOGLE_APPLICATION_CREDENTIALS` (see `../.env.example`).
-4. Run `node ../relay.js` (no `CALLDATA_FILE`) — it reads the row from the Sheet and submits to the same
-   anvil escrow. `verify_payout.js` still confirms the payout.
+1. **Share** your responses sheet "Anyone with the link can view" (see `../README.md`).
+2. **Deploy + lodge** for all 3 example sources — prints the 3 calldata and the escrow address:
+   ```bash
+   ( cd ../e2e && forge build )
+   node sheet_demo.js
+   ```
+3. **Paste** each printed calldata into the Google Form (one submission each).
+4. **Run the relayer** against your sheet + the printed escrow:
+   ```bash
+   RPC_URL=http://127.0.0.1:8545 ESCROW_ADDRESS=<from step 2> \
+   RELAYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
+   SHEET_ID=<id> SHEET_GID=<gid> CALLDATA_COL=B CURSOR_FILE=$(mktemp) node ../relay.js
+   ```
+5. **Verify** all 3 payouts:
+   ```bash
+   node sheet_demo.js --verify
+   ```
+
+Regenerate the examples (different destinations/amounts) with a matching zkey:
+`ZKEY=/path/to/final.zkey node gen_examples.cjs`.
 
 ## Notes
 
