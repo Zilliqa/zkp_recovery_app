@@ -5,6 +5,7 @@ test = "test"
 solc = "0.8.28"
 optimizer = true
 optimizer_runs = 200
+ignored_error_codes = [5667]
 fs_permissions = [{ access = "read", path = "./claim.json" }]
 # Match zq2's remappings so the vendored escrow_v1.sol/verifier.sol compile unchanged.
 remappings = [
