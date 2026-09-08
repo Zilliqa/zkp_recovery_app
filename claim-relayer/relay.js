@@ -69,8 +69,6 @@ const writeCursor = (n) => fs.writeFileSync(CURSOR_FILE, String(n));
 async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = new ethers.Wallet(RELAYER_PRIVATE_KEY, provider);
-  const claimIface = new ethers.Interface(['function claim(uint256[2] a, uint256[2][2] b, uint256[2] c, uint256[4] pub)']);
-  const escrow = new ethers.Contract(ESCROW_ADDRESS, ['function balanceOf(address) view returns (uint256)'], provider);
 
   const rows = await readRows();
   const start = readCursor();
@@ -88,21 +86,10 @@ async function main() {
       continue;
     }
 
-    // Balance guard: skip if the source address has nothing lodged. Reproduces on-chain `require(amount>0)`
-    // RELAY-SIDE, so we never waste gas on a zero-value claim even if the escrow doesn't revert on it.
-    // srcAddress = pubSignals[0]. NOTE: balance==0 is treated as final (skip + advance) — so a claim
-    // pasted BEFORE its deposit lands is dropped and not retried; users must deposit first (see README).
-    try {
-      const pub = claimIface.decodeFunctionData('claim', calldata)[3];
-      const src = ethers.getAddress('0x' + (pub[0] & ((1n << 160n) - 1n)).toString(16).padStart(40, '0'));
-      const bal = await escrow.balanceOf(src);
-      if (bal === 0n) { console.warn(`${tag}: no balance lodged for ${src} — skipping`); cursor = index + 1; continue; }
-    } catch (e) {
-      console.warn(`${tag}: balance check failed (${e.shortMessage || e.message}) — skipping`);
-      cursor = index + 1; continue;
-    }
-
-    // 1) Simulate. Catches invalid proof, already-claimed, missing deposit, etc. — WITHOUT spending gas.
+    // 1) Simulate. The gate: catches invalid proof, already-claimed, and no-balance-lodged (the escrow
+    //    reverts on amount==0) — WITHOUT spending gas. NOTE: a revert is treated as final (skip + advance
+    //    the cursor), so a claim pasted BEFORE its deposit lands is dropped and not retried; users must
+    //    deposit first (see README).
     try {
       await provider.call({ to: ESCROW_ADDRESS, data: calldata });
     } catch (e) {

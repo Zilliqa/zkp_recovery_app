@@ -11,15 +11,15 @@ compromised relayer key can at worst stop relaying or waste its own gas.
 ## How it works
 1. Reads the Form's **linked Google Sheet** (one row per submission) via a service account.
 2. For each new row: **shape-checks** the calldata (hex, `claim()` selector `0xcf1c9461`, exact
-   388-byte fixed length) → **balance guard** (`balanceOf(srcAddress) > 0`) → **simulates** `claim()`
-   with `eth_call` (no gas spent) → and only then **submits** it.
+   388-byte fixed length) → **simulates** `claim()` with `eth_call` (no gas spent) → and only then
+   **submits** it.
 3. Tracks a local **cursor** (rows processed) so it never re-submits; on-chain "already claimed" is the
    backstop, so a duplicate would just revert in simulation and be skipped.
 
-The **balance guard** reproduces the escrow's on-chain `require(amount > 0, "No balance lodged")`
-relay-side, so no gas is wasted submitting a zero-value claim that would certainly revert. ⚠ It treats
-`balance == 0` as final (skip + advance
-the cursor) — so **users must deposit *before* pasting their calldata into the form**; a claim submitted
+The **`eth_call` simulation is the gate**: a claim whose source has no lodged balance reverts on the
+escrow's `require(amount > 0, "No balance lodged")` (as do invalid/already-claimed proofs), so it is
+skipped and **no tx is submitted, no gas spent**. ⚠ A revert is treated as final (skip + advance the
+cursor) — so **users must deposit *before* pasting their calldata into the form**; a claim submitted
 before its deposit lands is dropped and not retried. (A per-row retry model — see below — would remove
 that constraint.)
 
