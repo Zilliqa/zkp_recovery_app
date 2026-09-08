@@ -9,7 +9,8 @@ compromised relayer key can at worst stop relaying or waste its own gas.
 > See "Assumptions" and "Not implemented yet" below.
 
 ## How it works
-1. Reads the Form's **linked Google Sheet** (one row per submission) via a service account.
+1. Reads the Form's **linked Google Sheet** (one row per submission) via its **public CSV endpoint** —
+   the sheet is shared "Anyone with the link can view", so **no credentials/GCP project are needed**.
 2. For each new row: **shape-checks** the calldata (hex, `claim()` selector `0xcf1c9461`, exact
    388-byte fixed length) → **simulates** `claim()` with `eth_call` (no gas spent) → and only then
    **submits** it.
@@ -24,13 +25,12 @@ before its deposit lands is dropped and not retried. (A per-row retry model — 
 that constraint.)
 
 ## Setup
-1. **Link the Form to a Sheet** — Form editor → Responses → *Link to Sheets*. Note the column header
-   that holds the calldata (default expected: `Calldata`).
-2. **Service account** — in Google Cloud: create a project, enable the **Google Sheets API**, create a
-   **service account**, download its JSON key. **Share the responses Sheet** with the service
-   account's email (`…@….iam.gserviceaccount.com`), Viewer access.
-3. **Configure** — `cp .env.example .env` and fill it in (`GOOGLE_APPLICATION_CREDENTIALS` points at
-   the JSON key; `SHEET_ID` is from the Sheet URL).
+1. **Link the Form to a Sheet** — Form editor → Responses → *Link to Sheets*. Note which column letter
+   holds the calldata (Forms put `Timestamp` in `A`, so the first question is `B`).
+2. **Make it link-readable** — Share → General access → **"Anyone with the link" = Viewer**. No GCP
+   project or service account is needed; the sheet holds only public calldata (see Security notes).
+3. **Configure** — `cp .env.example .env` and set `SHEET_ID` + `SHEET_GID` (both in the Sheet URL:
+   `/spreadsheets/d/<SHEET_ID>/edit#gid=<SHEET_GID>`) and `CALLDATA_COL` (default `B`).
 4. **Install & run:**
    ```bash
    npm install
@@ -62,11 +62,15 @@ verbatim as `tx.data` (no ABI/Interface needed).
   later — removes the "deposit before submitting" constraint above.
 - Alerting/metrics (submitted / skipped / reverted counts), structured logs.
 - Relayer gas-balance monitoring and top-up.
-- Optional: write a `status` column back to the Sheet per row (needs a read/write scope).
+- Optional: write a `status` column back to the Sheet per row (the read-only public CSV can't write —
+  this would need a credentialed write path, e.g. an admin-provisioned service account or Apps Script).
 - Rate-limit / batch-size caps.
 
 ## Security notes
-- `service-account.json` and `.env` (with `RELAYER_PRIVATE_KEY`) are secrets — git-ignored here; store
-  them securely. The relayer key has **no privilege over the escrow** (a system contract, upgradeable
-  only by `address(0)`) — it only pays gas — so fund it with just what relaying needs.
-- Calldata is **public data** (a proof + public inputs) — nothing secret transits the form.
+- `.env` (with `RELAYER_PRIVATE_KEY`) is the only secret — git-ignored here; store it securely. The
+  relayer key has **no privilege over the escrow** (a system contract, upgradeable only by `address(0)`)
+  — it only pays gas — so fund it with just what relaying needs.
+- The **sheet is public-read**, which is fine: calldata is **public data** (a proof + public inputs)
+  that ends up on-chain anyway, and writes still happen only through the Form (the public view is
+  read-only, so entries can't be tampered). The relayer also re-simulates every row on-chain, so a
+  garbage entry can't move funds — worst case a wasted `eth_call`.

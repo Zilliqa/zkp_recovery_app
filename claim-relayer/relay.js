@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Claim relayer — starting point (review & harden before production).
 //
-// Once a day: read new claim entries from the Google Form's linked Sheet, simulate each against the
+// Each run: read new claim entries from the Google Form's linked Sheet (via its public CSV endpoint —
+// the sheet is shared "Anyone with the link can view"; no credentials), simulate each against the
 // escrow, and submit the ones that would succeed. The relayer key ONLY pays gas — every proof binds
 // its own destination (newAddr is a public input), so this script cannot redirect anyone's funds.
 //
@@ -15,19 +16,17 @@
 
 import 'dotenv/config';
 import fs from 'node:fs';
-import { google } from 'googleapis';
 import { ethers } from 'ethers';
 
 const {
   RPC_URL,
   ESCROW_ADDRESS,
   RELAYER_PRIVATE_KEY,
-  SHEET_ID,
-  SHEET_RANGE = 'Form Responses 1!A:Z',
-  CALLDATA_COLUMN = 'Calldata',
+  SHEET_ID,                       // spreadsheet id, from its URL: /spreadsheets/d/<SHEET_ID>/edit
+  SHEET_GID = '0',                // the responses tab's gid (the #gid=… in the URL)
+  CALLDATA_COL = 'B',             // column letter holding the calldata (Forms: Timestamp=A, 1st question=B)
   CURSOR_FILE = './.cursor',
-  CALLDATA_FILE, // e2e/local testing ONLY: read calldata from this file instead of the Google Sheet
-  // GOOGLE_APPLICATION_CREDENTIALS = path to the service-account JSON key (read by google-auth)
+  CALLDATA_FILE,                  // e2e/local testing ONLY: read calldata from this file instead of the Sheet
 } = process.env;
 
 // SHEET_ID is required only for the real Google-Sheet source; CALLDATA_FILE mode doesn't need it.
@@ -41,12 +40,14 @@ const CLAIM_SELECTOR = '0xcf1c9461'; // claim(uint256[2],uint256[2][2],uint256[2
 const CLAIM_HEX_LEN = 778;           // fixed size: '0x' + 4-byte selector + 12×32-byte words = 388 bytes
 if (DRY_RUN) console.log('[dry-run] will simulate and report only — no transactions sent, cursor not advanced');
 
-// Column index (0-based) -> A1 column letter(s): 0->A, 25->Z, 26->AA.
-const colLetter = (n) => { let s = ''; for (n += 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s; return s; };
-const SHEET_TAB = SHEET_RANGE.split('!')[0] || 'Form Responses 1';
+// Public CSV endpoint for a LINK-READABLE sheet (share = "Anyone with the link can view"): the gviz
+// query reads only the calldata column, only from the cursor row onward (offset) → O(new rows), no auth.
+const sheetCsvUrl = (start) =>
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}` +
+  `&tq=${encodeURIComponent(`select ${CALLDATA_COL} offset ${start}`)}`;
 
 // --- Read only the NEW rows (index >= start), and only the calldata column ---
-// From a local file (e2e/local testing) if CALLDATA_FILE is set, else the Google Sheet.
+// From a local file (e2e/local testing) if CALLDATA_FILE is set, else the Google Sheet's public CSV.
 async function readRows(start) {
   if (CALLDATA_FILE) {
     // Testing source: one 0x-hex claim() calldata per non-empty line, in submission order. Same rows
@@ -54,23 +55,15 @@ async function readRows(start) {
     const lines = fs.readFileSync(CALLDATA_FILE, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
     return lines.slice(start).map((calldata, i) => ({ index: start + i, calldata }));
   }
-  const auth = new google.auth.GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'], // uses GOOGLE_APPLICATION_CREDENTIALS
-  });
-  const sheets = google.sheets({ version: 'v4', auth });
-  // 1) Resolve the calldata column letter from the header row (one tiny read).
-  const head = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `'${SHEET_TAB}'!1:1` });
-  const header = (head.data.values && head.data.values[0]) || [];
-  const col = header.indexOf(CALLDATA_COLUMN);
-  if (col < 0) throw new Error(`Column "${CALLDATA_COLUMN}" not in header: ${header.join(', ')}`);
-  const letter = colLetter(col);
-  // 2) Read ONLY that column, ONLY from the first unprocessed row onward. Responses are append-only,
-  //    so the data row for index `start` is sheet row start+2 (row 1 = header) → O(new rows) per run.
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SHEET_ID,
-    range: `'${SHEET_TAB}'!${letter}${start + 2}:${letter}`,
-  });
-  return (res.data.values || []).map((r, i) => ({ index: start + i, calldata: (r[0] || '').trim() }));
+  const res = await fetch(sheetCsvUrl(start));
+  const text = await res.text();
+  if (!res.ok || text.trimStart().startsWith('<')) {
+    throw new Error(`sheet fetch failed (HTTP ${res.status}) — is it shared "Anyone with the link can view", and SHEET_ID/SHEET_GID correct?`);
+  }
+  // gviz CSV: line 0 is the column label; the rest are the calldata values (each quoted). `offset start`
+  // already dropped the processed rows, so these all map to index >= start (responses are append-only).
+  const lines = text.split('\n').map((s) => s.trim()).filter(Boolean).slice(1);
+  return lines.map((l, i) => ({ index: start + i, calldata: l.replace(/^"(.*)"$/, '$1').trim() }));
 }
 
 // --- Idempotency: how many rows we've already handled (persisted locally) ---
