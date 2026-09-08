@@ -39,7 +39,7 @@ async function main() {
   //    empty init data (initialize() is NOT called at deploy), and interact through the proxy address.
   const art = JSON.parse(fs.readFileSync(ARTIFACT, 'utf8'));
   const proxyArt = JSON.parse(fs.readFileSync(PROXY_ARTIFACT, 'utf8'));
-  const deployer = new ethers.Wallet(DEPLOYER_PK, provider);
+  const deployer = new ethers.NonceManager(new ethers.Wallet(DEPLOYER_PK, provider));
   const impl = await new ethers.ContractFactory(art.abi, art.bytecode.object, deployer).deploy();
   await impl.waitForDeployment();
   const proxy = await new ethers.ContractFactory(proxyArt.abi, proxyArt.bytecode.object, deployer)
