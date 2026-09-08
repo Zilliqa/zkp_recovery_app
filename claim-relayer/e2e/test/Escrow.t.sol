@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.22;
 
 import {EscrowInit} from "../src/escrow_v1.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 interface Vm {
     function chainId(uint256) external;
@@ -13,8 +14,8 @@ interface Vm {
 
 // End-to-end: impersonate the legacy (SHA-256) address -> real lodge() -> submit the EXACT app calldata
 // to claim() -> assert the funds land at the newAddr baked into the proof. Runs against the REAL zq2
-// escrow (src/escrow_v1.sol) + its integrated verifier (src/verifier.sol), deploying the implementation
-// directly (the proxy is only needed for upgrades, which these tests don't exercise).
+// escrow (src/escrow_v1.sol) + its integrated verifier (src/verifier.sol), deployed behind an
+// ERC1967 proxy with empty init data — mirroring zq2's production deployment.
 contract EscrowE2E {
     Vm constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
     // from claim.json (proof generated with domain=32769):
@@ -22,16 +23,24 @@ contract EscrowE2E {
     address constant NEW = 0x00112233445566778899AABbCCdDeeFf00112233; // destination bound in the proof
     uint256 constant AMOUNT = 5 ether;
 
+    // Deploy exactly like production: implementation + ERC1967 proxy with empty init data (initialize()
+    // is NOT called at deploy), then interact through the proxy address.
+    function _deploy() internal returns (EscrowInit) {
+        EscrowInit impl = new EscrowInit();
+        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), "");
+        return EscrowInit(address(proxy));
+    }
+
     function _calldata() internal returns (bytes memory) {
         return vm.parseJsonBytes(vm.readFile("claim.json"), ".calldata");
     }
 
     function test_e2e_claim_moves_funds_to_proof_destination() public {
         vm.chainId(32769); // claim() requires pubSignals[2] == block.chainid
-        EscrowInit escrow = new EscrowInit();
+        EscrowInit escrow = _deploy();
         bytes memory cd = _calldata();
 
-        // 1) DEPOSIT — impersonate the legacy address and call the REAL lodge()
+        // 1) DEPOSIT — impersonate the legacy address and call the REAL lodge() (through the proxy)
         vm.deal(OLD, AMOUNT);
         vm.prank(OLD);
         escrow.lodge{value: AMOUNT}();
@@ -49,7 +58,7 @@ contract EscrowE2E {
 
     function test_replay_reverts_and_moves_nothing() public {
         vm.chainId(32769);
-        EscrowInit escrow = new EscrowInit();
+        EscrowInit escrow = _deploy();
         bytes memory cd = _calldata();
         vm.deal(OLD, AMOUNT);
         vm.prank(OLD);
