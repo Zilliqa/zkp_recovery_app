@@ -17,7 +17,7 @@ const RPC_URL = process.env.RPC_URL || 'http://127.0.0.1:8545';
 // Anvil's default account #0 — deployer + (later) relayer gas payer. Well-known test key, no secrets.
 const DEPLOYER_PK = process.env.DEPLOYER_PK || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 const LODGE_WEI = BigInt(process.env.LODGE_WEI || ethers.parseEther('1').toString());
-const ARTIFACT = path.join(HERE, '..', 'e2e', 'out', 'Escrow.sol', 'Escrow.json');
+const ARTIFACT = path.join(HERE, '..', 'e2e', 'out', 'escrow_v1.sol', 'EscrowInit.json');
 const CLAIM = path.join(HERE, '..', 'e2e', 'claim.json');
 
 async function main() {
@@ -32,7 +32,8 @@ async function main() {
   const { oldAddr, newAddr, domain, calldata } = JSON.parse(fs.readFileSync(CLAIM, 'utf8'));
   if (String(domain) !== '32769') throw new Error(`claim.json domain=${domain}, expected 32769`);
 
-  // 1) Deploy the escrow (Groth16Verifier-inheriting; same contract the forge test uses).
+  // 1) Deploy the real zq2 escrow implementation (EscrowInit) directly — the proxy is only needed for
+  //    upgrades, which this harness doesn't exercise; lodge/claim/balanceOf work on the impl as-is.
   const art = JSON.parse(fs.readFileSync(ARTIFACT, 'utf8'));
   const deployer = new ethers.Wallet(DEPLOYER_PK, provider);
   const factory = new ethers.ContractFactory(art.abi, art.bytecode.object, deployer);

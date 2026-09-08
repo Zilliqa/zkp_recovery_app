@@ -54,7 +54,7 @@ anvil --chain-id 32769
 ### Step by step (what `run.sh` does)
 
 ```bash
-( cd ../e2e && forge build )                       # compile Escrow.sol (+ verifier.sol)
+( cd ../e2e && forge build )                       # compile escrow_v1.sol (+ verifier.sol)
 node deploy_and_lodge.js                            # deploy, impersonate-lodge -> writes .escrow_addr + calldata.txt
 ESCROW_ADDRESS=$(cat .escrow_addr) \
 RPC_URL=http://127.0.0.1:8545 \
