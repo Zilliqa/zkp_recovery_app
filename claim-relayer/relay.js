@@ -41,25 +41,36 @@ const CLAIM_SELECTOR = '0xcf1c9461'; // claim(uint256[2],uint256[2][2],uint256[2
 const CLAIM_HEX_LEN = 778;           // fixed size: '0x' + 4-byte selector + 12×32-byte words = 388 bytes
 if (DRY_RUN) console.log('[dry-run] will simulate and report only — no transactions sent, cursor not advanced');
 
-// --- Read response rows: from a local file (e2e/local testing) if CALLDATA_FILE is set, else the Sheet ---
-async function readRows() {
+// Column index (0-based) -> A1 column letter(s): 0->A, 25->Z, 26->AA.
+const colLetter = (n) => { let s = ''; for (n += 1; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s; return s; };
+const SHEET_TAB = SHEET_RANGE.split('!')[0] || 'Form Responses 1';
+
+// --- Read only the NEW rows (index >= start), and only the calldata column ---
+// From a local file (e2e/local testing) if CALLDATA_FILE is set, else the Google Sheet.
+async function readRows(start) {
   if (CALLDATA_FILE) {
     // Testing source: one 0x-hex claim() calldata per non-empty line, in submission order. Same rows
-    // shape as the Sheet path, so every downstream check (shape, balance, simulate, submit) is identical.
+    // shape as the Sheet path, so every downstream check (shape, simulate, submit) is identical.
     const lines = fs.readFileSync(CALLDATA_FILE, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
-    return lines.map((calldata, i) => ({ index: i, calldata }));
+    return lines.slice(start).map((calldata, i) => ({ index: start + i, calldata }));
   }
   const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'], // uses GOOGLE_APPLICATION_CREDENTIALS
   });
   const sheets = google.sheets({ version: 'v4', auth });
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: SHEET_RANGE });
-  const [header, ...rows] = res.data.values || [];
-  if (!header) return [];
+  // 1) Resolve the calldata column letter from the header row (one tiny read).
+  const head = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `'${SHEET_TAB}'!1:1` });
+  const header = (head.data.values && head.data.values[0]) || [];
   const col = header.indexOf(CALLDATA_COLUMN);
   if (col < 0) throw new Error(`Column "${CALLDATA_COLUMN}" not in header: ${header.join(', ')}`);
-  // Form responses only ever append, so a row's position is stable → index is a safe cursor key.
-  return rows.map((r, i) => ({ index: i, calldata: (r[col] || '').trim() }));
+  const letter = colLetter(col);
+  // 2) Read ONLY that column, ONLY from the first unprocessed row onward. Responses are append-only,
+  //    so the data row for index `start` is sheet row start+2 (row 1 = header) → O(new rows) per run.
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `'${SHEET_TAB}'!${letter}${start + 2}:${letter}`,
+  });
+  return (res.data.values || []).map((r, i) => ({ index: start + i, calldata: (r[0] || '').trim() }));
 }
 
 // --- Idempotency: how many rows we've already handled (persisted locally) ---
@@ -70,10 +81,9 @@ async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = new ethers.Wallet(RELAYER_PRIVATE_KEY, provider);
 
-  const rows = await readRows();
   const start = readCursor();
-  const fresh = rows.filter((r) => r.index >= start);
-  console.log(`rows=${rows.length} alreadyProcessed=${start} new=${fresh.length}`);
+  const fresh = await readRows(start); // already only the unprocessed rows
+  console.log(`alreadyProcessed=${start} new=${fresh.length}`);
 
   let cursor = start;
   for (const { index, calldata } of fresh) {
