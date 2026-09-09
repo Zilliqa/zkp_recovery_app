@@ -21,9 +21,9 @@ node deploy_and_lodge.js
 ESCROW_ADDRESS="$(cat .escrow_addr)"; export ESCROW_ADDRESS
 
 echo "==> Running the REAL relay.js against anvil (local calldata source, not the Sheet)"
-CURSOR="$(mktemp)"
-CALLDATA_FILE=./calldata.txt CURSOR_FILE="$CURSOR" node ../relay.js
-rm -f "$CURSOR"
+DB="$(mktemp)"
+CALLDATA_FILE=./calldata.txt DB_FILE="$DB" node ../relay.js
+rm -f "$DB"
 
 echo "==> Verifying payout"
 node verify_payout.js

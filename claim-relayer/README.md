@@ -14,15 +14,19 @@ compromised relayer key can at worst stop relaying or waste its own gas.
 2. For each new row: **shape-checks** the calldata (hex, `claim()` selector `0xcf1c9461`, exact
    388-byte fixed length) → **simulates** `claim()` with `eth_call` (no gas spent) → and only then
    **submits** it.
-3. Tracks a local **cursor** (rows processed) so it never re-submits; on-chain "already claimed" is the
-   backstop, so a duplicate would just revert in simulation and be skipped.
+3. Records each row's status in a local **SQLite DB** (`DB_FILE`) — `pending` / `confirmed` / `failed` /
+   `retry` — so it never re-submits, survives restarts/crashes, and can **retry** rows that aren't
+   claimable yet. The read offset is derived from the DB, so only genuinely new rows are fetched.
 
-The **`eth_call` simulation is the gate**: a claim whose source has no lodged balance reverts on the
-escrow's `require(amount > 0, "No balance lodged")` (as do invalid/already-claimed proofs), so it is
-skipped and **no tx is submitted, no gas spent**. ⚠ A revert is treated as final (skip + advance the
-cursor) — so **users must deposit *before* pasting their calldata into the form**; a claim submitted
-before its deposit lands is dropped and not retried. (A per-row retry model — see below — would remove
-that constraint.)
+The **`eth_call` simulation is the gate**: an invalid proof (bad / wrong-domain / invalid src·dst)
+reverts and is marked **`failed`** (never retried). A claim whose deposit hasn't landed reverts on
+`require(amount > 0, "No balance lodged")` and is marked **`retry`** — re-attempted next run up to
+`RETRY_MAX` times — so a claim pasted **before** its deposit is no longer lost. Nothing is submitted and
+no gas is spent until simulation passes.
+
+> Caveat: an *already-claimed* row also reverts with `No balance lodged` (its balance was drained), so it
+> too is retried up to `RETRY_MAX` before being marked `failed`. Harmless (each retry is a free
+> `eth_call`), but a richer store could disambiguate via the escrow's `Released` event.
 
 ## Setup
 1. **Link the Form to a Sheet** — Form editor → Responses → *Link to Sheets*. Note which column letter
@@ -31,10 +35,10 @@ that constraint.)
    project or service account is needed; the sheet holds only public calldata (see Security notes).
 3. **Configure** — `cp .env.example .env` and set `SHEET_ID` + `SHEET_GID` (both in the Sheet URL:
    `/spreadsheets/d/<SHEET_ID>/edit#gid=<SHEET_GID>`) and `CALLDATA_COL` (default `B`).
-4. **Install & run:**
+4. **Install & run** (needs **Node 22+** — the state DB uses the built-in `node:sqlite`):
    ```bash
    npm install
-   node relay.js --dry-run   # simulate + report every new row; sends nothing, cursor untouched
+   node relay.js --dry-run   # ingest + simulate + report; sends nothing, no status writes
    node relay.js             # real batch: submit the rows that pass simulation
    ```
 5. **Schedule** — run daily via cron, e.g.:
@@ -53,14 +57,14 @@ verbatim as `tx.data` (no ABI/Interface needed).
 - **`e2e-anvil/`** — full path against a live anvil chain (id `32769`): deploy → impersonate-lodge → the **real `relay.js`** → payout assertion. See `e2e-anvil/README.md`.
 
 ## Assumptions
-- **Append-only responses.** Form submissions only append, so a row's position is a stable cursor key.
-- **Sequential submission.** Each tx is awaited before the next (simple, correct nonces). Fine for a
-  daily batch; parallelize with explicit nonce management if volume grows.
+- **Append-only responses.** Form submissions only append, so a row's position (index) is a stable key.
+- **Single instance.** The SQLite DB has no cross-process lock, so run **one** relayer at a time (two
+  concurrent runs could grab the same row). Multi-instance would need a shared DB + row locking.
+- **Sequential submission.** Each tx is awaited before the next (simple, correct nonces via `NonceManager`).
+  Fine for a batch; parallelize with managed nonces / multiple keys if volume grows.
 
 ## Not implemented yet (add for production)
-- **Per-row retry state** (instead of the single linear cursor) so `balance == 0` rows can be retried
-  later — removes the "deposit before submitting" constraint above.
-- Alerting/metrics (submitted / skipped / reverted counts), structured logs.
+- Alerting/metrics (confirmed / failed / retry counts), structured logs.
 - Relayer gas-balance monitoring and top-up.
 - Optional: write a `status` column back to the Sheet per row (the read-only public CSV can't write —
   this would need a credentialed write path, e.g. an admin-provisioned service account or Apps Script).

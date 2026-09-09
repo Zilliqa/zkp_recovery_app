@@ -74,7 +74,7 @@ async function main() {
   console.log('\n2) Run the relayer against your sheet + this escrow:');
   console.log(`   RPC_URL=${RPC_URL} ESCROW_ADDRESS=${escrowAddr} \\`);
   console.log(`   RELAYER_PRIVATE_KEY=${DEPLOYER_PK} \\`);
-  console.log('   SHEET_ID=<id> SHEET_GID=<gid> CALLDATA_COL=B CURSOR_FILE=$(mktemp) node ../relay.js');
+  console.log('   SHEET_ID=<id> SHEET_GID=<gid> CALLDATA_COL=B DB_FILE=$(mktemp) node ../relay.js');
   console.log('\n3) Verify payouts:  node sheet_demo.js --verify');
 }
 main().catch((e) => { console.error('sheet_demo failed:', e.message || e); process.exit(1); });
