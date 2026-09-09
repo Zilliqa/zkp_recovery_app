@@ -22,6 +22,7 @@ async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const net = await provider.getNetwork();
   if (net.chainId !== 32769n) throw new Error(`anvil chain id is ${net.chainId}, expected 32769 — anvil --chain-id 32769`);
+  if (!fs.existsSync(ART)) throw new Error(`missing ${ART} — run: (cd ../e2e-forge && forge build)`);
   const art = JSON.parse(fs.readFileSync(ART, 'utf8'));
 
   if (VERIFY) {
