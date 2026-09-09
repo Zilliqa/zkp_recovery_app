@@ -16,9 +16,11 @@ compromised relayer key can at worst stop relaying or waste its own gas.
    fixed length) → **simulates** `claim()` with `eth_call` (no gas spent) → and only then **submits** it.
 3. Records each row's status in a local **SQLite DB** (`DB_FILE`, table `sheet_rows`) — `pending` /
    `confirmed` / `failed` / `retry` — so it never re-submits, survives restarts/crashes, and can
-   **retry** rows that aren't claimable yet. Rows are **keyed by a hash of the calldata** (content), so
-   duplicate submissions dedup and **deleting / pruning / reordering** sheet rows — or pointing at a
-   fresh sheet — is safe (positions don't matter).
+   **retry** rows that aren't claimable yet. Rows are **keyed by a hash of the submission**
+   (`timestamp + calldata`), so each Form submission is tracked on its own — a proof re-submitted after a
+   fresh `lodge()` is a new row and **gets claimed again** (the escrow has no per-proof nonce, so a proof
+   stays claimable while `balances[src] > 0`) — while **deleting / pruning / reordering** rows, or a fresh
+   sheet, stays safe (positions don't matter).
 
 The **`eth_call` simulation is the gate**: an invalid proof (bad / wrong-domain / invalid src·dst)
 reverts and is marked **`failed`** (never retried). A claim whose deposit hasn't landed reverts on
@@ -26,9 +28,11 @@ reverts and is marked **`failed`** (never retried). A claim whose deposit hasn't
 `RETRY_MAX` times — so a claim pasted **before** its deposit is no longer lost. Nothing is submitted and
 no gas is spent until simulation passes.
 
-> Caveat: an *already-claimed* row also reverts with `No balance lodged` (its balance was drained), so it
-> too is retried up to `RETRY_MAX` before being marked `failed`. Harmless (each retry is a free
-> `eth_call`), but a richer store could disambiguate via the escrow's `Released` event.
+> Caveat: `No balance lodged` is ambiguous — *no deposit yet* (retry is right) vs *already drained* (a
+> re-paste with nothing left to claim). Both retry up to `RETRY_MAX` before `failed`. Harmless (free
+> `eth_call`s), and the retry window actually helps the top-up case — a re-paste that's currently empty
+> but gets a fresh `lodge()` within the window is then claimed. Disambiguating the truly-terminal case
+> would need the escrow's `Released` event.
 
 A `failed` row tells you **where** it failed: a set `tx_hash`/`block` means a submitted tx **reverted
 on-chain** (rare — state changed between simulate and submit; go inspect the tx), while a NULL `tx_hash`
@@ -67,9 +71,10 @@ verbatim as `tx.data` (no ABI/Interface needed).
   `Timestamp`** (a datetime) and column **`B` = the calldata** question — the default single-question Form
   layout. It queries exactly `A, B`, so extra columns (e.g. notes in `C`) are ignored, but the calldata
   must stay in `B` (don't insert columns to its left).
-- **Content-keyed + timestamp watermark.** Rows are deduped by calldata hash and read incrementally from
-  a stored timestamp watermark, so the sheet can be pruned / reordered / replaced without breaking
-  tracking, each unique claim is processed once, and reads stay O(new) rather than whole-sheet. The
+- **Submission-keyed + timestamp watermark.** Rows are keyed by a hash of `timestamp + calldata` and read
+  incrementally from a stored timestamp watermark, so the sheet can be pruned / reordered / replaced
+  without breaking tracking, each distinct submission is processed once (a proof re-pasted after a new
+  `lodge()` is a new submission → re-claimed), and reads stay O(new) rather than whole-sheet. The
   watermark uses gviz's unambiguous `Date(y,m,d,…)` JSON encoding — not the sheet's locale display — so
   M/D/YYYY vs D/M/YYYY doesn't matter. (Assumes column A is the Form's datetime `Timestamp`.)
 - **Single instance.** The SQLite DB has no cross-process lock, so run **one** relayer at a time (two

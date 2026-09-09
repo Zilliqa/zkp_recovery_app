@@ -21,6 +21,10 @@ import { ethers } from 'ethers';
 import { openStore } from './store.js';
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex');
+// Key a row by its SUBMISSION (timestamp + calldata), not just the proof bytes: the escrow has no
+// per-proof nonce, so the same proof pasted again after a fresh lodge() is a new, legitimately claimable
+// row. Different submission time → different hash → tracked separately.
+const rowHash = (submittedAt, calldata) => sha256(`${submittedAt ?? ''}\n${calldata.toLowerCase()}`);
 
 const {
   RPC_URL,
@@ -90,14 +94,14 @@ async function main() {
   const wallet = new ethers.NonceManager(new ethers.Wallet(RELAYER_PRIVATE_KEY, provider));
   const store = openStore(DB_FILE);
 
-  // 1) Ingest new rows: read only rows at/after the stored timestamp watermark, keyed by content hash.
-  //    Watermark-based reads scale (O(new)) and survive pruning/reordering (it's a time, not a position);
-  //    INSERT OR IGNORE dedups, so switching to a fresh sheet is also safe.
+  // 1) Ingest new rows: read only rows at/after the stored timestamp watermark, keyed by submission hash
+  //    (timestamp + calldata). Watermark reads scale (O(new)) and survive pruning/reordering (a time, not
+  //    a position); INSERT OR IGNORE dedups the same submission, so switching to a fresh sheet is also safe.
   const watermark = store.getWatermark();
   const fresh = await readRows(watermark);
   let maxTs = watermark;
   for (const { calldata, submittedAt } of fresh) {
-    if (!DRY_RUN) store.insertPending(sha256(calldata.toLowerCase()), calldata, submittedAt);
+    if (!DRY_RUN) store.insertPending(rowHash(submittedAt, calldata), calldata, submittedAt);
     if (submittedAt && (!maxTs || submittedAt > maxTs)) maxTs = submittedAt;
   }
   // Advance the watermark to the newest timestamp read — rows are safely in the DB now, and retries
@@ -108,16 +112,16 @@ async function main() {
   // 2) Process the pending/retry backlog (real run) — or, in --dry-run, just the freshly-read rows,
   //    without having written anything. Retries survive restarts via the DB, unlike the old cursor.
   const todo = DRY_RUN
-    ? fresh.map((r) => ({ calldata_hash: sha256(r.calldata.toLowerCase()), calldata: r.calldata, submitted_at: r.submittedAt, attempts: 0 }))
+    ? fresh.map((r) => ({ row_hash: rowHash(r.submittedAt, r.calldata), calldata: r.calldata, submitted_at: r.submittedAt, attempts: 0 }))
     : store.todo();
   console.log(`processing ${todo.length} pending/retry row(s)${DRY_RUN ? ' [dry-run]' : ''}`);
-  for (const { calldata_hash, calldata, submitted_at, attempts } of todo) {
-    const tag = submitted_at ? `[${submitted_at}]` : `claim ${calldata_hash.slice(0, 8)}`;
+  for (const { row_hash, calldata, submitted_at, attempts } of todo) {
+    const tag = submitted_at ? `[${submitted_at}]` : `claim ${row_hash.slice(0, 8)}`;
 
     // Shape check — a malformed row is a permanent reject.
     if (!/^0x[0-9a-fA-F]+$/.test(calldata) || !calldata.toLowerCase().startsWith(CLAIM_SELECTOR) || calldata.length !== CLAIM_HEX_LEN) {
       console.warn(`${tag}: malformed calldata (need selector ${CLAIM_SELECTOR}, ${CLAIM_HEX_LEN} chars) — failed`);
-      if (!DRY_RUN) store.markFailed(calldata_hash, 'malformed calldata');
+      if (!DRY_RUN) store.markFailed(row_hash, 'malformed calldata');
       continue;
     }
 
@@ -131,15 +135,15 @@ async function main() {
       const reason = e.reason || e.shortMessage || e.message || '';
       if (e.code !== 'CALL_EXCEPTION') {
         console.error(`${tag}: simulate infra error (${reason}) — retry next run. Stopping.`);
-        if (!DRY_RUN) store.markRetry(calldata_hash, reason);
+        if (!DRY_RUN) store.markRetry(row_hash, reason);
         break;
       }
       if (/No balance lodged/i.test(reason) && attempts + 1 < RETRY_LIMIT) {
         console.warn(`${tag}: no balance lodged yet (attempt ${attempts + 1}/${RETRY_LIMIT}) — retry`);
-        if (!DRY_RUN) store.markRetry(calldata_hash, reason);
+        if (!DRY_RUN) store.markRetry(row_hash, reason);
       } else {
         console.warn(`${tag}: simulation reverted (${reason}) — failed`);
-        if (!DRY_RUN) store.markFailed(calldata_hash, reason);
+        if (!DRY_RUN) store.markFailed(row_hash, reason);
       }
       continue;
     }
@@ -150,15 +154,15 @@ async function main() {
       const tx = await wallet.sendTransaction({ to: ESCROW_ADDRESS, data: calldata });
       const rcpt = await tx.wait();
       if (rcpt.status === 1) {
-        store.markConfirmed(calldata_hash, tx.hash, rcpt.blockNumber);
+        store.markConfirmed(row_hash, tx.hash, rcpt.blockNumber);
         console.log(`${tag}: CONFIRMED ${tx.hash} @ block ${rcpt.blockNumber}`);
       } else {
-        store.markFailed(calldata_hash, 'tx reverted on-chain', tx.hash, rcpt.blockNumber);
+        store.markFailed(row_hash, 'tx reverted on-chain', tx.hash, rcpt.blockNumber);
         console.warn(`${tag}: tx ${tx.hash} reverted on-chain @ block ${rcpt.blockNumber} — failed`);
       }
     } catch (e) {
       console.error(`${tag}: submit error — ${e.shortMessage || e.message}. Retry next run. Stopping.`);
-      store.markRetry(calldata_hash, e.shortMessage || e.message);
+      store.markRetry(row_hash, e.shortMessage || e.message);
       break;
     }
   }
