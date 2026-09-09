@@ -1,7 +1,8 @@
 // Durable per-row state for the relayer, backed by SQLite (node:sqlite — built-in, needs Node 22+;
 // prints an "experimental" warning). Rows are keyed by a hash of the CALLDATA (content), NOT by sheet
 // position — so deleting / reordering / pruning sheet rows, or pointing at a fresh sheet, is safe: each
-// claim is deduped by content and processed once, regardless of where (or whether) it sits in the sheet.
+// claim is deduped by content and processed once. A `meta` row holds the timestamp watermark so each
+// run reads only rows newer than the last one seen (see relay.js).
 //
 // status:
 //   pending    — ingested, not yet acted on
@@ -16,8 +17,7 @@ export function openStore(path) {
     CREATE TABLE IF NOT EXISTS sheet_rows (
       calldata_hash TEXT PRIMARY KEY,   -- sha256(lowercased calldata): the content key; dedups duplicates
       calldata      TEXT NOT NULL,
-      row_index     INTEGER,            -- sheet data-row index at first ingest (reference only; NOT stable if rows are deleted)
-      submitted_at  TEXT,               -- the Form's timestamp (column A), as shown in the sheet
+      submitted_at  TEXT,               -- Form timestamp, normalized to 'YYYY-MM-DD HH:MM:SS' (sheet timezone)
       status        TEXT NOT NULL DEFAULT 'pending',
       attempts      INTEGER NOT NULL DEFAULT 0,
       tx_hash       TEXT,
@@ -25,22 +25,27 @@ export function openStore(path) {
       last_error    TEXT,
       updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
   `);
   const s = {
-    ins: db.prepare(`INSERT OR IGNORE INTO sheet_rows (calldata_hash, calldata, row_index, submitted_at) VALUES (?, ?, ?, ?)`),
-    todo: db.prepare(`SELECT calldata_hash, calldata, row_index, attempts FROM sheet_rows WHERE status IN ('pending','retry') ORDER BY row_index`),
+    ins: db.prepare(`INSERT OR IGNORE INTO sheet_rows (calldata_hash, calldata, submitted_at) VALUES (?, ?, ?)`),
+    todo: db.prepare(`SELECT calldata_hash, calldata, submitted_at, attempts FROM sheet_rows WHERE status IN ('pending','retry') ORDER BY submitted_at`),
     set: db.prepare(`UPDATE sheet_rows SET status=?, last_error=?, attempts=attempts+1, updated_at=datetime('now') WHERE calldata_hash=?`),
     ok: db.prepare(`UPDATE sheet_rows SET status='confirmed', tx_hash=?, block=?, last_error=NULL, attempts=attempts+1, updated_at=datetime('now') WHERE calldata_hash=?`),
     counts: db.prepare(`SELECT status, COUNT(*) AS n FROM sheet_rows GROUP BY status`),
+    getMeta: db.prepare(`SELECT value FROM meta WHERE key=?`),
+    setMeta: db.prepare(`INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)`),
   };
   const err = (e) => String(e ?? '').slice(0, 500);
   return {
     // INSERT OR IGNORE by content hash → a calldata already seen (any status) is skipped.
-    insertPending: (hash, calldata, rowIndex, submittedAt) => s.ins.run(hash, calldata, rowIndex ?? null, submittedAt ?? null),
+    insertPending: (hash, calldata, submittedAt) => s.ins.run(hash, calldata, submittedAt ?? null),
     todo: () => s.todo.all(),
     markRetry: (hash, e) => s.set.run('retry', err(e), hash),
     markFailed: (hash, e) => s.set.run('failed', err(e), hash),
     markConfirmed: (hash, txHash, block) => s.ok.run(txHash, block, hash),
+    getWatermark: () => s.getMeta.get('watermark')?.value ?? null,
+    setWatermark: (ts) => s.setMeta.run('watermark', ts),
     summary: () => (s.counts.all().map((r) => `${r.status}=${r.n}`).join(' ') || '(empty)'),
     close: () => db.close(),
   };

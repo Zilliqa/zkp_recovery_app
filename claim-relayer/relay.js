@@ -46,36 +46,44 @@ const CLAIM_SELECTOR = '0xcf1c9461'; // claim(uint256[2],uint256[2][2],uint256[2
 const CLAIM_HEX_LEN = 778;           // fixed size: '0x' + 4-byte selector + 12×32-byte words = 388 bytes
 if (DRY_RUN) console.log('[dry-run] ingest + simulate + report only — no transactions sent, no status writes');
 
-// Public CSV endpoint for a LINK-READABLE sheet (share = "Anyone with the link can view"): the gviz
-// query reads the timestamp (column A) + calldata columns for ALL current rows, no auth. Rows are
-// deduped by content hash in the DB, so re-reading rows already handled is cheap (INSERT OR IGNORE)
-// and deleting/pruning old sheet rows is safe.
-const sheetCsvUrl = () =>
-  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}` +
-  `&tq=${encodeURIComponent(`select A, ${CALLDATA_COL}`)}`;
+// gviz JSON of a LINK-READABLE sheet (share = "Anyone with the link can view"), no auth: read the
+// timestamp (column A) + calldata, only rows at/after the watermark (a datetime). We use JSON — not CSV
+// — because it encodes the Form timestamp unambiguously as `Date(y,m0,d,h,mi,s)`, sidestepping the
+// sheet's locale display format (M/D/YYYY vs D/M/YYYY). `where A >= …` is a real datetime comparison.
+const sheetJsonUrl = (watermark) => {
+  const where = watermark ? ` where A >= datetime '${watermark}'` : '';
+  const tq = `select A, ${CALLDATA_COL}${where} order by A`;
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}&tq=${encodeURIComponent(tq)}`;
+};
 
-// --- Read all current rows: timestamp (column A) + calldata ---
-// From a local file (e2e/local testing) if CALLDATA_FILE is set, else the Google Sheet's public CSV.
-async function readRows() {
+const pad2 = (n) => String(n).padStart(2, '0');
+// "Date(2026,8,8,8,34,22)" (month is 0-indexed) -> "2026-09-08 08:34:22" (sheet timezone, sortable).
+const gvizDateToIso = (v) => {
+  const m = /^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/.exec(v || '');
+  if (!m) return null;
+  const [y, mo, d, h, mi, s] = m.slice(1).map(Number);
+  return `${y}-${pad2(mo + 1)}-${pad2(d)} ${pad2(h)}:${pad2(mi)}:${pad2(s)}`;
+};
+
+// --- Read rows at/after `watermark`: timestamp (column A) + calldata ---
+// From a local file (e2e/local testing) if CALLDATA_FILE is set, else the Google Sheet's public gviz JSON.
+async function readRows(watermark) {
   if (CALLDATA_FILE) {
     // Testing source: one 0x-hex claim() calldata per non-empty line, in submission order (no timestamp).
     const lines = fs.readFileSync(CALLDATA_FILE, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
-    return lines.map((calldata, i) => ({ rowIndex: i, calldata, submittedAt: null }));
+    return lines.map((calldata) => ({ calldata, submittedAt: null }));
   }
-  const res = await fetch(sheetCsvUrl());
+  const res = await fetch(sheetJsonUrl(watermark));
   const text = await res.text();
-  if (!res.ok || text.trimStart().startsWith('<')) {
+  const wrap = /setResponse\((.*)\);?\s*$/s.exec(text); // strip google.visualization.Query.setResponse(…)
+  if (!res.ok || !wrap) {
     throw new Error(`sheet fetch failed (HTTP ${res.status}) — is it shared "Anyone with the link can view", and SHEET_ID/SHEET_GID correct?`);
   }
-  // gviz CSV: line 0 is the column labels; each remaining row is `"<timestamp>","<calldata>"` (neither
-  // field contains a comma/quote).
-  const lines = text.split('\n').map((s) => s.trim()).filter(Boolean).slice(1);
-  return lines.map((l, i) => {
-    const m = l.match(/^"(.*)","(.*)"$/);
-    const submittedAt = m ? m[1] : null;
-    const calldata = (m ? m[2] : l.replace(/^"(.*)"$/, '$1')).trim();
-    return { rowIndex: i, calldata, submittedAt };
-  });
+  const body = JSON.parse(wrap[1]);
+  if (body.status === 'error') throw new Error(`gviz query error: ${JSON.stringify(body.errors)}`);
+  return (body.table?.rows || [])
+    .map((r) => ({ submittedAt: gvizDateToIso(r.c?.[0]?.v), calldata: (r.c?.[1]?.v || '').trim() }))
+    .filter((x) => x.calldata);
 }
 
 async function main() {
@@ -83,20 +91,26 @@ async function main() {
   const wallet = new ethers.NonceManager(new ethers.Wallet(RELAYER_PRIVATE_KEY, provider));
   const store = openStore(DB_FILE);
 
-  // 1) Ingest ALL current sheet rows, keyed by content hash. INSERT OR IGNORE dedups rows already seen
-  //    (any status), so re-reading the whole sheet each run is cheap and deleting/pruning old rows —
-  //    or switching to a fresh sheet — is safe (positions no longer matter).
-  const fresh = await readRows();
-  for (const { rowIndex, calldata, submittedAt } of fresh) {
-    store.insertPending(sha256(calldata.toLowerCase()), calldata, rowIndex, submittedAt);
+  // 1) Ingest new rows: read only rows at/after the stored timestamp watermark, keyed by content hash.
+  //    Watermark-based reads scale (O(new)) and survive pruning/reordering (it's a time, not a position);
+  //    INSERT OR IGNORE dedups, so switching to a fresh sheet is also safe.
+  const watermark = store.getWatermark();
+  const fresh = await readRows(watermark);
+  let maxTs = watermark;
+  for (const { calldata, submittedAt } of fresh) {
+    store.insertPending(sha256(calldata.toLowerCase()), calldata, submittedAt);
+    if (submittedAt && (!maxTs || submittedAt > maxTs)) maxTs = submittedAt;
   }
-  console.log(`read ${fresh.length} sheet row(s)  |  ${store.summary()}`);
+  // Advance the watermark to the newest timestamp read — rows are safely in the DB now, and retries
+  // happen via `todo`, not by re-reading the sheet. Next run's `>=` re-reads only same-second rows (deduped).
+  if (!DRY_RUN && maxTs && maxTs !== watermark) store.setWatermark(maxTs);
+  console.log(`read ${fresh.length} row(s) since ${watermark ?? 'start'}  |  ${store.summary()}`);
 
   // 2) Process every pending/retry row (retries survive restarts via the DB, unlike the old cursor).
   const todo = store.todo();
   console.log(`processing ${todo.length} pending/retry row(s)${DRY_RUN ? ' [dry-run]' : ''}`);
-  for (const { calldata_hash, calldata, row_index, attempts } of todo) {
-    const tag = row_index == null ? `claim ${calldata_hash.slice(0, 8)}` : `row ${row_index + 2}`; // +2: header + 1-based
+  for (const { calldata_hash, calldata, submitted_at, attempts } of todo) {
+    const tag = submitted_at ? `[${submitted_at}]` : `claim ${calldata_hash.slice(0, 8)}`;
 
     // Shape check — a malformed row is a permanent reject.
     if (!/^0x[0-9a-fA-F]+$/.test(calldata) || !calldata.toLowerCase().startsWith(CLAIM_SELECTOR) || calldata.length !== CLAIM_HEX_LEN) {

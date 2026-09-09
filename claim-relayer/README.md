@@ -9,8 +9,9 @@ compromised relayer key can at worst stop relaying or waste its own gas.
 > See "Assumptions" and "Security notes" below.
 
 ## How it works
-1. Reads **all current rows** of the Form's **linked Google Sheet** via its **public CSV endpoint** —
-   the sheet is shared "Anyone with the link can view", so **no credentials/GCP project are needed**.
+1. Reads **new rows** of the Form's **linked Google Sheet** (those at/after a stored **timestamp
+   watermark**) via its public **gviz JSON** endpoint — the sheet is shared "Anyone with the link can
+   view", so **no credentials/GCP project are needed**, and each run only fetches the recent tail (O(new)).
 2. For each row: **shape-checks** the calldata (hex, `claim()` selector `0xcf1c9461`, exact 388-byte
    fixed length) → **simulates** `claim()` with `eth_call` (no gas spent) → and only then **submits** it.
 3. Records each row's status in a local **SQLite DB** (`DB_FILE`, table `sheet_rows`) — `pending` /
@@ -58,9 +59,11 @@ verbatim as `tx.data` (no ABI/Interface needed).
 - **`e2e-anvil/`** — full path against a live anvil chain (id `32769`): deploy → impersonate-lodge → the **real `relay.js`** → payout assertion. See `e2e-anvil/README.md`.
 
 ## Assumptions
-- **Content-keyed, position-independent.** Rows are deduped by calldata hash, so the sheet can be
-  pruned / reordered / replaced without breaking tracking (each unique claim is processed once). The
-  cost is reading the whole current sheet each run — fine for a sheet you keep trimmed.
+- **Content-keyed + timestamp watermark.** Rows are deduped by calldata hash and read incrementally from
+  a stored timestamp watermark, so the sheet can be pruned / reordered / replaced without breaking
+  tracking, each unique claim is processed once, and reads stay O(new) rather than whole-sheet. The
+  watermark uses gviz's unambiguous `Date(y,m,d,…)` JSON encoding — not the sheet's locale display — so
+  M/D/YYYY vs D/M/YYYY doesn't matter. (Assumes column A is the Form's datetime `Timestamp`.)
 - **Single instance.** The SQLite DB has no cross-process lock, so run **one** relayer at a time (two
   concurrent runs could grab the same row). Multi-instance would need a shared DB + row locking.
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces via `NonceManager`).
