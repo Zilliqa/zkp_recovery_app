@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Claim relayer — starting point (review & harden before production).
 //
-// Each run: read new claim entries from the Google Form's linked Sheet (via its public CSV endpoint —
-// the sheet is shared "Anyone with the link can view"; no credentials), simulate each against the
+// Each run: read new claim entries from the Google Form's linked Sheet (via its public gviz JSON
+// endpoint — the sheet is shared "Anyone with the link can view"; no credentials), simulate each against the
 // escrow, and submit the ones that would succeed. The relayer key ONLY pays gas — every proof binds
 // its own destination (newAddr is a public input), so this script cannot redirect anyone's funds.
 //
@@ -43,7 +43,7 @@ for (const [k, v] of Object.entries(required)) {
 const DRY_RUN = process.argv.includes('--dry-run') || process.env.DRY_RUN === '1';
 const CLAIM_SELECTOR = '0xcf1c9461'; // claim(uint256[2],uint256[2][2],uint256[2],uint256[4])
 const CLAIM_HEX_LEN = 778;           // fixed size: '0x' + 4-byte selector + 12×32-byte words = 388 bytes
-if (DRY_RUN) console.log('[dry-run] ingest + simulate + report only — no transactions sent, no status writes');
+if (DRY_RUN) console.log('[dry-run] read + simulate + report only — writes nothing (no rows, status, or watermark) and sends no transactions');
 
 // gviz JSON of a LINK-READABLE sheet (share = "Anyone with the link can view"), no auth: read the
 // timestamp (column A) + calldata, only rows at/after the watermark (a datetime). We use JSON — not CSV
@@ -97,7 +97,7 @@ async function main() {
   const fresh = await readRows(watermark);
   let maxTs = watermark;
   for (const { calldata, submittedAt } of fresh) {
-    store.insertPending(sha256(calldata.toLowerCase()), calldata, submittedAt);
+    if (!DRY_RUN) store.insertPending(sha256(calldata.toLowerCase()), calldata, submittedAt);
     if (submittedAt && (!maxTs || submittedAt > maxTs)) maxTs = submittedAt;
   }
   // Advance the watermark to the newest timestamp read — rows are safely in the DB now, and retries
@@ -105,8 +105,11 @@ async function main() {
   if (!DRY_RUN && maxTs && maxTs !== watermark) store.setWatermark(maxTs);
   console.log(`read ${fresh.length} row(s) since ${watermark ?? 'start'}  |  ${store.summary()}`);
 
-  // 2) Process every pending/retry row (retries survive restarts via the DB, unlike the old cursor).
-  const todo = store.todo();
+  // 2) Process the pending/retry backlog (real run) — or, in --dry-run, just the freshly-read rows,
+  //    without having written anything. Retries survive restarts via the DB, unlike the old cursor.
+  const todo = DRY_RUN
+    ? fresh.map((r) => ({ calldata_hash: sha256(r.calldata.toLowerCase()), calldata: r.calldata, submitted_at: r.submittedAt, attempts: 0 }))
+    : store.todo();
   console.log(`processing ${todo.length} pending/retry row(s)${DRY_RUN ? ' [dry-run]' : ''}`);
   for (const { calldata_hash, calldata, submitted_at, attempts } of todo) {
     const tag = submitted_at ? `[${submitted_at}]` : `claim ${calldata_hash.slice(0, 8)}`;
