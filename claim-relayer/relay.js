@@ -72,7 +72,7 @@ const writeCursor = (n) => fs.writeFileSync(CURSOR_FILE, String(n));
 
 async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
-  const wallet = new ethers.Wallet(RELAYER_PRIVATE_KEY, provider);
+  const wallet = new ethers.NonceManager(new ethers.Wallet(RELAYER_PRIVATE_KEY, provider));
 
   const start = readCursor();
   const fresh = await readRows(start); // already only the unprocessed rows
