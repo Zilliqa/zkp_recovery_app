@@ -11,7 +11,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RPC_URL = process.env.RPC_URL || 'http://127.0.0.1:8545';
 const LODGE_WEI = BigInt(process.env.LODGE_WEI || ethers.parseEther('1').toString());
 const escrowAddr = fs.readFileSync(path.join(HERE, '.escrow_addr'), 'utf8').trim();
-const { oldAddr, newAddr } = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'e2e', 'claim.json'), 'utf8'));
+const { oldAddr, newAddr } = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'e2e-forge', 'claim.json'), 'utf8'));
 
 async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);

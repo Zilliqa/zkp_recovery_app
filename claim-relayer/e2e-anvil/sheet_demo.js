@@ -3,7 +3,7 @@
 // paste their calldata into the Google Form/Sheet and drive the REAL relay.js against anvil.
 //   setup:   node sheet_demo.js            (deploy + lodge; prints the 3 calldata + escrow address)
 //   verify:  node sheet_demo.js --verify   (assert each destination got paid)
-// Requires anvil on chain id 32769 and `(cd ../e2e && forge build)` first.
+// Requires anvil on chain id 32769 and `(cd ../e2e-forge && forge build)` first.
 import { ethers } from 'ethers';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RPC_URL = process.env.RPC_URL || 'http://127.0.0.1:8545';
 const DEPLOYER_PK = process.env.DEPLOYER_PK || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
-const ART = path.join(HERE, '..', 'e2e', 'out', 'escrow_v1.sol', 'EscrowInit.json');
-const PROXY_ART = path.join(HERE, '..', 'e2e', 'out', 'ERC1967Proxy.sol', 'ERC1967Proxy.json');
+const ART = path.join(HERE, '..', 'e2e-forge', 'out', 'escrow_v1.sol', 'EscrowInit.json');
+const PROXY_ART = path.join(HERE, '..', 'e2e-forge', 'out', 'ERC1967Proxy.sol', 'ERC1967Proxy.json');
 const EXAMPLES = path.join(HERE, 'examples.json');
 const DEMO = path.join(HERE, '.demo.json');
 const VERIFY = process.argv.includes('--verify');
@@ -40,7 +40,7 @@ async function main() {
     return;
   }
 
-  for (const p of [ART, PROXY_ART]) if (!fs.existsSync(p)) throw new Error(`missing ${p} — run: (cd ../e2e && forge build)`);
+  for (const p of [ART, PROXY_ART]) if (!fs.existsSync(p)) throw new Error(`missing ${p} — run: (cd ../e2e-forge && forge build)`);
   const claims = JSON.parse(fs.readFileSync(EXAMPLES, 'utf8'));
   const proxyArt = JSON.parse(fs.readFileSync(PROXY_ART, 'utf8'));
 

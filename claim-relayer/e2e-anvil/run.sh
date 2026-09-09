@@ -14,7 +14,7 @@ echo "==> Checking anvil at $RPC_URL (need chain id 32769)"
 cast chain-id --rpc-url "$RPC_URL" >/dev/null 2>&1 || { echo "anvil not reachable — run: anvil --chain-id 32769"; exit 1; }
 
 echo "==> Compiling escrow (forge build)"
-( cd ../e2e && forge build >/dev/null )
+( cd ../e2e-forge && forge build >/dev/null )
 
 echo "==> Deploying escrow + lodging for the legacy source address (impersonated)"
 node deploy_and_lodge.js

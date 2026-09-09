@@ -49,7 +49,7 @@ The form field is the **complete `0x…` transaction data** for the escrow's `cl
 verbatim as `tx.data` (no ABI/Interface needed).
 
 ## Testing
-- **`e2e/`** — `forge test` over the **real** zq2 escrow (`escrow_v1.sol`) + integrated verifier (proof → `lodge` → `claim` → funds move), in-process, no node.
+- **`e2e-forge/`** — `forge test` over the **real** zq2 escrow (`escrow_v1.sol`) + integrated verifier (proof → `lodge` → `claim` → funds move), in-process, no node.
 - **`e2e-anvil/`** — full path against a live anvil chain (id `32769`): deploy → impersonate-lodge → the **real `relay.js`** → payout assertion. See `e2e-anvil/README.md`.
 
 ## Assumptions

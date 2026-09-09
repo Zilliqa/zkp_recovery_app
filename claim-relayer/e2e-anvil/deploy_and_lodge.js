@@ -17,9 +17,9 @@ const RPC_URL = process.env.RPC_URL || 'http://127.0.0.1:8545';
 // Anvil's default account #0 — deployer + (later) relayer gas payer. Well-known test key, no secrets.
 const DEPLOYER_PK = process.env.DEPLOYER_PK || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 const LODGE_WEI = BigInt(process.env.LODGE_WEI || ethers.parseEther('1').toString());
-const ARTIFACT = path.join(HERE, '..', 'e2e', 'out', 'escrow_v1.sol', 'EscrowInit.json');
-const PROXY_ARTIFACT = path.join(HERE, '..', 'e2e', 'out', 'ERC1967Proxy.sol', 'ERC1967Proxy.json');
-const CLAIM = path.join(HERE, '..', 'e2e', 'claim.json');
+const ARTIFACT = path.join(HERE, '..', 'e2e-forge', 'out', 'escrow_v1.sol', 'EscrowInit.json');
+const PROXY_ARTIFACT = path.join(HERE, '..', 'e2e-forge', 'out', 'ERC1967Proxy.sol', 'ERC1967Proxy.json');
+const CLAIM = path.join(HERE, '..', 'e2e-forge', 'claim.json');
 
 async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
@@ -28,9 +28,9 @@ async function main() {
     throw new Error(`anvil chain id is ${net.chainId}, expected 32769 — start it with: anvil --chain-id 32769`);
   }
   for (const p of [ARTIFACT, PROXY_ARTIFACT]) {
-    if (!fs.existsSync(p)) throw new Error(`missing ${p} — run: (cd ../e2e && forge build)`);
+    if (!fs.existsSync(p)) throw new Error(`missing ${p} — run: (cd ../e2e-forge && forge build)`);
   }
-  if (!fs.existsSync(CLAIM)) throw new Error(`missing ${CLAIM} — run: (cd ../e2e && ZKEY=<path> node gen_calldata.js)`);
+  if (!fs.existsSync(CLAIM)) throw new Error(`missing ${CLAIM} — run: (cd ../e2e-forge && ZKEY=<path> node gen_calldata.js)`);
 
   const { oldAddr, newAddr, domain, calldata } = JSON.parse(fs.readFileSync(CLAIM, 'utf8'));
   if (String(domain) !== '32769') throw new Error(`claim.json domain=${domain}, expected 32769`);
