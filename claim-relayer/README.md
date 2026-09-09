@@ -59,6 +59,10 @@ verbatim as `tx.data` (no ABI/Interface needed).
 - **`e2e-anvil/`** — full path against a live anvil chain (id `32769`): deploy → impersonate-lodge → the **real `relay.js`** → payout assertion. See `e2e-anvil/README.md`.
 
 ## Assumptions
+- **Fixed sheet layout.** The relayer reads the Form's linked responses tab with column **`A` = the Form
+  `Timestamp`** (a datetime) and column **`B` = the calldata** question — the default single-question Form
+  layout. It queries exactly `A, B`, so extra columns (e.g. notes in `C`) are ignored, but the calldata
+  must stay in `B` (don't insert columns to its left).
 - **Content-keyed + timestamp watermark.** Rows are deduped by calldata hash and read incrementally from
   a stored timestamp watermark, so the sheet can be pruned / reordered / replaced without breaking
   tracking, each unique claim is processed once, and reads stay O(new) rather than whole-sheet. The
