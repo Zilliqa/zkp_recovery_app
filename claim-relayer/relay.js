@@ -192,4 +192,9 @@ async function main() {
   store.close();
 }
 
-main().catch((e) => { console.error('fatal:', e.message || e); process.exit(1); });
+// Exit explicitly: ethers' JsonRpcProvider keeps a background network-detection/retry timer alive (it
+// never settles when the RPC is unreachable), which would otherwise hang the process after main() is
+// done. By here all awaits are complete, DB writes are flushed, and the store is closed.
+main()
+  .then(() => process.exit(0))
+  .catch((e) => { console.error('fatal:', e.message || e); process.exit(1); });
