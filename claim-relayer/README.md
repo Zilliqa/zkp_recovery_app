@@ -30,6 +30,10 @@ no gas is spent until simulation passes.
 > too is retried up to `RETRY_MAX` before being marked `failed`. Harmless (each retry is a free
 > `eth_call`), but a richer store could disambiguate via the escrow's `Released` event.
 
+A `failed` row tells you **where** it failed: a set `tx_hash`/`block` means a submitted tx **reverted
+on-chain** (rare — state changed between simulate and submit; go inspect the tx), while a NULL `tx_hash`
+means it was rejected in **simulation** and never submitted (`last_error` has the escrow's reason).
+
 ## Setup
 1. **Link the Form to a Sheet** — Form editor → Responses → *Link to Sheets*. The relayer expects the
    fixed Form layout: column `A` = `Timestamp`, column `B` = the calldata question.

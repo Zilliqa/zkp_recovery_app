@@ -31,6 +31,7 @@ export function openStore(path) {
     ins: db.prepare(`INSERT OR IGNORE INTO sheet_rows (calldata_hash, calldata, submitted_at) VALUES (?, ?, ?)`),
     todo: db.prepare(`SELECT calldata_hash, calldata, submitted_at, attempts FROM sheet_rows WHERE status IN ('pending','retry') ORDER BY submitted_at`),
     set: db.prepare(`UPDATE sheet_rows SET status=?, last_error=?, attempts=attempts+1, updated_at=datetime('now') WHERE calldata_hash=?`),
+    fail: db.prepare(`UPDATE sheet_rows SET status='failed', last_error=?, tx_hash=?, block=?, attempts=attempts+1, updated_at=datetime('now') WHERE calldata_hash=?`),
     ok: db.prepare(`UPDATE sheet_rows SET status='confirmed', tx_hash=?, block=?, last_error=NULL, attempts=attempts+1, updated_at=datetime('now') WHERE calldata_hash=?`),
     counts: db.prepare(`SELECT status, COUNT(*) AS n FROM sheet_rows GROUP BY status`),
     getMeta: db.prepare(`SELECT value FROM meta WHERE key=?`),
@@ -42,7 +43,9 @@ export function openStore(path) {
     insertPending: (hash, calldata, submittedAt) => s.ins.run(hash, calldata, submittedAt ?? null),
     todo: () => s.todo.all(),
     markRetry: (hash, e) => s.set.run('retry', err(e), hash),
-    markFailed: (hash, e) => s.set.run('failed', err(e), hash),
+    // txHash/block are recorded only for an on-chain failure (a submitted tx that reverted); a
+    // simulation failure passes neither, so tx_hash/block stay NULL — that's how you tell them apart.
+    markFailed: (hash, e, txHash = null, block = null) => s.fail.run(err(e), txHash ?? null, block ?? null, hash),
     markConfirmed: (hash, txHash, block) => s.ok.run(txHash, block, hash),
     getWatermark: () => s.getMeta.get('watermark')?.value ?? null,
     setWatermark: (ts) => s.setMeta.run('watermark', ts),

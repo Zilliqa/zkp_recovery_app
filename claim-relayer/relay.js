@@ -150,8 +150,8 @@ async function main() {
         store.markConfirmed(calldata_hash, tx.hash, rcpt.blockNumber);
         console.log(`${tag}: CONFIRMED ${tx.hash} @ block ${rcpt.blockNumber}`);
       } else {
-        store.markFailed(calldata_hash, 'tx reverted on-chain');
-        console.warn(`${tag}: tx ${tx.hash} reverted on-chain — failed`);
+        store.markFailed(calldata_hash, 'tx reverted on-chain', tx.hash, rcpt.blockNumber);
+        console.warn(`${tag}: tx ${tx.hash} reverted on-chain @ block ${rcpt.blockNumber} — failed`);
       }
     } catch (e) {
       console.error(`${tag}: submit error — ${e.shortMessage || e.message}. Retry next run. Stopping.`);
