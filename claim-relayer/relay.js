@@ -16,8 +16,11 @@
 
 import 'dotenv/config';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { ethers } from 'ethers';
 import { openStore } from './store.js';
+
+const sha256 = (s) => createHash('sha256').update(s).digest('hex');
 
 const {
   RPC_URL,
@@ -44,33 +47,34 @@ const CLAIM_HEX_LEN = 778;           // fixed size: '0x' + 4-byte selector + 12�
 if (DRY_RUN) console.log('[dry-run] ingest + simulate + report only — no transactions sent, no status writes');
 
 // Public CSV endpoint for a LINK-READABLE sheet (share = "Anyone with the link can view"): the gviz
-// query reads the timestamp (column A) + calldata columns, only from the cursor row onward (offset)
-// → O(new rows), no auth.
-const sheetCsvUrl = (start) =>
+// query reads the timestamp (column A) + calldata columns for ALL current rows, no auth. Rows are
+// deduped by content hash in the DB, so re-reading rows already handled is cheap (INSERT OR IGNORE)
+// and deleting/pruning old sheet rows is safe.
+const sheetCsvUrl = () =>
   `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}` +
-  `&tq=${encodeURIComponent(`select A, ${CALLDATA_COL} offset ${start}`)}`;
+  `&tq=${encodeURIComponent(`select A, ${CALLDATA_COL}`)}`;
 
-// --- Read only the NEW rows (index >= start): timestamp (column A) + calldata ---
+// --- Read all current rows: timestamp (column A) + calldata ---
 // From a local file (e2e/local testing) if CALLDATA_FILE is set, else the Google Sheet's public CSV.
-async function readRows(start) {
+async function readRows() {
   if (CALLDATA_FILE) {
     // Testing source: one 0x-hex claim() calldata per non-empty line, in submission order (no timestamp).
     const lines = fs.readFileSync(CALLDATA_FILE, 'utf8').split('\n').map((s) => s.trim()).filter(Boolean);
-    return lines.slice(start).map((calldata, i) => ({ index: start + i, calldata, submittedAt: null }));
+    return lines.map((calldata, i) => ({ rowIndex: i, calldata, submittedAt: null }));
   }
-  const res = await fetch(sheetCsvUrl(start));
+  const res = await fetch(sheetCsvUrl());
   const text = await res.text();
   if (!res.ok || text.trimStart().startsWith('<')) {
     throw new Error(`sheet fetch failed (HTTP ${res.status}) — is it shared "Anyone with the link can view", and SHEET_ID/SHEET_GID correct?`);
   }
   // gviz CSV: line 0 is the column labels; each remaining row is `"<timestamp>","<calldata>"` (neither
-  // field contains a comma/quote). `offset start` already dropped the processed rows (append-only).
+  // field contains a comma/quote).
   const lines = text.split('\n').map((s) => s.trim()).filter(Boolean).slice(1);
   return lines.map((l, i) => {
     const m = l.match(/^"(.*)","(.*)"$/);
     const submittedAt = m ? m[1] : null;
     const calldata = (m ? m[2] : l.replace(/^"(.*)"$/, '$1')).trim();
-    return { index: start + i, calldata, submittedAt };
+    return { rowIndex: i, calldata, submittedAt };
   });
 }
 
@@ -79,23 +83,25 @@ async function main() {
   const wallet = new ethers.NonceManager(new ethers.Wallet(RELAYER_PRIVATE_KEY, provider));
   const store = openStore(DB_FILE);
 
-  // 1) Ingest new sheet rows as 'pending' (idempotent). Offset = one past the highest row we've seen,
-  //    so we only read (and only fetch) rows the DB doesn't already know about.
-  const offset = store.ingestOffset();
-  const fresh = await readRows(offset);
-  for (const { index, calldata, submittedAt } of fresh) store.insertPending(index, calldata, submittedAt);
-  console.log(`ingested from offset ${offset}: +${fresh.length}  |  ${store.summary()}`);
+  // 1) Ingest ALL current sheet rows, keyed by content hash. INSERT OR IGNORE dedups rows already seen
+  //    (any status), so re-reading the whole sheet each run is cheap and deleting/pruning old rows —
+  //    or switching to a fresh sheet — is safe (positions no longer matter).
+  const fresh = await readRows();
+  for (const { rowIndex, calldata, submittedAt } of fresh) {
+    store.insertPending(sha256(calldata.toLowerCase()), calldata, rowIndex, submittedAt);
+  }
+  console.log(`read ${fresh.length} sheet row(s)  |  ${store.summary()}`);
 
   // 2) Process every pending/retry row (retries survive restarts via the DB, unlike the old cursor).
   const todo = store.todo();
   console.log(`processing ${todo.length} pending/retry row(s)${DRY_RUN ? ' [dry-run]' : ''}`);
-  for (const { row_index, calldata, attempts } of todo) {
-    const tag = `row ${row_index + 2}`; // +2: 1 header row, sheets are 1-based
+  for (const { calldata_hash, calldata, row_index, attempts } of todo) {
+    const tag = row_index == null ? `claim ${calldata_hash.slice(0, 8)}` : `row ${row_index + 2}`; // +2: header + 1-based
 
     // Shape check — a malformed row is a permanent reject.
     if (!/^0x[0-9a-fA-F]+$/.test(calldata) || !calldata.toLowerCase().startsWith(CLAIM_SELECTOR) || calldata.length !== CLAIM_HEX_LEN) {
       console.warn(`${tag}: malformed calldata (need selector ${CLAIM_SELECTOR}, ${CLAIM_HEX_LEN} chars) — failed`);
-      if (!DRY_RUN) store.markFailed(row_index, 'malformed calldata');
+      if (!DRY_RUN) store.markFailed(calldata_hash, 'malformed calldata');
       continue;
     }
 
@@ -109,15 +115,15 @@ async function main() {
       const reason = e.reason || e.shortMessage || e.message || '';
       if (e.code !== 'CALL_EXCEPTION') {
         console.error(`${tag}: simulate infra error (${reason}) — retry next run. Stopping.`);
-        if (!DRY_RUN) store.markRetry(row_index, reason);
+        if (!DRY_RUN) store.markRetry(calldata_hash, reason);
         break;
       }
       if (/No balance lodged/i.test(reason) && attempts + 1 < RETRY_LIMIT) {
         console.warn(`${tag}: no balance lodged yet (attempt ${attempts + 1}/${RETRY_LIMIT}) — retry`);
-        if (!DRY_RUN) store.markRetry(row_index, reason);
+        if (!DRY_RUN) store.markRetry(calldata_hash, reason);
       } else {
         console.warn(`${tag}: simulation reverted (${reason}) — failed`);
-        if (!DRY_RUN) store.markFailed(row_index, reason);
+        if (!DRY_RUN) store.markFailed(calldata_hash, reason);
       }
       continue;
     }
@@ -128,15 +134,15 @@ async function main() {
       const tx = await wallet.sendTransaction({ to: ESCROW_ADDRESS, data: calldata });
       const rcpt = await tx.wait();
       if (rcpt.status === 1) {
-        store.markConfirmed(row_index, tx.hash, rcpt.blockNumber);
+        store.markConfirmed(calldata_hash, tx.hash, rcpt.blockNumber);
         console.log(`${tag}: CONFIRMED ${tx.hash} @ block ${rcpt.blockNumber}`);
       } else {
-        store.markFailed(row_index, 'tx reverted on-chain');
+        store.markFailed(calldata_hash, 'tx reverted on-chain');
         console.warn(`${tag}: tx ${tx.hash} reverted on-chain — failed`);
       }
     } catch (e) {
       console.error(`${tag}: submit error — ${e.shortMessage || e.message}. Retry next run. Stopping.`);
-      store.markRetry(row_index, e.shortMessage || e.message);
+      store.markRetry(calldata_hash, e.shortMessage || e.message);
       break;
     }
   }

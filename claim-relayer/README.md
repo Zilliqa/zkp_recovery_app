@@ -9,14 +9,15 @@ compromised relayer key can at worst stop relaying or waste its own gas.
 > See "Assumptions" and "Security notes" below.
 
 ## How it works
-1. Reads the Form's **linked Google Sheet** (one row per submission) via its **public CSV endpoint** —
+1. Reads **all current rows** of the Form's **linked Google Sheet** via its **public CSV endpoint** —
    the sheet is shared "Anyone with the link can view", so **no credentials/GCP project are needed**.
-2. For each new row: **shape-checks** the calldata (hex, `claim()` selector `0xcf1c9461`, exact
-   388-byte fixed length) → **simulates** `claim()` with `eth_call` (no gas spent) → and only then
-   **submits** it.
-3. Records each row's status in a local **SQLite DB** (`DB_FILE`) — `pending` / `confirmed` / `failed` /
-   `retry` — so it never re-submits, survives restarts/crashes, and can **retry** rows that aren't
-   claimable yet. The read offset is derived from the DB, so only genuinely new rows are fetched.
+2. For each row: **shape-checks** the calldata (hex, `claim()` selector `0xcf1c9461`, exact 388-byte
+   fixed length) → **simulates** `claim()` with `eth_call` (no gas spent) → and only then **submits** it.
+3. Records each row's status in a local **SQLite DB** (`DB_FILE`, table `sheet_rows`) — `pending` /
+   `confirmed` / `failed` / `retry` — so it never re-submits, survives restarts/crashes, and can
+   **retry** rows that aren't claimable yet. Rows are **keyed by a hash of the calldata** (content), so
+   duplicate submissions dedup and **deleting / pruning / reordering** sheet rows — or pointing at a
+   fresh sheet — is safe (positions don't matter).
 
 The **`eth_call` simulation is the gate**: an invalid proof (bad / wrong-domain / invalid src·dst)
 reverts and is marked **`failed`** (never retried). A claim whose deposit hasn't landed reverts on
@@ -57,7 +58,9 @@ verbatim as `tx.data` (no ABI/Interface needed).
 - **`e2e-anvil/`** — full path against a live anvil chain (id `32769`): deploy → impersonate-lodge → the **real `relay.js`** → payout assertion. See `e2e-anvil/README.md`.
 
 ## Assumptions
-- **Append-only responses.** Form submissions only append, so a row's position (index) is a stable key.
+- **Content-keyed, position-independent.** Rows are deduped by calldata hash, so the sheet can be
+  pruned / reordered / replaced without breaking tracking (each unique claim is processed once). The
+  cost is reading the whole current sheet each run — fine for a sheet you keep trimmed.
 - **Single instance.** The SQLite DB has no cross-process lock, so run **one** relayer at a time (two
   concurrent runs could grab the same row). Multi-instance would need a shared DB + row locking.
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces via `NonceManager`).
