@@ -5,8 +5,8 @@ escrow, and submits the valid ones. The relayer key **only pays gas** — every 
 destination (`newAddr` is a public input), so this script **cannot redirect anyone's funds**; a
 compromised relayer key can at worst stop relaying or waste its own gas.
 
-> **Review and harden before production** (monitoring, key management, gas policy, retry/alerting).
-> See "Assumptions" and "Not implemented yet" below.
+> **Review and harden before production** (monitoring, key management, gas policy, alerting).
+> See "Assumptions" and "Security notes" below.
 
 ## How it works
 1. Reads the Form's **linked Google Sheet** (one row per submission) via its **public CSV endpoint** —

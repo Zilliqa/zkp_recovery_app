@@ -1,11 +1,11 @@
-// Generate a REAL proof with dry-run/final.zkey and assemble the exact claim() calldata the Flutter
-// app would emit (selector 0xcf1c9461 + a,b,c + 4 public inputs). domain=32769 to match anvil --chain-id 32769.
+// Generate a REAL proof with the production final.zkey and assemble the exact claim() calldata the
+// Flutter app would emit (selector 0xcf1c9461 + a,b,c + 4 public inputs). domain=32769 (anvil chain id).
+// Writes ./claim.json (the file the forge test + anvil harness read).
 const base = '../../groth16-prover-min/node_modules';
 const snarkjs = require(base + '/snarkjs');
 const bip39s = require(base + '/@scure/bip39');
 const { HDKey } = require(base + '/@scure/bip32');
 const crypto = require('crypto'); const fs = require('fs');
-const P = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 const MN = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 const DOMAIN = 32769n;                                   // must equal block.chainid on anvil
 const NEW = BigInt('0x00112233445566778899aabbccddeeff00112233'); // dstAddress to observe
@@ -29,7 +29,7 @@ const pad=h=>BigInt(h).toString(16).padStart(64,'0');
   const calldata='0xcf1c9461'+words.map(pad).join('');
   const out={ oldAddr:'0x'+old.toString('hex'), newAddr:'0x'+NEW.toString(16).padStart(40,'0'),
     domain:DOMAIN.toString(), publicSignals, calldata };
-  fs.writeFileSync('/tmp/escrow-e2e/claim.json', JSON.stringify(out,null,2));
+  fs.writeFileSync('claim.json', JSON.stringify(out,null,2));
   console.log('oldAddr  :', out.oldAddr, '(expect 0xb413df42a4e2d5236fe1b914a21c354eb86f133c)');
   console.log('newAddr  :', out.newAddr);
   console.log('pub      :', publicSignals);

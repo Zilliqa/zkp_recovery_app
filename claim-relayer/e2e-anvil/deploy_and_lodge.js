@@ -30,7 +30,7 @@ async function main() {
   for (const p of [ARTIFACT, PROXY_ARTIFACT]) {
     if (!fs.existsSync(p)) throw new Error(`missing ${p} — run: (cd ../e2e-forge && forge build)`);
   }
-  if (!fs.existsSync(CLAIM)) throw new Error(`missing ${CLAIM} — run: (cd ../e2e-forge && ZKEY=<path> node gen_calldata.js)`);
+  if (!fs.existsSync(CLAIM)) throw new Error(`missing ${CLAIM} — run: (cd ../e2e-forge && ZKEY=<path> node gen_calldata.cjs)`);
 
   const { oldAddr, newAddr, domain, calldata } = JSON.parse(fs.readFileSync(CLAIM, 'utf8'));
   if (String(domain) !== '32769') throw new Error(`claim.json domain=${domain}, expected 32769`);

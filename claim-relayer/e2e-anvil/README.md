@@ -28,7 +28,7 @@ balance is seeded by zq2 itself, not by an EVM `lodge()`.)
 - Relayer deps: from `..` (the `claim-relayer/` root) run `npm install`.
 - The **production proving key**. `../e2e-forge/claim.json` is committed, so you can run this harness as-is.
   To regenerate the proof (e.g. a different destination), download `circuit_final.zkey` into
-  `../../groth16-prover-min/` (or set `ZKEY=/path/to/final.zkey`) and run `node ../e2e-forge/gen_calldata.js`.
+  `../../groth16-prover-min/` (or set `ZKEY=/path/to/final.zkey`) and run `node ../e2e-forge/gen_calldata.cjs`.
 
 The committed proof uses the public all-zero BIP-39 test vector: source
 `0xb413df42a4e2d5236fe1b914a21c354eb86f133c`, destination `0x00112233445566778899aabbccddeeff00112233`,
