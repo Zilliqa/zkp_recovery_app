@@ -83,7 +83,7 @@ test seed, paying 1/2/3 ZIL to distinct destinations) through a real **link-read
    ```bash
    RPC_URL=http://127.0.0.1:8545 ESCROW_ADDRESS=<from step 2> \
    RELAYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-   SHEET_ID=<id> SHEET_GID=<gid> CALLDATA_COL=B DB_FILE=$(mktemp) node ../relay.js
+   SHEET_ID=<id> SHEET_GID=<gid> DB_FILE=$(mktemp) node ../relay.js
    ```
 5. **Verify** all 3 payouts:
    ```bash

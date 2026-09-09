@@ -31,12 +31,12 @@ no gas is spent until simulation passes.
 > `eth_call`), but a richer store could disambiguate via the escrow's `Released` event.
 
 ## Setup
-1. **Link the Form to a Sheet** — Form editor → Responses → *Link to Sheets*. Note which column letter
-   holds the calldata (Forms put `Timestamp` in `A`, so the first question is `B`).
+1. **Link the Form to a Sheet** — Form editor → Responses → *Link to Sheets*. The relayer expects the
+   fixed Form layout: column `A` = `Timestamp`, column `B` = the calldata question.
 2. **Make it link-readable** — Share → General access → **"Anyone with the link" = Viewer**. No GCP
    project or service account is needed; the sheet holds only public calldata (see Security notes).
 3. **Configure** — `cp .env.example .env` and set `SHEET_ID` + `SHEET_GID` (both in the Sheet URL:
-   `/spreadsheets/d/<SHEET_ID>/edit#gid=<SHEET_GID>`) and `CALLDATA_COL` (default `B`).
+   `/spreadsheets/d/<SHEET_ID>/edit#gid=<SHEET_GID>`).
 4. **Install & run** (needs **Node 22+** — the state DB uses the built-in `node:sqlite`):
    ```bash
    npm install

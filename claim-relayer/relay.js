@@ -28,7 +28,6 @@ const {
   RELAYER_PRIVATE_KEY,
   SHEET_ID,                       // spreadsheet id, from its URL: /spreadsheets/d/<SHEET_ID>/edit
   SHEET_GID = '0',                // the responses tab's gid (the #gid=… in the URL)
-  CALLDATA_COL = 'B',             // column letter holding the calldata (Forms: Timestamp=A, 1st question=B)
   DB_FILE = './relayer.db',       // SQLite per-row state (status/retries/tx hash); replaces the old cursor
   RETRY_MAX = '20',               // give up retrying a "No balance lodged" row after this many attempts
   CALLDATA_FILE,                  // e2e/local testing ONLY: read calldata from this file instead of the Sheet
@@ -52,7 +51,7 @@ if (DRY_RUN) console.log('[dry-run] ingest + simulate + report only — no trans
 // sheet's locale display format (M/D/YYYY vs D/M/YYYY). `where A >= …` is a real datetime comparison.
 const sheetJsonUrl = (watermark) => {
   const where = watermark ? ` where A >= datetime '${watermark}'` : '';
-  const tq = `select A, ${CALLDATA_COL}${where} order by A`;
+  const tq = `select A, B${where} order by A`; // A = Form Timestamp, B = Calldata (fixed Form layout)
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}&tq=${encodeURIComponent(tq)}`;
 };
 
