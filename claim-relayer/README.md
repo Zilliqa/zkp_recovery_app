@@ -77,8 +77,12 @@ verbatim as `tx.data` (no ABI/Interface needed).
   `lodge()` is a new submission → re-claimed), and reads stay O(new) rather than whole-sheet. The
   watermark uses gviz's unambiguous `Date(y,m,d,…)` JSON encoding — not the sheet's locale display — so
   M/D/YYYY vs D/M/YYYY doesn't matter. (Assumes column A is the Form's datetime `Timestamp`.)
-- **Single instance.** The SQLite DB has no cross-process lock, so run **one** relayer at a time (two
-  concurrent runs could grab the same row). Multi-instance would need a shared DB + row locking.
+- **Single instance (enforced).** Run **one** relayer at a time — two would double-submit and clash
+  nonces. A second instance detects the first via a PID lock file (`<DB_FILE>.lock`) and **exits cleanly**
+  ("another relayer instance appears to be running") instead of crashing on `SQLITE_BUSY`; a stale lock
+  from a crashed run is taken over automatically. (A `busy_timeout` also waits out a transient lock, e.g.
+  an open `sqlite3` reader.) `--dry-run` is read-only and takes no lock. True multi-instance would still
+  need a shared DB + row-level leasing.
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces via `NonceManager`).
   Fine for a batch; parallelize with managed nonces / multiple keys if volume grows.
 

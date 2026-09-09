@@ -15,6 +15,7 @@ import { DatabaseSync } from 'node:sqlite';
 
 export function openStore(path) {
   const db = new DatabaseSync(path);
+  db.exec('PRAGMA busy_timeout = 5000'); // wait up to 5s for a transient lock (e.g. a reader) instead of failing instantly
   db.exec(`
     CREATE TABLE IF NOT EXISTS sheet_rows (
       row_hash     TEXT PRIMARY KEY,    -- sha256(submitted_at + calldata): identity of a Form submission
