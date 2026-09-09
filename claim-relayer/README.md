@@ -63,13 +63,6 @@ verbatim as `tx.data` (no ABI/Interface needed).
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces via `NonceManager`).
   Fine for a batch; parallelize with managed nonces / multiple keys if volume grows.
 
-## Not implemented yet (add for production)
-- Alerting/metrics (confirmed / failed / retry counts), structured logs.
-- Relayer gas-balance monitoring and top-up.
-- Optional: write a `status` column back to the Sheet per row (the read-only public CSV can't write —
-  this would need a credentialed write path, e.g. an admin-provisioned service account or Apps Script).
-- Rate-limit / batch-size caps.
-
 ## Security notes
 - `.env` (with `RELAYER_PRIVATE_KEY`) is the only secret — git-ignored here; store it securely. The
   relayer key has **no privilege over the escrow** (a system contract, upgradeable only by `address(0)`)
