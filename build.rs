@@ -8,7 +8,7 @@
 /// - Install flutter https://docs.flutter.dev/install/custom#target-platform
 /// - Run `flutter pub get` in the `flutter` directory to install the Flutter dependencies.
 ///
-/// - Download https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/circuit_final.zkey
+/// - Download https://storage.googleapis.com/bkt-p-zkproof-files-001/groth16/final.zkey
 ///
 /// How to build and run the Flutter app:
 /// 1. Copy the `circuit.wasm` file to the `test-vectors/circom/groth.wasm` file.

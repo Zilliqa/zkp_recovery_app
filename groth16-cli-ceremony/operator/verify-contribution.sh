@@ -16,7 +16,10 @@ R1CS_SHA=$(sha256sum "$R1CS" | cut -d' ' -f1)
 echo "circuit.r1cs sha256: $R1CS_SHA   (must equal the hash pinned in the published transcript)"
 echo "verifying $ZKEY (this takes a few minutes)..."
 OUT="$($S zkey verify "$R1CS" "$PTAU" "$ZKEY" 2>&1 | sed 's/\x1b\[[0-9;]*m//g')"
-echo "$OUT" | grep -iE 'contribution #|ZKey Ok|INVALID' || true
+# show the FULL contribution block INCLUDING each contribution's hash (the 4 hex lines) — you need
+# these to match the published transcript, so do NOT filter to names only.
+BLOCK="$(echo "$OUT" | sed 's/^\[INFO\][[:space:]]*snarkJS:[[:space:]]*//' | sed -n '/^contribution #/,/^ZKey Ok/p')"
+[ -n "$BLOCK" ] && echo "$BLOCK" || echo "$OUT" | grep -iE 'invalid|error' || true
 echo
 if echo "$OUT" | grep -qi 'ZKey Ok!'; then
   echo "RESULT: VALID (ZKey Ok!)."

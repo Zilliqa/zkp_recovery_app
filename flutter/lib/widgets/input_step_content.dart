@@ -147,7 +147,7 @@ class InputStepContent extends StatelessWidget {
             maxLines: 1,
             decoration: InputDecoration(
               labelText: 'Mnemonic-seed',
-              hint: const Text('12/15/18/21/24-word mnemonic'),
+              hint: const Text('Mnemonic-seed phrase'),
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: Icon(

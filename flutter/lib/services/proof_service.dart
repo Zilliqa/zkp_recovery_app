@@ -89,6 +89,7 @@ class ProofService {
     } catch (_) {
       rethrow;
     }
+    log("BIP39 fingerprint ${bytesToHex(hdKey.fingerprint)}");
 
     // Find old account index; throws exception if not found
     final account = await findAccountParent(hdKey, zilAddress, wallet);
@@ -97,6 +98,9 @@ class ProofService {
         "ZIL address does not seem to be derived from mnemonic-seed, or unsupported wallet.",
       );
     }
+    log(
+      "Parent fingerprint ${bytesToHex(account.parent.fingerprint)}",
+    );
 
     // Encode the Circom inputs in the Arkworks format.
     // Arkworks uses a different encoding format than Rapidsnark.
@@ -119,6 +123,7 @@ class ProofService {
         'Proving key failed integrity check; re-download required.',
       );
     }
+    log("ZKEY checksum ${ProvingArtifacts.artifact.checksum}");
 
     // Compute the Circom proof
     final zkeyPath = await DownloadService.instance.pathFor();
@@ -132,6 +137,7 @@ class ProofService {
       circuitInputs: jsonEncode(inputs),
       proofLib: ProofLib.arkworks,
     );
+    log("GROTH16 proof ${result.proof.protocol}/${result.proof.curve}");
 
     // check the result
     final check = await verifyCircomProof(
@@ -142,12 +148,12 @@ class ProofService {
     if (!check) {
       throw Exception('Generated proof is invalid');
     }
+    log("GROTH16 validated $check");
 
     // Encode the outputs
     final calldata = encodeCallData(result);
     final output = bytesToHex(calldata);
-
-    log(output);
+    log("CALLDATA $output");
     return output;
   }
 
@@ -182,7 +188,6 @@ class ProofService {
                 .bytes,
           ).sublist(12);
           if (listEquals(knownAddress, derivedAddress)) {
-            log("${bytesToHex(knownAddress)} found at $n");
             final parent = masterKey.derivePath("m/44'/313'/$n'/0'");
             return AccountData(parent: parent, index: 0, hardened: 1);
           }
@@ -199,7 +204,6 @@ class ProofService {
                   .bytes,
             ).sublist(12);
             if (listEquals(knownAddress, derivedAddress)) {
-              log("${bytesToHex(knownAddress)} found at $n/$i");
               final parent = masterKey.derivePath("m/44'/313'/$n'/0");
               return AccountData(parent: parent, index: i, hardened: 0);
             }

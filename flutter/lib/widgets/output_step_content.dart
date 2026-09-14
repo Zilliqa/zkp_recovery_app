@@ -27,8 +27,8 @@ class OutputStepContent extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         const _CopyableField(
-          label: 'Contract address',
-          value: '0x00000000005A494c31455343524f5750524f5859', // hard-coded
+          label: 'Legacy escrow address',
+          value: 'zil1qqqqqqqqtfy5cv292dp4yn6h2pfy7kzec60lqn', // hard-coded
         ),
         const SizedBox(height: 16),
         Text(
@@ -39,7 +39,7 @@ class OutputStepContent extends StatelessWidget {
         _CopyableField(label: 'Contract calldata', value: result),
         const SizedBox(height: 16),
         const _CopyableField(
-          label: 'Contract address',
+          label: 'EVM escrow address',
           value: '0x00000000005A494c31455343524f5750524f5859', // hard-coded
         ),
         const SizedBox(height: 16),
