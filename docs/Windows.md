@@ -193,30 +193,6 @@ username@DESKTOP:~$
 
 Linux commands such as `sudo`, `apt`, `tar`, and `chmod` must be run here.
 
-## Do Not Type `$`
-
-Some Linux documentation shows commands like:
-
-```text
-$ sudo apt update
-```
-
-The `$` represents the shell prompt.
-
-Do **not** type it.
-
-Incorrect:
-
-```text
-$ sudo apt update
-```
-
-Correct:
-
-```bash
-sudo apt update
-```
-
 ---
 
 # 7. Verify WSL2
@@ -493,30 +469,6 @@ wsl -d Ubuntu-24.04
 ```
 
 Then run:
-
-```bash
-sudo apt update
-```
-
----
-
-## `$` Is Not Recognized
-
-If you see:
-
-```text
-'$' is not recognized as an internal or external command
-```
-
-you probably copied the shell prompt together with the command.
-
-Do not run:
-
-```text
-$ sudo apt update
-```
-
-Run:
 
 ```bash
 sudo apt update
