@@ -20,10 +20,11 @@ class _LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
     final paragraphs = [
-      "The older non-EVM side of Zilliqa is retired. This impacts all Schnorr-based accounts and transactions. The current EVM side of Zilliqa is the only way of using the network, going forward.",
-      "Any existing balances held in a legacy Zilliqa account must be transferred to the Escrow contract; and can be claimed by submitting a zero-knowledge proof computed in this app.",
-      "The zero-knowledge proof asserts your ownership of the legacy Schnorr-based wallet without exposing your mnemonic-seed; and binds it to the new EVM wallet that the balance will be transferred to.",
-      "This application forms part of this migration process.",
+      "The older non-EVM side of Zilliqa is retired. This impacts all Schnorr-based accounts and transactions. The current EVM side of Zilliqa is the only way of using the network, going forward. As a result, if your funds are being held in a non-EVM/legacy account, you will no longer be able to access them normally.",
+      "In order to regain normal access to your funds, you will need to move your funds from the non-EVM/legacy account over to an EVM account via the Escrow contract - a Smart Contract that exists on the EVM side of the chain, but can receive funds from the non-EVM side of the chain.",
+      "Therefore, all existing balances held in a non-EVM Zilliqa account MUST be sent to the Escrow contract. The funds that are thus lodged with the Escrow contract, and recorded against the senders non-EVM/legacy address, can only be claimed by submitting a zero-knowledge proof computed in this app.",
+      "The zero-knowledge proof asserts your ownership of the legacy Schnorr-based account by demonstrating your possession of the mnemonic-seed without exposing your mnemonic-seed itself; and binds it to both the non-EVM/legacy account and the new EVM account where the balance will be directed.",
+      "Upon confirmation of the proof with the Escrow contract, the funds will be released to the new EVM account.",
     ].toList();
     return Scaffold(
       appBar: AppBar(
@@ -36,7 +37,7 @@ class _LandingPageState extends State<LandingPage> {
           children: [
             InfoCard(
               imageUrl: 'assets/images/zilliqa-full-teal.svg',
-              title: 'Legacy Account Migration',
+              title: 'Legacy Account Migration Notice',
               subTitle: 'v0.4.0',
               paragraphs: paragraphs,
             ),

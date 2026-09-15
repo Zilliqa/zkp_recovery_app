@@ -34,13 +34,13 @@ const List<InfoCardData> welcomeInfoCards = [
   ),
   InfoCardData(
     icon: Icons.savings,
-    title: 'Lodge your balance',
+    title: 'Lodge your funds',
     body:
         'Send your entire legacy account balance to the Escrow contract.',
   ),
   InfoCardData(
     icon: Icons.upload_file,
-    title: 'Submit the calldata',
+    title: 'Claim your funds',
     body:
         'Copy the calldata and submit it to the Escrow contract to claim your funds.',
   ),

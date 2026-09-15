@@ -17,7 +17,7 @@ const List<ChecklistItemData> prepChecklistItems = [
   ChecklistItemData(
     title: 'Fresh EVM-only account',
     subtitle:
-        'Have a EVM-only account ready - this new account will be the destination for your funds.',
+        'Have a EVM-only account ready - this EVM-only account will be the destination for your funds.',
   ),
   ChecklistItemData(
     title: 'Agree to Software License',
