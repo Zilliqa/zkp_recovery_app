@@ -20,11 +20,13 @@ class _LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
     final paragraphs = [
-      "The older non-EVM side of Zilliqa is retired. This impacts all Schnorr-based accounts and transactions. The current EVM side of Zilliqa is the only way of using the network, going forward. As a result, if your funds are being held in a non-EVM/legacy account, you will no longer be able to access them normally.",
-      "In order to regain normal access to your funds, you will need to move your funds from the non-EVM/legacy account over to an EVM account via the Escrow contract - a Smart Contract that exists on the EVM side of the chain, but can receive funds from the non-EVM side of the chain.",
-      "Therefore, all existing balances held in a non-EVM Zilliqa account MUST be sent to the Escrow contract. The funds that are thus lodged with the Escrow contract, and recorded against the senders non-EVM/legacy address, can only be claimed by submitting a zero-knowledge proof computed in this app.",
-      "The zero-knowledge proof asserts your ownership of the legacy Schnorr-based account by demonstrating your possession of the mnemonic-seed without exposing your mnemonic-seed itself; and binds it to both the non-EVM/legacy account and the new EVM account where the balance will be directed.",
-      "Upon confirmation of the proof with the Escrow contract, the funds will be released to the new EVM account.",
+      "This Notice is issued by Zilliqa in relation to the Zero Knowledge Migration App to facilitate migration of \$ZILs held in a non-EVM Schnorr-based legacy accounts (\"Legacy Account\") to EVM based accounts (\"EVM Account\"). This Notice is applicable to you if you hold \$ZILs in a Legacy Account and you must read this Notice carefully before proceeding to use the Migration App to move your \$ZIL from your Legacy Account to a EVM Account designated (\"Designated EVM Account\") by you.",
+      "The older non-EVM side of Zilliqa is retired. This impacts all Legacy Accounts and transactions. The current EVM side of Zilliqa is the only way of using the network, going forward. As a result, if your \$ZILs are being held in a Legacy Account, you will no longer be able to access them.",
+      "In order to regain access to your \$ZILs that are in your Legacy Account, you MUST move ALL AND NOT PART OF your \$ZILs from your Legacy Acount over to your designated EVM account via the Escrow Contract - a Smart Contract that exists on the EVM side of the chain, but can receive your \$ZILs from the non-EVM side of the chain.",
+      "To initiate the move of your \$ZILs from your Legacy Account to your designated EVM Account, you MUST send ALL AND NOT PART OF your \$ZILs from your Legacy Account to the Escrow Contract to lodge your \$ZILs with the Escrow Contract which will be recorded against your Legacy Account address. Thereafter, you can claim your \$ZILs from the Escrow Contract to your designated EVM Account by submitting to the Escrow Contract, the calldata associated with a zero-knowledge proof that you create using this Migration App.",
+      "The zero-knowledge proof constitutes proof of your ownership of your Legacy Account by demonstrating your possession of the mnemonic-seed to your Legacy Account without exposing that mnemonic-seed, and binds the mnemonic-seed to both your Legacy Account and your designated EVM Account.",
+      "Following your submission of that zero-knowledge proof calldata to and confirmation of that calldata with the Escrow Contract, the Escrow Contract will initiate the release of your \$ZILs that you had lodged with the Escrow Contract to your designated EVM account."
+      // "The designated EVM Account MUST be derived using a separate private key from that used to derive the Legacy Account.",
     ].toList();
     return Scaffold(
       appBar: AppBar(
@@ -118,10 +120,14 @@ class InfoCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                for (final paragraph in paragraphs) ...[
+                for (final entry in paragraphs.asMap().entries) ...[
                   Text(
-                    paragraph,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    entry.value,
+                    style: entry.key == 0
+                        ? Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: Colors.red)
+                        : Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 12),
                 ],
