@@ -101,3 +101,6 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   image_path: "assets/icon/zilliqa-icon-teal.png"
   min_sdk_android: 32
+  macos:
+    generate: true
+    image_path: "assets/icon/zilliqa-icon-teal.png"
