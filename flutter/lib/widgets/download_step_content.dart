@@ -21,7 +21,7 @@ class DownloadStepContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'This file is required to generate your proof. It is downloaded once and cached on this device.',
+          'This file is required to generate your zero-knowledge proof. It is downloaded once and cached on this device.',
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 12),

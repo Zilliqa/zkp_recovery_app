@@ -172,7 +172,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
   List<Step> get _steps => [
     Step(
       title: const Text('Onboarding'),
-      subtitle: const Text('How this app works'),
+      subtitle: const Text('How this Migration App works'),
       state: _stepState(_stepWelcome),
       isActive: _currentStep >= _stepWelcome,
       content: const Align(
@@ -197,7 +197,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
     ),
     Step(
       title: const Text('Downloads'),
-      subtitle: const Text('Required to generate your proof'),
+      subtitle: const Text('Required to generate your zero-knowledge proof'),
       state: _stepState(_stepDownload),
       isActive: _currentStep >= _stepDownload,
       content: Align(
@@ -209,8 +209,8 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
       ),
     ),
     Step(
-      title: const Text('Account details'),
-      subtitle: const Text('Seed phrase and new EVM account'),
+      title: const Text('Details of your Legacy Account and designated EVM Account'),
+      subtitle: const Text('Seed phrase and your designated EVM account'),
       state: _stepState(_stepInput),
       isActive: _currentStep >= _stepInput,
       content: Align(
@@ -239,7 +239,7 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
       ),
     ),
     Step(
-      title: const Text('Proof'),
+      title: const Text('Submission & Verification of Zero-knowledge Proof'),
       subtitle: const Text('Submit this for verification'),
       state: _stepState(_stepOutput),
       isActive: _currentStep >= _stepOutput,
