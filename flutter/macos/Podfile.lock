@@ -1,0 +1,22 @@
+PODS:
+  - FlutterMacOS (1.0.0)
+  - mopro_flutter_bindings (0.0.1):
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - mopro_flutter_bindings (from `Flutter/ephemeral/.symlinks/plugins/mopro_flutter_bindings/macos`)
+
+EXTERNAL SOURCES:
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  mopro_flutter_bindings:
+    :path: Flutter/ephemeral/.symlinks/plugins/mopro_flutter_bindings/macos
+
+SPEC CHECKSUMS:
+  FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
+  mopro_flutter_bindings: e6eff53997d8c9933e70fda2bad14bae853d272c
+
+PODFILE CHECKSUM: 1e95c36afbfd1cb6423ceca4de7a8e1b256fb6ac
+
+COCOAPODS: 1.17.0

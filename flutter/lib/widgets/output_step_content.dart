@@ -27,24 +27,34 @@ class OutputStepContent extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         const _CopyableField(
-          label: 'Contract address',
-          value: '0x00000000005A494c31455343524f5750524f5859', // hard-coded
+          label: 'Legacy escrow address',
+          value: 'zil1qqqqqqqqtfy5cv292dp4yn6h2pfy7kzec60lqn', // hard-coded
         ),
         const SizedBox(height: 16),
+        _CopyableField(label: 'Zero-knowledge proof calldata', value: result),
+        const SizedBox(height: 16),
         Text(
-          'To claim your funds, copy and paste the calldata / bytes argument into your EVM wallet, and submit it to the Escrow contract at the address below.',
+          'To automatically claim your \$ZILs that you lodged with the Escrow Contract, copy and paste the zero-knowledge proof into your EVM wallet, and submit it to the Escrow contract at the address below.',
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
-        _CopyableField(label: 'Contract calldata', value: result),
-        const SizedBox(height: 16),
         const _CopyableField(
-          label: 'Contract address',
+          label: 'Escrow Contract address',
           value: '0x00000000005A494c31455343524f5750524f5859', // hard-coded
         ),
         const SizedBox(height: 16),
         Text(
-          'For added safety, you may remove this app and restart this device after submitting the proof.',
+          'Otherwise, copy the zero-knowledge proof calldata above; and submit it to the following Google form for manual processing.',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+        const _CopyableField(
+          label: 'Manual claims form',
+          value: 'https://forms.gle/rBFJMEGGQcPV6nqW8', // hard-coded
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'For added safety, you may remove this Migration App and restart this device after submitting the zero-knowledge proof.',
           style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
         ),
       ],

@@ -15,14 +15,14 @@ const List<ChecklistItemData> prepChecklistItems = [
         'Have your mnemonic-seed ready to type in - you will need it in a later step.',
   ),
   ChecklistItemData(
-    title: 'Fresh EVM-only account',
+    title: 'New designated EVM Account',
     subtitle:
-        'Have a EVM-only account ready - this new account will be the destination for your funds.',
+        'Have your designated EVM Account ready - this EVM-only account will be the destination for your funds.',
   ),
   ChecklistItemData(
-    title: 'Agree to Software License',
+    title: 'Agree to terms of use of Migration App',
     subtitle:
-        'You are deemed to have agreed to the terms of the GPLv3 at https://www.gnu.org/licenses/gpl-3.0.html',
+        'By ticking off on this checkbox, you confirm your agreement to and to be bound by the terms of the GPLv3 accessible https://www.gnu.org/licenses/gpl-3.0.html which shall apply to your use of the Migration App.',
   ),
 ];
 
@@ -63,7 +63,7 @@ class ChecklistStepContent extends StatelessWidget {
         if (!allChecked) ...[
           const SizedBox(height: 8),
           Text(
-            'Please confirm both steps above to continue.',
+            'Please confirm all requirements above to continue.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.error,
             ),

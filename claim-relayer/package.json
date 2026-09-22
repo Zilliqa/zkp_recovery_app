@@ -1,0 +1,17 @@
+{
+  "name": "claim-relayer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Relayer: read claim calldata from the Google Form's link-readable Sheet (public gviz JSON), simulate against the escrow, and submit the valid ones.",
+  "scripts": {
+    "start": "node relay.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.2"
+  }
+}

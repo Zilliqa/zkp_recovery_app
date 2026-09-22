@@ -16,15 +16,15 @@ class InfoCardData {
 const List<InfoCardData> welcomeInfoCards = [
   InfoCardData(
     icon: Icons.info_outline,
-    title: 'How this app works',
+    title: 'How this Migration App works',
     body:
-        'This app generates a zero-knowledge proof that links your legacy Schnorr-based account to a new EVM-only account.',
+        'This app generates a zero-knowledge proof that links your Legacy Account to your new EVM-only account.',
   ),
   InfoCardData(
     icon: Icons.security,
     title: 'Your seed phrase stays local',
     body:
-        'Your mnemonic seed phrase is only used on-device to compute the proof. It is never transmitted nor stored.',
+        'Your mnemonic seed phrase is only used on-device to compute the zero-knowledge proof. It is never transmitted nor stored.',
   ),
   InfoCardData(
     icon: Icons.airplanemode_active,
@@ -34,15 +34,15 @@ const List<InfoCardData> welcomeInfoCards = [
   ),
   InfoCardData(
     icon: Icons.savings,
-    title: 'Lodge your balance',
+    title: 'Lodge your \$ZILs with the Escrow Contract',
     body:
-        'Send your entire legacy account balance to the Escrow contract.',
+        'Send ALL AND NOT PART OF your \$ZILs in your Legacy Account to the Escrow Contract. All other transfers are permanently blocked.',
   ),
   InfoCardData(
     icon: Icons.upload_file,
-    title: 'Submit the calldata',
+    title: 'Claim your \$ZILs from the Escrow Contract',
     body:
-        'Copy the calldata and submit it to the Escrow contract to claim your funds.',
+        'Copy the zero-knowledge proof calldata and submit it to the Escrow contract to claim your \$ZILs that you had lodged with the Escrow Contract.',
   ),
 ];
 

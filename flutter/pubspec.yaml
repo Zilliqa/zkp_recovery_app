@@ -1,9 +1,9 @@
 name: zkp_recovery_app
-description: "Zero Knowledge Recovery Proof"
+description: "Zero Knowledge Migration App"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 0.4.0
+version: 0.5.0
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
@@ -101,3 +101,6 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   image_path: "assets/icon/zilliqa-icon-teal.png"
   min_sdk_android: 32
+  macos:
+    generate: true
+    image_path: "assets/icon/zilliqa-icon-teal.png"

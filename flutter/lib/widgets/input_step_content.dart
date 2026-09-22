@@ -96,7 +96,7 @@ class InputStepContent extends StatelessWidget {
             enabled: !isComputingProof,
             controller: zilAddressController,
             decoration: const InputDecoration(
-              labelText: 'Old Schnorr account address',
+              labelText: 'Your Legacy Account address',
               hintText: 'zil1… or 0x…',
               border: OutlineInputBorder(),
             ),
@@ -110,7 +110,7 @@ class InputStepContent extends StatelessWidget {
             enabled: !isComputingProof,
             controller: evmAddressController,
             decoration: const InputDecoration(
-              labelText: 'New EVM-only account address',
+              labelText: 'Your designated EVM Account address',
               hintText: '0x…',
               border: OutlineInputBorder(),
             ),
@@ -136,7 +136,7 @@ class InputStepContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Your mnemonic-seed/private-key is only used locally on this device to compute the proof and is never transmitted.',
+            'Your mnemonic-seed is only used locally on this device to compute the zero-knowledge proof and is never transmitted.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
