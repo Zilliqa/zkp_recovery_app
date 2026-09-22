@@ -40,7 +40,7 @@ class _LandingPageState extends State<LandingPage> {
             InfoCard(
               imageUrl: 'assets/images/zilliqa-full-teal.svg',
               title: 'Legacy Account Migration Notice',
-              subTitle: 'v0.5.0',
+              subTitle: 'v0.5.1',
               paragraphs: paragraphs,
             ),
             const SizedBox(height: 16),
