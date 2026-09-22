@@ -268,7 +268,7 @@ Close GNOME Text Editor before continuing.
 Download the Linux release:
 
 ```text
-zkp-recovery-app-linux-beta.tar.gz
+zkp-migration-app-linux-amd64.tar.gz
 ```
 
 using your Windows browser.
@@ -300,7 +300,7 @@ ls /mnt/c/Users/YTECH/Downloads/
 You should see:
 
 ```text
-zkp-recovery-app-linux-beta.tar.gz
+zkp-migration-app-linux-amd64.tar.gz
 ```
 
 ---
@@ -324,13 +324,13 @@ cd ~/zkp-recovery
 Extract the archive:
 
 ```bash
-tar -xvf /mnt/c/Users/<WINDOWS_USERNAME>/Downloads/zkp-recovery-app-linux-beta.tar.gz
+tar -xvf /mnt/c/Users/<WINDOWS_USERNAME>/Downloads/zkp-migration-app-linux-amd64.tar.gz
 ```
 
 For example:
 
 ```bash
-tar -xvf /mnt/c/Users/YTECH/Downloads/zkp-recovery-app-linux-beta.tar.gz
+tar -xvf /mnt/c/Users/YTECH/Downloads/zkp-migration-app-linux-amd64.tar.gz
 ```
 
 ---
@@ -348,7 +348,7 @@ Depending on how the release archive was packaged, you should see the applicatio
 For example:
 
 ```text
-zkp_recovery_app
+zkp_migration_app
 lib/
 data/
 ```
@@ -371,7 +371,7 @@ Then check:
 ls -la
 ```
 
-> **Important:** Keep the complete application bundle together. The `zkp_recovery_app` executable requires its accompanying libraries and application data.
+> **Important:** Keep the complete application bundle together. The `zkp_migration_app` executable requires its accompanying libraries and application data.
 
 ---
 
@@ -380,13 +380,13 @@ ls -la
 Run:
 
 ```bash
-chmod +x zkp_recovery_app
+chmod +x zkp_migration_app
 ```
 
 Verify:
 
 ```bash
-ls -l zkp_recovery_app
+ls -l zkp_migration_app
 ```
 
 The executable permissions should include `x`, for example:
@@ -399,10 +399,10 @@ The executable permissions should include `x`, for example:
 
 # 14. Run the ZKP Recovery App
 
-From the directory containing `zkp_recovery_app`, run:
+From the directory containing `zkp_migration_app`, run:
 
 ```bash
-./zkp_recovery_app
+./zkp_migration_app
 ```
 
 If WSL2 and WSLg are configured correctly, the ZKP Recovery App window should appear directly on the Windows desktop.
@@ -430,14 +430,14 @@ cd ~/zkp-recovery
 If the executable is directly in this directory:
 
 ```bash
-./zkp_recovery_app
+./zkp_migration_app
 ```
 
 If the archive contains a `bundle` directory:
 
 ```bash
 cd ~/zkp-recovery/bundle
-./zkp_recovery_app
+./zkp_migration_app
 ```
 
 ---
@@ -546,7 +546,7 @@ you may see warnings such as:
 ```text
 tar: ./lib/libdartjni.so: Cannot utime: Operation not permitted
 tar: ./lib/libmopro_flutter_bindings.so: Cannot utime: Operation not permitted
-tar: ./zkp_recovery_app: Cannot utime: Operation not permitted
+tar: ./zkp_migration_app: Cannot utime: Operation not permitted
 ```
 
 This occurs because `/mnt/c` is a Windows-mounted filesystem and does not behave exactly like the native Linux filesystem for Linux permissions and timestamps.
@@ -561,7 +561,7 @@ cd ~/zkp-recovery
 Then:
 
 ```bash
-tar -xvf /mnt/c/Users/<WINDOWS_USERNAME>/Downloads/zkp-recovery-app-linux-beta.tar.gz
+tar -xvf /mnt/c/Users/<WINDOWS_USERNAME>/Downloads/zkp-migration-app-linux-amd64.tar.gz
 ```
 
 ---
@@ -571,7 +571,7 @@ tar -xvf /mnt/c/Users/<WINDOWS_USERNAME>/Downloads/zkp-recovery-app-linux-beta.t
 If:
 
 ```bash
-./zkp_recovery_app
+./zkp_migration_app
 ```
 
 returns:
@@ -583,13 +583,13 @@ Permission denied
 make the file executable:
 
 ```bash
-chmod +x zkp_recovery_app
+chmod +x zkp_migration_app
 ```
 
 Then try again:
 
 ```bash
-./zkp_recovery_app
+./zkp_migration_app
 ```
 
 ---
@@ -605,7 +605,7 @@ gnome-text-editor
 If GNOME Text Editor opens but the ZKP Recovery App does not, run:
 
 ```bash
-./zkp_recovery_app
+./zkp_migration_app
 ```
 
 from the terminal again and check the terminal output for missing libraries or application-specific errors.
@@ -622,11 +622,11 @@ If WSL2 and Ubuntu 24.04 are already configured and the archive is in Windows Do
 mkdir -p ~/zkp-recovery
 cd ~/zkp-recovery
 
-tar -xvf /mnt/c/Users/<WINDOWS_USERNAME>/Downloads/zkp-recovery-app-linux-beta.tar.gz
+tar -xvf /mnt/c/Users/<WINDOWS_USERNAME>/Downloads/zkp-migration-app-linux-amd64.tar.gz
 
-chmod +x zkp_recovery_app
+chmod +x zkp_migration_app
 
-./zkp_recovery_app
+./zkp_migration_app
 ```
 
 For example:
@@ -635,11 +635,11 @@ For example:
 mkdir -p ~/zkp-recovery
 cd ~/zkp-recovery
 
-tar -xvf /mnt/c/Users/YTECH/Downloads/zkp-recovery-app-linux-beta.tar.gz
+tar -xvf /mnt/c/Users/YTECH/Downloads/zkp-migration-app-linux-amd64.tar.gz
 
-chmod +x zkp_recovery_app
+chmod +x zkp_migration_app
 
-./zkp_recovery_app
+./zkp_migration_app
 ```
 
 If the release archive contains a `bundle/` directory instead, enter that directory before running the executable.
