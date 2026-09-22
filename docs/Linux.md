@@ -32,3 +32,25 @@ Visit the official Github [releases](https://github.com/Zilliqa/zkp_recovery_app
    $ ./zkp_migration_app
    ```
 3. You should see the GUI application start up.
+
+
+## (Alternative): Build from Source
+
+1. Download the source from [Github](https://github.com/Zilliqa/zkp_recovery_app)
+   ```bash
+   $ git clone https://github.com/Zilliqa/zkp_recovery_app.git
+   ```
+
+2. Install and build [Mopro](../README.md).
+3. Install [Flutter](https://docs.flutter.dev/platform-integration/linux/setup).
+
+4. Build the Linux application
+   ```bash
+   $ cd flutter
+   $ flutter build linux
+   ```
+
+5. Run it
+   ```bash
+   $ build/linux/x64/debug/bundle/zkp_migration_app
+   ```
