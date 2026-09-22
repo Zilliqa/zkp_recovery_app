@@ -147,7 +147,7 @@ class InputStepContent extends StatelessWidget {
             maxLines: 1,
             decoration: InputDecoration(
               labelText: 'Mnemonic-seed',
-              hint: const Text('Mnemonic-seed phrase'),
+              hint: const Text('Mnemonic-seed phrase with spaces between words'),
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -159,7 +159,6 @@ class InputStepContent extends StatelessWidget {
             validator: _validateMnemonic,
             autocorrect: false,
             enableSuggestions: false,
-            enableInteractiveSelection: false,
             enableIMEPersonalizedLearning: false,
             autofillHints: null,
             keyboardType: TextInputType.visiblePassword,
