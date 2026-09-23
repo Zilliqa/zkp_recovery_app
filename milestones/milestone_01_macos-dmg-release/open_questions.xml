@@ -19,6 +19,26 @@
   </open-question>
   <open-question id="DMG output location">
     <question>Where should the script write the final .dmg and its intermediate staging files? For example, a git-ignored dist/ directory at the repo root, or somewhere under flutter/build/. Should an existing output be overwritten or should the script refuse?</question>
+    <alternative id="Root dist, overwrite">
+      Write the final dmg to a new `dist/` directory at the repo root, and add a new `dist/` entry to the root `.gitignore` because nothing ignores it today. Build the dmg staging folder (the `.app` copy and the `/Applications` symlink) in a `mktemp -d` directory that is deleted by an exit `trap`. Silently replace any existing dmg of the same name.
+      <advantage>The output is easy to find and separate from all build state. A `flutter clean` or removing `flutter/build/` never deletes a finished release dmg. Staging in a temp directory means a failed run leaves no half-built staging tree behind. Re-running for the same version just works, which suits a build → sign → dmg dry run repeated until it passes.</advantage>
+      <drawback>It adds a new top-level directory and a `.gitignore` change. Silent overwrite can replace a dmg whose SHA-256 was already published on a GitHub release. If the same version is rebuilt, the new file&apos;s checksum will differ from the published one, and nothing warns about it.</drawback>
+    </alternative>
+    <alternative id="Root dist, refuse unless forced">
+      Use the same git-ignored repo-root `dist/` for the final dmg and a temp directory for staging. If the target dmg already exists, the script stops with an error before doing any build work, unless a flag such as `--force` is passed to allow overwriting.
+      <advantage>A dmg whose checksum may already be on a GitHub release is never replaced by accident. The versioned file name makes a name clash mean exactly &quot;this version was already packaged&quot;, so refusing is a meaningful safeguard. Checking up front also avoids wasting a long `mopro build` / `flutter build macos` run.</advantage>
+      <drawback>It adds a flag and a code path to the script. Repeated dry runs of the same version need `--force` or a manual delete every time, which gets in the way during this milestone&apos;s fix-until-it-passes loop. How often this bites depends on how the version-naming question settles.</drawback>
+    </alternative>
+    <alternative id="Under flutter/build, overwrite">
+      Put both the staging folder and the final dmg under the Flutter build tree, for example `flutter/build/macos/dmg/`, next to the `Build/Products/Release` app it packages. Replace existing output freely because it is a disposable build product.
+      <advantage>It needs no new directory and no `.gitignore` change, because the root and `flutter/.gitignore` `build/` patterns already cover it. It keeps every artifact of one build in one place, next to the `.app` it came from.</advantage>
+      <drawback>The dmg is hidden deep in a build tree, and it is lost whenever that tree is wiped. `flutter clean` deletes all of `flutter/build/`, so if the clean-build policy runs a clean at the start of each build, the previous release dmg disappears without warning. Nothing marks it apart from the intermediate files.</drawback>
+    </alternative>
+    <alternative id="Root build dir, overwrite">
+      Write both staging and the final dmg to a directory under a repo-root `build/`, for example `build/macos/`, which the root `.gitignore`&apos;s existing `build/` pattern already ignores. Replace existing output on each run.
+      <advantage>The output sits at the top level where it is easy to find. It needs no `.gitignore` edit. It is outside the Flutter project, so `flutter clean` does not touch it.</advantage>
+      <drawback>A root `build/` next to cargo&apos;s `target/` suggests an intermediate build tree rather than a release deliverable. Keeping staging and the final dmg in the same place makes it easier to confuse or accidentally delete the finished artifact. Silent overwrite has the same risk of changing an already-published checksum.</drawback>
+    </alternative>
   </open-question>
   <open-question id="Version source for naming">
     <question>Which file is the authoritative version for the dmg file name and the bundle&apos;s CFBundleShortVersionString? Candidates are the root Cargo.toml (currently 0.5.1) and flutter/pubspec.yaml (currently 0.5.0). What should the script do when they disagree, given that it only warns?</question>
