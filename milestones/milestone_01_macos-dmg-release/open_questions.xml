@@ -1,1 +1,41 @@
-<open-questions/>
+<open-questions>
+  <open-question id="Script location and name">
+    <question>Where should the macOS build script live, and what should it be called? The repo has no scripts/ directory or app build script yet. Options include a repo-root scripts/build-macos.sh, a script inside flutter/, or something else.</question>
+  </open-question>
+  <open-question id="DMG output location">
+    <question>Where should the script write the final .dmg and its intermediate staging files? For example, a git-ignored dist/ directory at the repo root, or somewhere under flutter/build/. Should an existing output be overwritten or should the script refuse?</question>
+  </open-question>
+  <open-question id="Version source for naming">
+    <question>Which file is the authoritative version for the dmg file name and the bundle&apos;s CFBundleShortVersionString? Candidates are the root Cargo.toml (currently 0.5.1) and flutter/pubspec.yaml (currently 0.5.0). What should the script do when they disagree, given that it only warns?</question>
+  </open-question>
+  <open-question id="Artifact and volume naming">
+    <question>What exact naming convention should the dmg file and its mounted volume use? The Linux release uses zkp-migration-app-linux-amd64.tar.gz with no version. Should the macOS file follow the same pattern with a version added (e.g. zkp-migration-app-macos-arm64-&lt;version&gt;.dmg)? What volume name should users see when they open it?</question>
+  </open-question>
+  <open-question id="Entitlements when re-signing">
+    <question>Xcode already ad-hoc signs the Release build with Release.entitlements (app-sandbox and network.client), but codesign --force --deep -s - without --entitlements removes them. Should the script re-sign explicitly with flutter/macos/Runner/Release.entitlements, keep Xcode&apos;s signature and only verify it, or do something else? Should the app stay sandboxed?</question>
+  </open-question>
+  <open-question id="mopro build handling">
+    <question>Should the script always run mopro build (which regenerates the committed Dart bindings and can leave the working tree dirty), make it optional with a flag, or skip it by default? If mopro-cli is missing, should the script just fail with install instructions or install it automatically?</question>
+  </open-question>
+  <open-question id="Prerequisite checks scope">
+    <question>Which prerequisites should the script check before building, and how strict should each check be? Candidates: host is arm64 macOS, Xcode command-line tools, flutter, CocoaPods, cargo/rustup with the aarch64-apple-darwin target, mopro, hdiutil/codesign/shasum, a clean git working tree, and building on a release tag or branch. Which of these fail the build and which only warn?</question>
+  </open-question>
+  <open-question id="Clean build policy">
+    <question>Should the script always start from a clean build (e.g. flutter clean and removing the previous Release products) so release artifacts are reproducible? Or should it reuse incremental build state for speed, perhaps with a flag to choose?</question>
+  </open-question>
+  <open-question id="Verification checks and outcomes">
+    <question>Which checks should the script run after building, and what counts as success? For example: codesign --verify --deep --strict on the app, checking the entitlements are present, hdiutil verify on the dmg, a test mount, and spctl --assess. spctl is expected to reject an ad-hoc-signed app, so should it be reported for information only?</question>
+  </open-question>
+  <open-question id="Checksum publication format">
+    <question>Should the script only print the dmg&apos;s SHA-256, or also write it to a sidecar file (e.g. &lt;dmg&gt;.sha256 in shasum format) that can be attached to the GitHub release? Which command should the user doc tell users to run to check it (shasum -a 256)?</question>
+  </open-question>
+  <open-question id="Maintainer doc location">
+    <question>Where should the maintainer instructions for the build script live: a --help/usage block in the script, a &quot;Build from source / Release&quot; section in docs/macOS.md like docs/Linux.md has, a separate maintainer doc, or a combination?</question>
+  </open-question>
+  <open-question id="Gatekeeper bypass instructions">
+    <question>Which Gatekeeper workaround(s) should docs/macOS.md document for the unsigned app, given the minimum supported macOS is 12 and recent macOS versions dropped the right-click → Open shortcut? Options: System Settings → Privacy &amp; Security → Open Anyway, xattr -dr com.apple.quarantine on the installed app, or both. Should the doc explain the &quot;damaged&quot;/&quot;unidentified developer&quot; messages users will see?</question>
+  </open-question>
+  <open-question id="Screenshot and doc links">
+    <question>Should docs/macOS.md include a screenshot (docs/macos.png) like the Linux and Windows guides? Should any existing doc (e.g. the root README.md or flutter/README.md) link to the new macOS guide?</question>
+  </open-question>
+</open-questions>
