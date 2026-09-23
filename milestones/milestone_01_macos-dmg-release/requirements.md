@@ -58,5 +58,9 @@ The dmg file is named `zkp-migration-app-macos-arm64-<version>.dmg`. It follows 
 
 The script keeps the goal's ad-hoc re-sign step (`codesign --force --deep -s -`) and passes the entitlements explicitly with `--entitlements flutter/macos/Runner/Release.entitlements`. The shipped app stays sandboxed with `app-sandbox` and `network.client`, the same configuration Xcode applies to the Release build, so the app that handles mnemonics stays isolated. `Release.entitlements` in git remains the single source of truth for the app's entitlements, and the script never drops them or substitutes its own. The zkey therefore keeps its home under `~/Library/Containers/com.zilliqa.zkpRecoveryApp/`, and the sandboxed Release behaviour (zkey download and file access) has to be confirmed at runtime during the manual testing.
 
+### mopro build handling
+
+The script always runs `mopro build` at the repo root before `flutter build macos`. There is no skip or opt-in flag, so there is a single build path and every dmg ships with Dart bindings freshly regenerated from the current Rust API and circuit. If `mopro` is not on `PATH`, the script stops immediately and prints the install command (`cargo install mopro-cli`). It never installs or changes the maintainer's toolchain itself. After the step, if the committed bindings under `mopro_flutter_bindings/lib/src/rust/` changed, the script reports it with a `git status`/`git diff --stat` notice. Because mopro-cli is not installed on the developer machine today, it has to be installed by hand before the dry run. Repeated dry runs stay cheap because cargo's `target/` cache makes later `mopro build` runs incremental.
+
 ## Out of Scope
 
