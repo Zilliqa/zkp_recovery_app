@@ -16,6 +16,7 @@
       <advantage>It is the easiest place to find: it shows up with `ls` next to the README, it needs no new directory, and it follows the pattern the repo already has of a runnable `.sh` at the top level of the tree it works on (e.g. `groth16-prover-min/build-circuit.sh`, `claim-relayer/e2e-anvil/run.sh`). A name like `build-macos-dmg.sh` also states the output clearly.</advantage>
       <drawback>It clutters a root that already holds the mopro crate files (`build.rs`, `Config.toml`, `Cargo.toml`), where a stray shell script can look like part of the Rust/mopro build. It also sets no pattern for more platform scripts, so a later Linux or Windows packaging script would either pile up at the root or force a move to `scripts/`.</drawback>
     </alternative>
+    <recommendation option="Repo-root scripts/build-macos.sh">The script runs mopro build at the repo root and compares three version files spread across the tree, so it belongs at repo level, and a scripts/ directory sets the convention future Linux and Windows packaging scripts can join.</recommendation>
   </open-question>
   <open-question id="DMG output location">
     <question>Where should the script write the final .dmg and its intermediate staging files? For example, a git-ignored dist/ directory at the repo root, or somewhere under flutter/build/. Should an existing output be overwritten or should the script refuse?</question>
@@ -39,6 +40,7 @@
       <advantage>The output sits at the top level where it is easy to find. It needs no `.gitignore` edit. It is outside the Flutter project, so `flutter clean` does not touch it.</advantage>
       <drawback>A root `build/` next to cargo&apos;s `target/` suggests an intermediate build tree rather than a release deliverable. Keeping staging and the final dmg in the same place makes it easier to confuse or accidentally delete the finished artifact. Silent overwrite has the same risk of changing an already-published checksum.</drawback>
     </alternative>
+    <recommendation option="Root dist, overwrite">A git-ignored dist/ keeps the finished dmg apart from build state and safe from flutter clean, temp-dir staging leaves nothing behind on failure, and silent overwrite is what the milestone&apos;s repeat-until-it-passes dry run needs; the published-checksum risk is covered by building releases from a tag.</recommendation>
   </open-question>
   <open-question id="Version source for naming">
     <question>Which file is the authoritative version for the dmg file name and the bundle&apos;s CFBundleShortVersionString? Candidates are the root Cargo.toml (currently 0.5.1) and flutter/pubspec.yaml (currently 0.5.0). What should the script do when they disagree, given that it only warns?</question>
@@ -57,6 +59,7 @@
       <advantage>The version stays tied to the release tag being published instead of to either file, so the mismatch neither file can settle on its own does not choose the name. Every file that disagrees is reported the same way.</advantage>
       <drawback>It adds a required input or a dependency on the git state. A build without a tag or without the argument needs a fallback rule, which brings back the question of which file wins. The bundle version can also differ from both files, which is confusing when someone looks at the build later.</drawback>
     </alternative>
+    <recommendation option="Pubspec is authoritative">The bundle&apos;s CFBundleShortVersionString already comes from the pubspec, so naming the dmg from the same file guarantees file name and bundle agree with no build-name override, and the warning about Cargo.toml and the bindings covers the mismatch the milestone deliberately leaves unfixed.</recommendation>
   </open-question>
   <open-question id="Artifact and volume naming">
     <question>What exact naming convention should the dmg file and its mounted volume use? The Linux release uses zkp-migration-app-linux-amd64.tar.gz with no version. Should the macOS file follow the same pattern with a version added (e.g. zkp-migration-app-macos-arm64-&lt;version&gt;.dmg)? What volume name should users see when they open it?</question>
@@ -75,6 +78,7 @@
       <advantage>What users download, what they see mounted, and what lands in `/Applications` all carry the same human-readable product name. That makes the download easy to recognise for non-technical macOS users following docs/macOS.md.</advantage>
       <drawback>It shares nothing with the `zkp-migration-app-*` Linux name, so release assets no longer form one recognisable family. The spaced form also needs quoting in every `shasum`, `hdiutil` and `codesign` command in the script and the user doc, and it gets URL-encoded in GitHub release download links.</drawback>
     </alternative>
+    <recommendation option="Linux pattern, version last">Keeping the zkp-migration-app-platform-arch stem gives one recognisable family on the release page, the space-free lowercase name needs no quoting in docs or the script, and a volume named after the product matches the .app users drag to /Applications.</recommendation>
   </open-question>
   <open-question id="Entitlements when re-signing">
     <question>Xcode already ad-hoc signs the Release build with Release.entitlements (app-sandbox and network.client), but codesign --force --deep -s - without --entitlements removes them. Should the script re-sign explicitly with flutter/macos/Runner/Release.entitlements, keep Xcode&apos;s signature and only verify it, or do something else? Should the app stay sandboxed?</question>
@@ -93,6 +97,7 @@
       <advantage>It is the simplest signing step and matches the goal&apos;s command word for word. An ad-hoc app without the hardened runtime or a sandbox needs no entitlements to reach the network or write files. Container path differences go away, and the app behaves like the Linux and Windows builds.</advantage>
       <drawback>It drops OS-level isolation for an app that handles BIP-39 mnemonics, which is a real step down in security. The zkey moves from the sandbox container to `~/Library/Application Support/com.zilliqa.zkpRecoveryApp/`. And unless Release.entitlements is edited too, the shipped app quietly differs from what the Xcode project declares.</drawback>
     </alternative>
+    <recommendation option="Re-sign with Release.entitlements">It keeps the goal&apos;s ad-hoc re-sign step while preserving the sandbox and network.client entitlements the project already declares, so the app that handles mnemonics stays isolated and Release.entitlements in git remains the single source of truth.</recommendation>
   </open-question>
   <open-question id="mopro build handling">
     <question>Should the script always run mopro build (which regenerates the committed Dart bindings and can leave the working tree dirty), make it optional with a flag, or skip it by default? If mopro-cli is missing, should the script just fail with install instructions or install it automatically?</question>
@@ -116,6 +121,7 @@
       <advantage>The release build treats the committed bindings as the source of truth and never dirties the working tree. It doesn&apos;t need mopro-cli at all, and it skips a redundant release Rust compile, since the native library is built by cargokit either way. Regenerating bindings stays a deliberate step that gets committed, not a side effect of packaging.</advantage>
       <drawback>This goes against the Goal as written, which lists `mopro build` as a step the script runs, so choosing it means amending the Goal. It also relies on the committed bindings actually matching the Rust API. If someone changes the Rust API or circuit and forgets to run `mopro build` and commit, the mismatch only shows up as a build or runtime failure instead of being regenerated automatically.</drawback>
     </alternative>
+    <recommendation option="Always run, fail if missing">It matches the goal as written with a single code path, guarantees every dmg ships freshly regenerated bindings, never alters the maintainer&apos;s toolchain, and repeated dry runs stay cheap because cargo&apos;s target/ cache makes the second mopro build incremental.</recommendation>
   </open-question>
   <open-question id="Prerequisite checks scope">
     <question>Which prerequisites should the script check before building, and how strict should each check be? Candidates: host is arm64 macOS, Xcode command-line tools, flutter, CocoaPods, cargo/rustup with the aarch64-apple-darwin target, mopro, hdiutil/codesign/shasum, a clean git working tree, and building on a release tag or branch. Which of these fail the build and which only warn?</question>
@@ -134,6 +140,8 @@
       <advantage>It is the smallest and least brittle script. It does not try to reproduce checks the underlying tools already do, and it will not falsely fail on some other valid way of installing rustup/Xcode.</advantage>
       <drawback>Some problems only show up after minutes of building, as cryptic cargokit or Xcode errors, for example a missing `aarch64-apple-darwin` target or the command-line tools pointing to the wrong Xcode. The script also says nothing about dirty or untagged release builds.</drawback>
     </alternative>
+    <depends-on question="mopro build handling" option="Always run, fail if missing"/>
+    <recommendation option="Option A">Failing fast on missing tools, including mopro since it always runs, surfaces toolchain gaps in seconds with a fix, while warning on git state lets this milestone&apos;s dry run pass on the feature branch and matches the goal&apos;s warn-without-stopping pattern.</recommendation>
   </open-question>
   <open-question id="Clean build policy">
     <question>Should the script always start from a clean build (e.g. flutter clean and removing the previous Release products) so release artifacts are reproducible? Or should it reuse incremental build state for speed, perhaps with a flag to choose?</question>
@@ -157,6 +165,7 @@
       <advantage>Most of the benefit at little cost. A stale or leftover app bundle can never be packaged, because the bundle that gets signed and put in the dmg is always freshly produced by this run&apos;s `flutter build macos`. The expensive Rust compile cache is kept.</advantage>
       <drawback>It relies on Xcode and cargokit invalidating their caches correctly, for example after the bindings are regenerated or the pubspec version changes. Any mistake in that dependency tracking ends up in the release unnoticed. It also differs from a truly clean build if the machine&apos;s toolchain or pods change between runs.</drawback>
     </alternative>
+    <recommendation option="Targeted clean only">Deleting the Release .app and staging directory every run guarantees the packaged bundle is always produced by this run&apos;s flutter build, with one code path and no flag, while keeping the expensive cargokit Rust cache that a full flutter clean would throw away on every dry-run attempt.</recommendation>
   </open-question>
   <open-question id="Verification checks and outcomes">
     <question>Which checks should the script run after building, and what counts as success? For example: codesign --verify --deep --strict on the app, checking the entitlements are present, hdiutil verify on the dmg, a test mount, and spctl --assess. spctl is expected to reject an ad-hoc-signed app, so should it be reported for information only?</question>
@@ -175,6 +184,8 @@
       <advantage>It guarantees the shipped artifact is what the file name and docs say it is: the right architecture, bundle identity and version. This matters because the `Info.plist` version comes from `flutter/pubspec.yaml` (0.5.0) and the other version files say 0.5.1, so a dmg name and a bundle version that disagree could otherwise be released without anyone noticing.</advantage>
       <drawback>It is the most code and the most likely to fail on things that are expected. The version check would fail today because of the 0.5.0/0.5.1 mismatch, which the milestone explicitly only warns about and leaves unfixed. So this check has to be downgraded to a warning, or it depends on how the version-source question is settled. It also partly overlaps with the prerequisite and version-warning steps.</drawback>
     </alternative>
+    <depends-on question="Entitlements when re-signing" option="Re-sign with Release.entitlements"/>
+    <recommendation option="Layered gate, spctl informational">The entitlement comparison against Release.entitlements and the test mount catch exactly the failures re-signing and dmg creation can introduce, so the dry run&apos;s success covers the whole build, sign and dmg chain, while the bundle assertions add overlap with the version warning for little extra safety.</recommendation>
   </open-question>
   <open-question id="Checksum publication format">
     <question>Should the script only print the dmg&apos;s SHA-256, or also write it to a sidecar file (e.g. &lt;dmg&gt;.sha256 in shasum format) that can be attached to the GitHub release? Which command should the user doc tell users to run to check it (shasum -a 256)?</question>
@@ -193,6 +204,7 @@
       <advantage>Users get a clear OK/FAILED result with no manual hex comparison, which makes the &quot;DO NOT PROCEED if it doesn&apos;t match&quot; instruction easy to follow. The file format and the verification command are designed as a pair.</advantage>
       <drawback>Users have two downloads to manage, and the check fails confusingly if the sidecar&apos;s filename doesn&apos;t exactly match the downloaded dmg&apos;s name (for example, if the browser renamed it to &quot;…(1).dmg&quot;). The steps also differ from docs/Linux.md. And, as with any sidecar, it gives no protection against tampering at the release source.</drawback>
     </alternative>
+    <recommendation option="Print plus shasum sidecar, compare by eye">Writing the .sha256 next to the dmg costs one line, removes the hand-copied hash from the release process, and keeps docs/macOS.md parallel to the Linux guide&apos;s compare-by-eye step without the renamed-download pitfalls of shasum -c.</recommendation>
   </open-question>
   <open-question id="Maintainer doc location">
     <question>Where should the maintainer instructions for the build script live: a --help/usage block in the script, a &quot;Build from source / Release&quot; section in docs/macOS.md like docs/Linux.md has, a separate maintainer doc, or a combination?</question>
@@ -216,6 +228,9 @@
       <advantage>It cleanly separates the two audiences. End users get a short, focused guide, and maintainers get room for the full release procedure: toolchain setup, the version-consistency warning, verification output, and publishing the dmg and checksum. A general `RELEASING.md` could also later cover Linux and Windows, which have no build scripts today.</advantage>
       <drawback>It adds another file for a small repo that has no maintainer-doc convention yet. It also still duplicates part of the script&apos;s usage text. How natural a README next to the script is depends on where the script ends up living, which is a separate open question.</drawback>
     </alternative>
+    <depends-on question="mopro build handling" option="Always run, fail if missing"/>
+    <depends-on question="Clean build policy" option="Targeted clean only"/>
+    <recommendation option="Help plus macOS.md section">It follows the docs/Linux.md precedent the goal asks for, gives maintainers help at the terminal and a browsable release section in the guide, and with a script that has almost no flags the duplication between the two stays small.</recommendation>
   </open-question>
   <open-question id="Gatekeeper bypass instructions">
     <question>Which Gatekeeper workaround(s) should docs/macOS.md document for the unsigned app, given the minimum supported macOS is 12 and recent macOS versions dropped the right-click → Open shortcut? Options: System Settings → Privacy &amp; Security → Open Anyway, xattr -dr com.apple.quarantine on the installed app, or both. Should the doc explain the &quot;damaged&quot;/&quot;unidentified developer&quot; messages users will see?</question>
@@ -239,6 +254,7 @@
       <advantage>Each user gets the shortest route their OS allows. On 12–14 that is the familiar right-click → Open, which is quicker than the Settings round-trip, so the guide is as precise as possible across the supported range.</advantage>
       <drawback>Users must first check which macOS version they have, and the guide ends up with three procedures that each need screenshots or wording kept up to date. The right-click branch helps only users of older versions and adds a branch point where they can pick the wrong path. Open Anyway already works on those versions, so the split adds complexity without making anything newly possible.</drawback>
     </alternative>
+    <recommendation option="Both, GUI first">Leading with Open Anyway keeps the supported route for macOS 12 through 26, and the xattr fallback with a message-to-fix table covers the damaged case an ad-hoc signature can still produce, so users are not left stuck or assuming the app is malware.</recommendation>
   </open-question>
   <open-question id="Screenshot and doc links">
     <question>Should docs/macOS.md include a screenshot (docs/macos.png) like the Linux and Windows guides? Should any existing doc (e.g. the root README.md or flutter/README.md) link to the new macOS guide?</question>
@@ -262,5 +278,6 @@
       <advantage>The guide can be finished entirely within the milestone&apos;s dry-run scope, with no dependency on launching the app, and the macOS guide and the existing platform guides are all findable from the repo landing page.</advantage>
       <drawback>It still edits the stock mopro template README.md, which widens the milestone beyond macOS packaging. The guide also looks different from docs/Linux.md, which leads with a screenshot.</drawback>
     </alternative>
+    <recommendation option="Text-only, no new links">A screenshot needs a launched Release build, which the goal defers to the manual test after this milestone, and the root README is the stock mopro template, so the guide ships complete within the dry-run scope and the image can be added once the launch test happens.</recommendation>
   </open-question>
 </open-questions>
