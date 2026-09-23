@@ -96,6 +96,26 @@
   </open-question>
   <open-question id="mopro build handling">
     <question>Should the script always run mopro build (which regenerates the committed Dart bindings and can leave the working tree dirty), make it optional with a flag, or skip it by default? If mopro-cli is missing, should the script just fail with install instructions or install it automatically?</question>
+    <alternative id="Always run, fail if missing">
+      The script always runs `mopro build` before `flutter build macos`. If `mopro` is not on PATH, it stops straight away and prints the install command (`cargo install mopro-cli`). If the committed bindings under `mopro_flutter_bindings/lib/src/rust/` change, it reports that with a `git status`/`git diff --stat` notice after the step.
+      <advantage>This matches the milestone Goal as written (&quot;runs `mopro build` and `flutter build macos`&quot;). Every dmg is built from bindings freshly regenerated from the current Rust API and circuit, so a stale-bindings release can&apos;t happen. The script also never changes the machine&apos;s toolchain without the maintainer knowing.</advantage>
+      <drawback>Every run needs mopro-cli, which is not installed on the developer machine today. `mopro build` also adds a full release Rust compile on top of the one cargokit already does during `flutter build macos`. A regeneration can leave committed generated files dirty, for example from a different mopro-cli or flutter_rust_bridge version than the one that produced the frb 2.11.1 bindings. Whether that is only reported or blocks the build depends on how the clean-working-tree prerequisite is settled.</drawback>
+    </alternative>
+    <alternative id="Always run, auto-install mopro">
+      The script always runs `mopro build`. If `mopro` is missing, it installs mopro-cli itself with `cargo install mopro-cli`, ideally pinned with `--version`/`--locked` to a release compatible with the crate&apos;s `mopro-ffi =0.3.7`, and then continues.
+      <advantage>A new maintainer machine goes from checkout to dmg with one command and no manual setup. That would have covered the one gap found on this machine, where mopro was missing.</advantage>
+      <drawback>The build script changes the maintainer&apos;s global cargo install, and a first run takes a long time. Unless the version is pinned and kept current by hand, `cargo install mopro-cli` picks up the latest CLI, which may generate bindings that don&apos;t match the committed ones or the pinned `mopro-ffi =0.3.7`/frb 2.11.1. That puts an unreviewed toolchain change into the release artifact.</drawback>
+    </alternative>
+    <alternative id="Run by default, skip flag">
+      `mopro build` runs by default. An opt-out flag (e.g. `--skip-mopro`) builds straight from the committed bindings. mopro-cli is only required, and a missing one only fails the run with install instructions, when the step isn&apos;t skipped.
+      <advantage>The Goal&apos;s default behaviour and its freshness guarantee stay the same. Maintainers who know the Rust API and circuit haven&apos;t changed can skip the extra Rust compile and the dirty-tree churn, and a machine without mopro can still build.</advantage>
+      <drawback>Two build paths need documenting and testing. Also, the skip is chosen by the maintainer rather than detected, so a release can still ship with stale bindings if someone uses the flag after a Rust API change.</drawback>
+    </alternative>
+    <alternative id="Skip by default, opt-in flag">
+      By default the script builds from the committed Dart bindings and relies on cargokit&apos;s pod &quot;Build Rust library&quot; phase to compile the native library during `flutter build macos`. `mopro build` runs only with an opt-in flag (e.g. `--regen-bindings`), and mopro-cli is checked (fail with instructions) only in that case.
+      <advantage>The release build treats the committed bindings as the source of truth and never dirties the working tree. It doesn&apos;t need mopro-cli at all, and it skips a redundant release Rust compile, since the native library is built by cargokit either way. Regenerating bindings stays a deliberate step that gets committed, not a side effect of packaging.</advantage>
+      <drawback>This goes against the Goal as written, which lists `mopro build` as a step the script runs, so choosing it means amending the Goal. It also relies on the committed bindings actually matching the Rust API. If someone changes the Rust API or circuit and forgets to run `mopro build` and commit, the mismatch only shows up as a build or runtime failure instead of being regenerated automatically.</drawback>
+    </alternative>
   </open-question>
   <open-question id="Prerequisite checks scope">
     <question>Which prerequisites should the script check before building, and how strict should each check be? Candidates: host is arm64 macOS, Xcode command-line tools, flutter, CocoaPods, cargo/rustup with the aarch64-apple-darwin target, mopro, hdiutil/codesign/shasum, a clean git working tree, and building on a release tag or branch. Which of these fail the build and which only warn?</question>
