@@ -137,6 +137,26 @@
   </open-question>
   <open-question id="Clean build policy">
     <question>Should the script always start from a clean build (e.g. flutter clean and removing the previous Release products) so release artifacts are reproducible? Or should it reuse incremental build state for speed, perhaps with a flag to choose?</question>
+    <alternative id="Always clean">
+      The script always starts with `flutter clean` and deletes any earlier Release products and staging output. No incremental state carries over into a release dmg.
+      <advantage>Every dmg is built from the checked-out sources and nothing else. A leftover Debug build (the only thing now under `flutter/build/macos/Build/Products/`), stale pods, or a stale cargokit Rust library can&apos;t slip into a release, so the published SHA-256 always comes from the same kind of build.</advantage>
+      <drawback>Every run is slow. `flutter/build` is about 2.2 GB, and cargokit&apos;s Rust output sits in Xcode&apos;s `TARGET_TEMP_DIR` inside it. Cleaning therefore forces a full recompile of the Arkworks/circom-prover crate, including the `rust_witness` transpile of the ~679k-constraint `groth.wasm`, on every attempt. That hurts most while the milestone&apos;s dry run is being fixed. Also, a clean build is not byte-reproducible anyway, because timestamps and ad-hoc signatures still vary.</drawback>
+    </alternative>
+    <alternative id="Incremental by default, --clean flag">
+      By default the script reuses the existing Flutter, pod and cargokit build state. A `--clean` flag runs `flutter clean` and removes the earlier Release products before building.
+      <advantage>Quick iteration while developing and debugging the script, since repeated runs skip the long Rust rebuild. A clean release build is still one flag away.</advantage>
+      <drawback>A maintainer can forget the flag, and the default path is the less trustworthy one. A dmg built on stale state, such as bindings or a Rust library from before a `mopro build` or version bump, looks just like a clean one. Nothing records whether a published artifact was built clean.</drawback>
+    </alternative>
+    <alternative id="Clean by default, --incremental flag">
+      By default the script cleans the Flutter build and earlier Release products. An opt-in flag such as `--incremental` or `--no-clean` skips the clean so a developer can iterate quickly.
+      <advantage>The default is the safe one for release artifacts, and a fast path is still there for script development and repeated dry runs. The warning could mark incremental builds, for example in output or dmg naming, so they aren&apos;t mistaken for release builds.</advantage>
+      <drawback>There are two code paths to maintain and document. Anyone who habitually passes the fast flag loses the guarantee without noticing, unless the script clearly labels incremental output as not for release.</drawback>
+    </alternative>
+    <alternative id="Targeted clean only">
+      The script never runs a full `flutter clean`. Instead it always deletes only the outputs that decide what gets shipped: the Release `.app` under `flutter/build/macos/Build/Products/Release/` and the dmg staging directory. Xcode, pod and cargokit compile caches are left for Flutter and Xcode&apos;s own dependency tracking to invalidate.
+      <advantage>Most of the benefit at little cost. A stale or leftover app bundle can never be packaged, because the bundle that gets signed and put in the dmg is always freshly produced by this run&apos;s `flutter build macos`. The expensive Rust compile cache is kept.</advantage>
+      <drawback>It relies on Xcode and cargokit invalidating their caches correctly, for example after the bindings are regenerated or the pubspec version changes. Any mistake in that dependency tracking ends up in the release unnoticed. It also differs from a truly clean build if the machine&apos;s toolchain or pods change between runs.</drawback>
+    </alternative>
   </open-question>
   <open-question id="Verification checks and outcomes">
     <question>Which checks should the script run after building, and what counts as success? For example: codesign --verify --deep --strict on the app, checking the entitlements are present, hdiutil verify on the dmg, a test mount, and spctl --assess. spctl is expected to reject an ad-hoc-signed app, so should it be reported for information only?</question>
