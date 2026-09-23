@@ -88,3 +88,20 @@ Add a text-only `docs/macOS.md` in the style of `docs/Linux.md` (no screenshot, 
 - The guide uses no right-click/Control-click → Open shortcut and has no per-version procedures (grep for `right-click`, `control-click`, macOS 13+ version names finds nothing; the only version mention is the macOS 12 settings-name note the decision requires).
 
 ---
+
+## Add Maintainer Build Section to macOS Guide
+
+Append an "(Alternative): Build from Source / Release" section to the end of `docs/macOS.md`, mirroring the end of `docs/Linux.md`, that walks a maintainer through cloning the repo, installing the toolchain (including `cargo install mopro-cli`), bumping `flutter/pubspec.yaml` as the authoritative version before a release, running `scripts/build-macos.sh`, and publishing the dmg together with its `.sha256` sidecar on the GitHub release; no separate maintainer document is added. Verified by checking that the section's flags and prerequisites agree with the script's `--help` output.
+
+**Verified:**
+
+- `docs/macOS.md` ends with a new `## (Alternative): Build from Source / Release` section placed after the end-user Steps 1 to 3 and the Gatekeeper messages. It mirrors the end of `docs/Linux.md`, with numbered steps, `$`-prefixed bash blocks, the GitHub clone link and the `[Mopro](../README.md)` link.
+- Step 1 clones the repo with `git clone https://github.com/Zilliqa/zkp_recovery_app.git` and changes into it.
+- Step 2 installs the toolchain: the Xcode command-line tools (`xcode-select --install`), Flutter, CocoaPods, Rust via rustup with `rustup target add aarch64-apple-darwin`, and mopro-cli with `cargo install mopro-cli`. It notes that `hdiutil`, `codesign` and `shasum` ship with macOS, that an Apple Silicon (arm64) Mac is required, and that the script stops with an install hint and never installs tools itself. The Flutter and CocoaPods install hints match the script's own hint text (`brew install --cask flutter`, `brew install cocoapods`, `sudo gem install cocoapods`).
+- Step 3 says to bump `flutter/pubspec.yaml` before a release, as the authoritative version (`version:` without `+build`, which gives the dmg name and bundle version). The bump happens on the `release/vX.Y.Z` branch before tagging, and the build then runs from the release tag. The section also says to keep the root `Cargo.toml` and bindings dependency versions in step, and that the version-mismatch, dirty-tree and non-release-ref conditions only warn.
+- Step 4 runs `scripts/build-macos.sh` from the repo root and describes its output `dist/zkp-migration-app-macos-arm64-<version>.dmg` and `.dmg.sha256`, the informational `spctl` rejection, and not publishing on a non-zero exit.
+- Step 5 publishes the dmg together with its `.sha256` sidecar on the GitHub release, without retyping the checksum by hand.
+- No separate maintainer document was added. `git status` shows only `docs/macOS.md` modified, with no untracked files.
+- The section's flags and prerequisites agree with `scripts/build-macos.sh --help`. The only flag is `-h, --help`, and every listed prerequisite matches: arm64 macOS host, Xcode CLT, flutter, CocoaPods `pod`, cargo/rustup with `aarch64-apple-darwin`, hdiutil/codesign/shasum, and `mopro` via `cargo install mopro-cli`. The warn-only conditions (dirty tree, HEAD not a `v*` tag or `release/*` branch, version mismatch) also match. Checked by grepping each flag and prerequisite in both the doc and the `--help` output.
+
+---
