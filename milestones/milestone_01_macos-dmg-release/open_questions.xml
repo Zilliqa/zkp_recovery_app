@@ -119,6 +119,21 @@
   </open-question>
   <open-question id="Prerequisite checks scope">
     <question>Which prerequisites should the script check before building, and how strict should each check be? Candidates: host is arm64 macOS, Xcode command-line tools, flutter, CocoaPods, cargo/rustup with the aarch64-apple-darwin target, mopro, hdiutil/codesign/shasum, a clean git working tree, and building on a release tag or branch. Which of these fail the build and which only warn?</question>
+    <alternative id="Option A">
+      Tool checks fail, git checks warn. Before building, the script fails with an install hint for each missing tool that has no workaround. That covers an arm64 macOS host (`uname -s`/`uname -m`), the Xcode command-line tools (`xcode-select -p`), `flutter`, CocoaPods `pod`, `cargo`/`rustup` with `aarch64-apple-darwin` in `rustup target list --installed`, and `hdiutil`/`codesign`/`shasum`. A dirty working tree or a HEAD that is not a release tag or `release/*` branch only prints a warning. The `mopro` check follows whatever the mopro-handling decision says: it fails only if `mopro build` is going to run.
+      <advantage>Every toolchain gap shows up in the first seconds with a clear fix, not deep inside a long `mopro build`/`flutter build macos`/cargokit run. The script still works for this milestone&apos;s dry run, which happens on the feature branch `user/lukasz/macos_dist` with a tree that `mopro build` may itself dirty. It also matches the Goal&apos;s existing pattern of warning without stopping, as for the version mismatch.</advantage>
+      <drawback>Nothing stops a maintainer from publishing a dmg built from uncommitted or untagged code. The warning is easy to scroll past, so the dmg on the GitHub release may not match any commit, and whether it is reproducible depends on the maintainer&apos;s discipline.</drawback>
+    </alternative>
+    <alternative id="Option B">
+      Everything fails, with explicit overrides. Every candidate check fails the build, including the git checks: a dirty working tree fails and so does a HEAD that is not a release tag or `release/*` branch. Flags like `--allow-dirty` and `--allow-untagged` (or one `--dev` flag) turn the git failures into warnings. The clean-tree check runs before `mopro build`, so regenerated bindings are not counted against it.
+      <advantage>By default, any artifact that could be released comes from a committed, tagged state, so the published SHA-256 can be traced to a specific commit. Skipping that guarantee takes a deliberate flag that anyone can see.</advantage>
+      <drawback>The milestone&apos;s own dry run on a feature branch cannot pass without the override flags, and so will every day-to-day test build. This adds flag handling and documentation for a solo developer-machine workflow. If regenerated bindings are expected to be committed as part of the release, the clean-tree rule can also clash with `mopro build` dirtying the tree.</drawback>
+    </alternative>
+    <alternative id="Option C">
+      Minimal presence checks. The script fails only if the host is not arm64 macOS or a command it calls directly is missing from `PATH` (`command -v` for `flutter`, `pod`, `cargo`, `hdiutil`, `codesign` and `shasum`, plus `mopro` if it runs). It does not check the Xcode tools setup or the installed Rust target, and it does not check git state. Deeper problems are left to `flutter build macos`, CocoaPods and cargokit to report.
+      <advantage>It is the smallest and least brittle script. It does not try to reproduce checks the underlying tools already do, and it will not falsely fail on some other valid way of installing rustup/Xcode.</advantage>
+      <drawback>Some problems only show up after minutes of building, as cryptic cargokit or Xcode errors, for example a missing `aarch64-apple-darwin` target or the command-line tools pointing to the wrong Xcode. The script also says nothing about dirty or untagged release builds.</drawback>
+    </alternative>
   </open-question>
   <open-question id="Clean build policy">
     <question>Should the script always start from a clean build (e.g. flutter clean and removing the previous Release products) so release artifacts are reproducible? Or should it reuse incremental build state for speed, perhaps with a flag to choose?</question>
