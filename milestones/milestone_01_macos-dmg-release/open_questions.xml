@@ -178,6 +178,21 @@
   </open-question>
   <open-question id="Checksum publication format">
     <question>Should the script only print the dmg&apos;s SHA-256, or also write it to a sidecar file (e.g. &lt;dmg&gt;.sha256 in shasum format) that can be attached to the GitHub release? Which command should the user doc tell users to run to check it (shasum -a 256)?</question>
+    <alternative id="Print only, compare by eye">
+      The script prints the dmg&apos;s SHA-256 to the terminal and writes no file. The maintainer pastes the hash into the GitHub release notes. docs/macOS.md tells users to run `shasum -a 256 &lt;dmg&gt;` and compare the output by eye with the hash on the release page. This matches the flow in docs/Linux.md (`sha256sum` on the file, then compare with the hash listed on the official release page).
+      <advantage>This is the smallest change and matches both the Goal text (&quot;the script prints its SHA-256&quot;) and the existing Linux guide. There is no extra artifact to upload or keep in sync, and the macOS and Linux user instructions stay parallel.</advantage>
+      <drawback>The maintainer has to copy the hash into the release notes by hand, so a paste error or a stale hash can slip through. Users also have to compare 64 hex characters by eye, which is easy to get wrong and gives no clear pass/fail result.</drawback>
+    </alternative>
+    <alternative id="Print plus shasum sidecar, compare by eye">
+      The script prints the SHA-256 and also writes `&lt;dmg&gt;.sha256` next to the dmg, in the standard `shasum -a 256` output format (`&lt;hash&gt; &lt;filename&gt;`, filename only, no directory). The maintainer attaches that file to the GitHub release. docs/macOS.md still tells users to run `shasum -a 256 &lt;dmg&gt;` and compare the result with the published hash (from the release page or the .sha256 asset).
+      <advantage>The release gets a checksum file that machines can read, and it comes straight from the build, so no copying by hand is involved. The user doc stays as simple as the Linux guide, and users who know `shasum -c` can use it.</advantage>
+      <drawback>There is one more artifact for the maintainer to upload, and it must not go stale if the dmg is rebuilt. The sidecar also only helps with transport errors: it is published by the same hand from the same place as the dmg, so anyone who can swap the dmg can swap the .sha256 too. And unless the doc shows `shasum -c`, users still compare by eye.</drawback>
+    </alternative>
+    <alternative id="Print plus sidecar, doc uses shasum -c">
+      The script prints the SHA-256 and writes the `&lt;dmg&gt;.sha256` sidecar in shasum format, with the bare filename so it checks correctly from ~/Downloads. docs/macOS.md tells users to download both files into the same directory and run `shasum -a 256 -c &lt;dmg&gt;.sha256`, which prints `&lt;dmg&gt;: OK` or FAILED. The printed hash is still shown for anyone who wants to compare by eye.
+      <advantage>Users get a clear OK/FAILED result with no manual hex comparison, which makes the &quot;DO NOT PROCEED if it doesn&apos;t match&quot; instruction easy to follow. The file format and the verification command are designed as a pair.</advantage>
+      <drawback>Users have two downloads to manage, and the check fails confusingly if the sidecar&apos;s filename doesn&apos;t exactly match the downloaded dmg&apos;s name (for example, if the browser renamed it to &quot;…(1).dmg&quot;). The steps also differ from docs/Linux.md. And, as with any sidecar, it gives no protection against tampering at the release source.</drawback>
+    </alternative>
   </open-question>
   <open-question id="Maintainer doc location">
     <question>Where should the maintainer instructions for the build script live: a --help/usage block in the script, a &quot;Build from source / Release&quot; section in docs/macOS.md like docs/Linux.md has, a separate maintainer doc, or a combination?</question>
