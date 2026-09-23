@@ -1,23 +1,4 @@
 <open-questions>
-  <open-question id="Version source for naming">
-    <question>Which file is the authoritative version for the dmg file name and the bundle&apos;s CFBundleShortVersionString? Candidates are the root Cargo.toml (currently 0.5.1) and flutter/pubspec.yaml (currently 0.5.0). What should the script do when they disagree, given that it only warns?</question>
-    <alternative id="Pubspec is authoritative">
-      The script reads the version from flutter/pubspec.yaml (currently 0.5.0) and uses it for the dmg file name. It runs flutter build macos without overriding the version, so CFBundleShortVersionString comes from FLUTTER_BUILD_NAME as Info.plist already does. If the root Cargo.toml or the bindings dependency disagrees, the script prints a warning naming both values and carries on.
-      <advantage>No build flags are needed, and the name and bundle always agree. The dmg name, the About/Finder version and the pubspec are the same value because Flutter already takes it from the pubspec.</advantage>
-      <drawback>With the repo as it is, the first build is 0.5.0 even though the latest tag is v0.5.1 and Cargo.toml says 0.5.1. Unless the pubspec is bumped first, the release is published under an older version than it contains. Fixing that mismatch is out of scope for this milestone.</drawback>
-    </alternative>
-    <alternative id="Cargo.toml is authoritative">
-      The script reads the version from the root Cargo.toml (currently 0.5.1, which matches the latest tag and the bindings dependency). It uses that version for the dmg name and passes it to flutter build macos --build-name, so it overrides the pubspec in CFBundleShortVersionString. If pubspec.yaml disagrees, the script warns and says the pubspec value was overridden.
-      <advantage>With the repo as it is, this gives the correct 0.5.1 in both the file name and the bundle. It also follows the two files CLAUDE.md already requires to match (the root Cargo.toml and the bindings dependency), with no need to fix the pubspec first.</advantage>
-      <drawback>The bundle&apos;s version no longer comes from the pubspec, so a plain flutter build macos made by hand gives a different CFBundleShortVersionString than the script does. Anyone who bumps only the pubspec later is quietly overridden, and a warning is the only sign.</drawback>
-    </alternative>
-    <alternative id="Explicit version argument">
-      The maintainer passes the release version on the command line, or the script takes it from the git tag at HEAD (for example v0.5.1 without the &quot;v&quot;). The script uses it for the dmg name and passes it as --build-name. It checks it against Cargo.toml, the bindings dependency and pubspec.yaml, and warns about each file that differs.
-      <advantage>The version stays tied to the release tag being published instead of to either file, so the mismatch neither file can settle on its own does not choose the name. Every file that disagrees is reported the same way.</advantage>
-      <drawback>It adds a required input or a dependency on the git state. A build without a tag or without the argument needs a fallback rule, which brings back the question of which file wins. The bundle version can also differ from both files, which is confusing when someone looks at the build later.</drawback>
-    </alternative>
-    <recommendation option="Pubspec is authoritative">The bundle&apos;s CFBundleShortVersionString already comes from the pubspec, so naming the dmg from the same file guarantees file name and bundle agree with no build-name override, and the warning about Cargo.toml and the bindings covers the mismatch the milestone deliberately leaves unfixed.</recommendation>
-  </open-question>
   <open-question id="Artifact and volume naming">
     <question>What exact naming convention should the dmg file and its mounted volume use? The Linux release uses zkp-migration-app-linux-amd64.tar.gz with no version. Should the macOS file follow the same pattern with a version added (e.g. zkp-migration-app-macos-arm64-&lt;version&gt;.dmg)? What volume name should users see when they open it?</question>
     <alternative id="Linux pattern, version last">

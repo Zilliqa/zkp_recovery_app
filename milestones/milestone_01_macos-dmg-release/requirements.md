@@ -46,5 +46,9 @@ The macOS build script lives at `scripts/build-macos.sh`, in a new top-level `sc
 
 The script writes the finished `.dmg` to a new `dist/` directory at the repo root, and a `dist/` entry is added to the root `.gitignore`, because nothing ignores it today. Keeping it there separates the release artifact from build state, so `flutter clean` or wiping `flutter/build/` never deletes it. The dmg staging folder (the `.app` copy and the `/Applications` symlink) is built in a `mktemp -d` directory that an exit `trap` deletes, so a failed run leaves no staging tree behind. An existing dmg with the same name is silently overwritten, so the build, sign and dmg dry run can be repeated until it passes. Releases are built from a tag, which guards against a rebuilt dmg replacing one whose checksum was already published.
 
+### Version source for naming
+
+`flutter/pubspec.yaml` is the authoritative version. The script reads its `version:` (without any `+build` suffix) and uses it in the dmg file name. It runs `flutter build macos` with no `--build-name` override, so the bundle's `CFBundleShortVersionString` comes from the pubspec through `FLUTTER_BUILD_NAME`, and the file name and bundle version always match. If the root `Cargo.toml` version or the `zkp_recovery_app` dependency version in `mopro_flutter_bindings/rust/Cargo.toml` differs from the pubspec, the script prints a warning naming each file and value and carries on. As long as the 0.5.0/0.5.1 mismatch stays unfixed (it is out of scope here), a build from the current tree is named and versioned 0.5.0. A maintainer must bump the pubspec before building a release.
+
 ## Out of Scope
 
