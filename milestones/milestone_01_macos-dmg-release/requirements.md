@@ -54,5 +54,9 @@ The script writes the finished `.dmg` to a new `dist/` directory at the repo roo
 
 The dmg file is named `zkp-migration-app-macos-arm64-<version>.dmg`. It follows the Linux `zkp-migration-app-linux-amd64.tar.gz` stem with the macOS platform and arch, and puts the pubspec version last. The name is lowercase, hyphenated and has no spaces, so the `shasum -a 256` step in `docs/macOS.md` and the script need no quoting. The mounted volume is named after the bundle's product name, `Zero Knowledge Migration App`, with no version, to match the `.app` users drag to `/Applications`. Any script or doc step that refers to the mounted volume uses `/Volumes/Zero Knowledge Migration App`, quoted. Renaming the unversioned Linux artifact is not part of this milestone.
 
+### Entitlements when re-signing
+
+The script keeps the goal's ad-hoc re-sign step (`codesign --force --deep -s -`) and passes the entitlements explicitly with `--entitlements flutter/macos/Runner/Release.entitlements`. The shipped app stays sandboxed with `app-sandbox` and `network.client`, the same configuration Xcode applies to the Release build, so the app that handles mnemonics stays isolated. `Release.entitlements` in git remains the single source of truth for the app's entitlements, and the script never drops them or substitutes its own. The zkey therefore keeps its home under `~/Library/Containers/com.zilliqa.zkpRecoveryApp/`, and the sandboxed Release behaviour (zkey download and file access) has to be confirmed at runtime during the manual testing.
+
 ## Out of Scope
 

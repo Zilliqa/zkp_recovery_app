@@ -1,23 +1,4 @@
 <open-questions>
-  <open-question id="Entitlements when re-signing">
-    <question>Xcode already ad-hoc signs the Release build with Release.entitlements (app-sandbox and network.client), but codesign --force --deep -s - without --entitlements removes them. Should the script re-sign explicitly with flutter/macos/Runner/Release.entitlements, keep Xcode&apos;s signature and only verify it, or do something else? Should the app stay sandboxed?</question>
-    <alternative id="Re-sign with Release.entitlements">
-      The script keeps the goal&apos;s ad-hoc re-sign step but passes the entitlements file explicitly: `codesign --force --deep -s - --entitlements flutter/macos/Runner/Release.entitlements` on the app bundle. The app stays sandboxed with `app-sandbox` and `network.client`, the same configuration Xcode applies.
-      <advantage>It follows the goal&apos;s stated `codesign --force --deep -s -` step and still ships the same sandbox and network entitlements the project already declares for Release. The file in git stays the single source of truth for entitlements, and the zkey keeps its home under `~/Library/Containers/com.zilliqa.zkpRecoveryApp/`.</advantage>
-      <drawback>With `--deep`, the app&apos;s entitlements are also stamped onto the embedded frameworks (FlutterMacOS, App, the Rust pod). Apple discourages `--deep` for signing. Keeping it clean means signing nested code first without entitlements and then signing the outer app with them, which makes the script longer. The sandbox also has to be confirmed at runtime, because the zkey download and file access have only been checked in Debug.</drawback>
-    </alternative>
-    <alternative id="Keep Xcode signature, verify only">
-      The script skips re-signing and ships the ad-hoc signature `flutter build macos` already produces (`CODE_SIGN_IDENTITY = &quot;-&quot;` with Release.entitlements). It only runs `codesign --verify --deep --strict` and checks that the expected entitlements are present.
-      <advantage>Nothing is signed twice, so the entitlements cannot be lost by accident and there is no `--deep` signing. The shipped signature is exactly what Xcode&apos;s project settings define, which makes this the simplest and least error-prone path.</advantage>
-      <drawback>It departs from the goal&apos;s explicit `codesign --force --deep -s -` step, so the goal text would need to change. It also depends on Xcode signing every nested framework and dylib correctly (including the cargokit-built Rust library). If any of them come out unsigned or with a mismatched signature, the script can only report the failure, not fix it.</drawback>
-    </alternative>
-    <alternative id="Re-sign unsandboxed, no entitlements">
-      The script runs the plain `codesign --force --deep -s -` from the goal with no entitlements, so the app ships unsandboxed. Release.entitlements would ideally be changed to match, so the Xcode build and the shipped app don&apos;t differ.
-      <advantage>It is the simplest signing step and matches the goal&apos;s command word for word. An ad-hoc app without the hardened runtime or a sandbox needs no entitlements to reach the network or write files. Container path differences go away, and the app behaves like the Linux and Windows builds.</advantage>
-      <drawback>It drops OS-level isolation for an app that handles BIP-39 mnemonics, which is a real step down in security. The zkey moves from the sandbox container to `~/Library/Application Support/com.zilliqa.zkpRecoveryApp/`. And unless Release.entitlements is edited too, the shipped app quietly differs from what the Xcode project declares.</drawback>
-    </alternative>
-    <recommendation option="Re-sign with Release.entitlements">It keeps the goal&apos;s ad-hoc re-sign step while preserving the sandbox and network.client entitlements the project already declares, so the app that handles mnemonics stays isolated and Release.entitlements in git remains the single source of truth.</recommendation>
-  </open-question>
   <open-question id="mopro build handling">
     <question>Should the script always run mopro build (which regenerates the committed Dart bindings and can leave the working tree dirty), make it optional with a flag, or skip it by default? If mopro-cli is missing, should the script just fail with install instructions or install it automatically?</question>
     <alternative id="Always run, fail if missing">
@@ -170,7 +151,6 @@
       <advantage>It guarantees the shipped artifact is what the file name and docs say it is: the right architecture, bundle identity and version. This matters because the `Info.plist` version comes from `flutter/pubspec.yaml` (0.5.0) and the other version files say 0.5.1, so a dmg name and a bundle version that disagree could otherwise be released without anyone noticing.</advantage>
       <drawback>It is the most code and the most likely to fail on things that are expected. The version check would fail today because of the 0.5.0/0.5.1 mismatch, which the milestone explicitly only warns about and leaves unfixed. So this check has to be downgraded to a warning, or it depends on how the version-source question is settled. It also partly overlaps with the prerequisite and version-warning steps.</drawback>
     </alternative>
-    <depends-on question="Entitlements when re-signing" option="Re-sign with Release.entitlements"/>
     <recommendation option="Layered gate, spctl informational">The entitlement comparison against Release.entitlements and the test mount catch exactly the failures re-signing and dmg creation can introduce, so the dry run&apos;s success covers the whole build, sign and dmg chain, while the bundle assertions add overlap with the version warning for little extra safety.</recommendation>
   </open-question>
   <open-question id="Maintainer doc location">
