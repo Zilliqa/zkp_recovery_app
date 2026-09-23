@@ -26,6 +26,20 @@ APP_PATH="$RELEASE_PRODUCTS_DIR/$APP_NAME.app"
 
 RUST_TARGET="aarch64-apple-darwin"
 
+# Ad-hoc re-signing keeps the Release entitlements (app-sandbox, network.client); this file
+# in git is the single source of truth for them.
+ENTITLEMENTS="$REPO_ROOT/flutter/macos/Runner/Release.entitlements"
+
+# The finished dmg and its .sha256 sidecar go to dist/ (git-ignored). The dmg file name is
+# completed with the pubspec version once it has been read.
+DIST_DIR="$REPO_ROOT/dist"
+DMG_STEM="zkp-migration-app-macos-arm64"
+VOLUME_NAME="$APP_NAME"
+
+# Temporary dmg staging directory (the .app copy plus an /Applications symlink); the exit
+# trap below deletes it, so a failed or interrupted run leaves no staging tree behind.
+STAGING_DIR=""
+
 usage() {
   cat <<EOF
 Usage: scripts/$SCRIPT_NAME [-h|--help]
@@ -50,6 +64,15 @@ Steps (always run in this order; there are no skip or clean/incremental flags):
      the build caches under flutter/build/ are kept, and 'flutter clean' is never run.
   4. Run 'flutter build macos' in flutter/ (no --build-name override, so the bundle
      version comes from flutter/pubspec.yaml).
+  5. Ad-hoc re-sign the app: codesign --force --deep -s - with
+     --entitlements flutter/macos/Runner/Release.entitlements (no Developer ID).
+  6. Stage a copy of the app plus an /Applications symlink in a temporary directory
+     (deleted on exit) and create a plain hdiutil dmg with the volume name
+     "$VOLUME_NAME" at dist/$DMG_STEM-<version>.dmg
+     (an existing dmg of the same name is overwritten).
+  7. Print the dmg's SHA-256 and write it to dist/$DMG_STEM-<version>.dmg.sha256
+     in 'shasum -a 256' format (hash, two spaces, bare file name); attach this sidecar to
+     the GitHub release together with the dmg.
 
 Prerequisites (checked before anything is built; a missing one stops the script with an
 install hint -- the script never installs or changes your toolchain itself):
@@ -74,6 +97,16 @@ info() { printf '==> %s\n' "$*"; }
 warn() { printf 'WARNING: %s\n' "$*" >&2; }
 error() { printf 'ERROR: %s\n' "$*" >&2; }
 die() { error "$*"; exit 1; }
+
+cleanup() {
+  if [ -n "$STAGING_DIR" ] && [ -d "$STAGING_DIR" ]; then
+    rm -rf "$STAGING_DIR"
+  fi
+}
+trap cleanup EXIT
+# Turn Ctrl-C and termination into a normal exit so the EXIT trap still cleans up.
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # ---------------------------------------------------------------------------------------
 # Arguments
@@ -279,6 +312,55 @@ build_app() {
 }
 
 # ---------------------------------------------------------------------------------------
+# Sign, package the dmg and write its checksum
+# ---------------------------------------------------------------------------------------
+
+# Ad-hoc re-sign the whole bundle, passing the Release entitlements explicitly so the
+# re-sign never drops them.
+sign_app() {
+  [ -f "$ENTITLEMENTS" ] || die "entitlements file not found: ${ENTITLEMENTS#"$REPO_ROOT"/}"
+  info "Ad-hoc signing ${APP_PATH#"$REPO_ROOT"/} with ${ENTITLEMENTS#"$REPO_ROOT"/}"
+  codesign --force --deep -s - --entitlements "$ENTITLEMENTS" "$APP_PATH" \
+    || die "codesign failed"
+}
+
+# Stage the app copy plus an /Applications symlink and turn that folder into a plain dmg.
+create_dmg() {
+  DMG_NAME="$DMG_STEM-$VERSION.dmg"
+  DMG_PATH="$DIST_DIR/$DMG_NAME"
+
+  STAGING_DIR="$(mktemp -d -t build-macos-dmg)" || die "could not create a staging directory"
+  info "Staging the dmg contents in $STAGING_DIR"
+  # ditto keeps the bundle's signature, symlinks and extended attributes intact.
+  ditto "$APP_PATH" "$STAGING_DIR/$APP_NAME.app" || die "could not copy the app to the staging directory"
+  ln -s /Applications "$STAGING_DIR/Applications" || die "could not create the /Applications symlink"
+
+  mkdir -p "$DIST_DIR" || die "could not create ${DIST_DIR#"$REPO_ROOT"/}/"
+  # Silently replace a dmg (and its sidecar) of the same name from an earlier run.
+  rm -f "$DMG_PATH" "$DMG_PATH.sha256"
+
+  info "Creating ${DMG_PATH#"$REPO_ROOT"/} (volume name: $VOLUME_NAME)"
+  hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -format UDZO -ov \
+    "$DMG_PATH" || die "hdiutil create failed"
+  [ -f "$DMG_PATH" ] || die "hdiutil create did not produce ${DMG_PATH#"$REPO_ROOT"/}"
+
+  rm -rf "$STAGING_DIR"
+  STAGING_DIR=""
+}
+
+# Print the dmg's SHA-256 and write the <dmg>.sha256 sidecar in standard `shasum -a 256`
+# output format with the bare file name (run from dist/ so no directory is recorded).
+write_checksum() {
+  local line
+  line="$(cd "$DIST_DIR" && shasum -a 256 "$DMG_NAME")" || die "shasum failed"
+  printf '%s\n' "$line" >"$DMG_PATH.sha256" || die "could not write ${DMG_PATH#"$REPO_ROOT"/}.sha256"
+  info "SHA-256 of $DMG_NAME:"
+  printf '%s\n' "$line"
+  info "Wrote ${DMG_PATH#"$REPO_ROOT"/}"
+  info "Wrote ${DMG_PATH#"$REPO_ROOT"/}.sha256"
+}
+
+# ---------------------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------------------
 info "Repo root: $REPO_ROOT"
@@ -295,3 +377,6 @@ info "All prerequisites found"
 
 build_bindings
 build_app
+sign_app
+create_dmg
+write_checksum

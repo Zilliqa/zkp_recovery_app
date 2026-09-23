@@ -34,3 +34,21 @@ Extend `scripts/build-macos.sh` so that after the checks it always runs `mopro b
 - `--help` documents the build steps in order (checks, `mopro build` with its flags and the path restore and bindings notice, Release `.app` deletion without `flutter clean`, `flutter build macos` with the version from the pubspec), and the script passes `bash -n` under Homebrew bash and `/bin/bash` 3.2.
 
 ---
+
+## Sign, Package DMG and Write Checksum
+
+Extend `scripts/build-macos.sh` to ad-hoc re-sign the built app with `codesign --force --deep -s -` passing `--entitlements flutter/macos/Runner/Release.entitlements`, stage a copy of the `.app` plus an `/Applications` symlink in a `mktemp -d` directory that an exit `trap` deletes, create a plain `hdiutil` dmg with the volume name `Zero Knowledge Migration App` as `dist/zkp-migration-app-macos-arm64-<version>.dmg` (silently overwriting an existing dmg of the same name), and print its SHA-256 while writing a `<dmg>.sha256` sidecar next to it in standard `shasum -a 256` output format with the bare file name and no directory; also add a `dist/` entry to the root `.gitignore`. Verified by running the script, mounting the dmg by hand to see the app and the `/Applications` symlink, comparing the sidecar with fresh `shasum -a 256` output, and confirming that no staging directory survives and that `git status` does not show `dist/`.
+
+**Verified:**
+
+- `scripts/build-macos.sh`, after `flutter build macos`, ad-hoc re-signs the built app with `codesign --force --deep -s - --entitlements flutter/macos/Runner/Release.entitlements` (`sign_app`); the real run logged `replacing existing signature`, and the mounted app copy shows exactly `com.apple.security.app-sandbox` and `com.apple.security.network.client` in `codesign -d --entitlements -` and passes `codesign --verify --deep --strict`.
+- The script stages a `ditto` copy of `Zero Knowledge Migration App.app` plus an `Applications -> /Applications` symlink in a `mktemp -d -t build-macos-dmg` directory, and an `EXIT` trap (with `INT`/`TERM` turned into exits) deletes it: no `$TMPDIR/build-macos-dmg*` directory survives the successful full run, and none survives a run in which a stub `hdiutil` failed (that run stopped with `ERROR: hdiutil create failed`, exit 1).
+- It creates a plain `hdiutil create -volname "Zero Knowledge Migration App" -srcfolder <staging> -format UDZO -ov` dmg at `dist/zkp-migration-app-macos-arm64-0.5.0.dmg` (version from `flutter/pubspec.yaml`); `hdiutil imageinfo` reports `Format: UDZO` and the mounted volume name is `Zero Knowledge Migration App`.
+- An existing dmg of the same name is silently overwritten: a repeat sign/dmg/checksum run replaced the dmg (new mtime and hash) with no prompt, error or warning, and exited 0.
+- It prints the dmg's SHA-256 and writes `dist/zkp-migration-app-macos-arm64-0.5.0.dmg.sha256` in standard `shasum -a 256` format (`<hash>  zkp-migration-app-macos-arm64-0.5.0.dmg`, bare file name, no directory); the sidecar is byte-identical to fresh `shasum -a 256` output run in `dist/`, and `shasum -a 256 -c` reports `OK`.
+- The full `scripts/build-macos.sh` run (mopro-cli 0.3.7 installed by hand) exits 0, printing only the expected 0.5.0/0.5.1 version-mismatch, git-state and bindings-changed warnings.
+- Mounting the dmg by hand (`hdiutil attach -readonly -nobrowse`) shows `Zero Knowledge Migration App.app` and an `Applications` symlink whose `readlink` is `/Applications`.
+- The root `.gitignore` has a `dist/` entry (`git check-ignore -v dist/` matches `.gitignore:4:dist/`) and `git status` does not show `dist/`.
+- `--help` lists the new steps 5 to 7 (ad-hoc re-sign with the Release entitlements, staging plus `hdiutil` dmg with the volume name and file name and silent overwrite, SHA-256 print plus sidecar), and the script passes `bash -n` under Homebrew bash and `/bin/bash` 3.2.
+
+---

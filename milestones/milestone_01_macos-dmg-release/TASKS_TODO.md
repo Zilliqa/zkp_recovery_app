@@ -1,11 +1,5 @@
 # TASKS TODO
 
-## Sign, Package DMG and Write Checksum
-
-Extend `scripts/build-macos.sh` to ad-hoc re-sign the built app with `codesign --force --deep -s -` passing `--entitlements flutter/macos/Runner/Release.entitlements`, stage a copy of the `.app` plus an `/Applications` symlink in a `mktemp -d` directory that an exit `trap` deletes, create a plain `hdiutil` dmg with the volume name `Zero Knowledge Migration App` as `dist/zkp-migration-app-macos-arm64-<version>.dmg` (silently overwriting an existing dmg of the same name), and print its SHA-256 while writing a `<dmg>.sha256` sidecar next to it in standard `shasum -a 256` output format with the bare file name and no directory; also add a `dist/` entry to the root `.gitignore`. Verified by running the script, mounting the dmg by hand to see the app and the `/Applications` symlink, comparing the sidecar with fresh `shasum -a 256` output, and confirming that no staging directory survives and that `git status` does not show `dist/`.
-
----
-
 ## Add Post-Build Signature and DMG Verification
 
 Extend `scripts/build-macos.sh` with a final layered check stage in which any failure stops it with a non-zero exit: `codesign --verify --deep --strict --verbose=2` on the built app, a comparison of the `codesign -d --entitlements -` output against the expected set in `flutter/macos/Runner/Release.entitlements`, `hdiutil verify` on the finished dmg, a read-only, no-browse test mount (`hdiutil attach -readonly -nobrowse`, detached by a trap) that confirms the `.app` and the `/Applications` symlink are present and re-runs `codesign --verify` on the mounted copy, and lastly `spctl --assess --type execute`, whose expected rejection of the ad-hoc signature is printed as information only and never changes the exit status. No bundle-content assertions (`lipo` architecture, `CFBundleIdentifier`, `CFBundleShortVersionString`) are added. Verified by a full script run passing, and by a deliberate tamper (for example re-signing the app without entitlements, or appending a byte to the dmg) making the script exit non-zero.
