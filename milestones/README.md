@@ -11,7 +11,7 @@ Each milestone lives at `milestones/milestone_<N>_<slug>/` and contains:
 
 ## Current Milestone
 
-Current milestone: none
+Current milestone: `milestones/milestone_01_macos-dmg-release/`
 
 ## Milestone History
 
