@@ -71,3 +71,20 @@ Extend `scripts/build-macos.sh` with a final layered check stage in which any fa
 - `--help` documents the new step 8 (the checks in order, the informational spctl result and not publishing on failure), and the script passes `bash -n` under Homebrew bash and `/bin/bash` 3.2.
 
 ---
+
+## Write macOS User Guide
+
+Add a text-only `docs/macOS.md` in the style of `docs/Linux.md` (no screenshot, no image reference, and no link to it added to any other doc) that covers: downloading `zkp-migration-app-macos-arm64-<version>.dmg` only from the official GitHub releases page; checking it with `shasum -a 256 <dmg>` and comparing the output by eye with the published hash from the release page or the `.sha256` asset (not `shasum -c`); installing by opening the dmg and dragging the app from `/Volumes/Zero Knowledge Migration App` to `/Applications`; and getting past Gatekeeper, leading with Open Anyway (launch once, then System Settings → Privacy & Security, or System Preferences → Security & Privacy on macOS 12) and falling back to `xattr -dr com.apple.quarantine "/Applications/Zero Knowledge Migration App.app"`, with a short section matching each message to its fix ("Apple could not verify … is free of malware" or "unidentified developer" → Open Anyway; "… is damaged and can't be opened" → the xattr command) and explaining that the messages appear because the app is ad-hoc signed and not Developer ID signed or notarized. Verified by reading the finished guide against these decisions and checking it uses no right-click → Open shortcut and no per-version procedures.
+
+**Verified:**
+
+- `docs/macOS.md` exists as a new file in the style of `docs/Linux.md` (a `# ZKP Migration on macOS (Apple Silicon).` title, a short intro, then numbered `## Step N:` sections with `$`-prefixed bash blocks and the same **DO NOT DOWNLOAD** / **DO NOT PROCEED** warnings).
+- It is text-only: no screenshot, no `![...]` image reference and no `.png` mention; no other doc (root `README.md`, `flutter/README.md`, `docs/Linux.md`, `docs/Windows.md`) was changed or links to it (`git diff --stat` empty; grep for `macOS.md` finds nothing).
+- Step 1 tells users to download `zkp-migration-app-macos-arm64-<version>.dmg` only from the official GitHub releases page (`https://github.com/Zilliqa/zkp_recovery_app/releases`).
+- Step 1 checks it with `shasum -a 256 zkp-migration-app-macos-arm64-<version>.dmg` and compares the output by eye with the published hash from the release page or the `.dmg.sha256` asset; the guide never uses `shasum -c`.
+- Step 2 installs by opening the dmg (Finder or `open`), which mounts `/Volumes/Zero Knowledge Migration App` (quoted where used in a command), and dragging the app onto the `/Applications` shortcut, then ejecting the image.
+- Step 3 leads with Open Anyway: launch the app once, then System Settings → Privacy & Security (System Preferences → Security & Privacy on macOS 12) and click "Open Anyway"; the fallback is `xattr -dr com.apple.quarantine "/Applications/Zero Knowledge Migration App.app"`, with the path quoted because the name has spaces.
+- A "Gatekeeper messages" section matches each message to its fix ("Apple could not verify … is free of malware" and "unidentified developer" → Open Anyway; "… is damaged and can't be opened" → the xattr command) and explains the messages appear because the app is ad-hoc signed, not Developer ID signed or notarized.
+- The guide uses no right-click/Control-click → Open shortcut and has no per-version procedures (grep for `right-click`, `control-click`, macOS 13+ version names finds nothing; the only version mention is the macOS 12 settings-name note the decision requires).
+
+---
