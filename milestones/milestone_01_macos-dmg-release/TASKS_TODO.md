@@ -1,11 +1,5 @@
 # TASKS TODO
 
-## Scaffold Build Script With Prerequisite Checks
-
-Create `scripts/build-macos.sh` in a new top-level `scripts/` directory that resolves the repo root from its own location, prints a `--help`/usage block listing its flags and prerequisites, and, before building anything, stops with an install hint when a required tool is missing (an arm64 macOS host via `uname -s`/`uname -m`, the Xcode command-line tools via `xcode-select -p`, `flutter`, CocoaPods `pod`, `cargo`/`rustup` with `aarch64-apple-darwin` listed by `rustup target list --installed`, `hdiutil`/`codesign`/`shasum`, and `mopro` with the hint `cargo install mopro-cli`), but only warns and carries on when the working tree is dirty or HEAD is not a release tag or a `release/*` branch. It also reads the authoritative `version:` from `flutter/pubspec.yaml` (without any `+build` suffix) and warns, naming each file and value, if the root `Cargo.toml` version or the `zkp_recovery_app` dependency version in `mopro_flutter_bindings/rust/Cargo.toml` differs. Verified by running the script with `--help`, running it on the current tree (expecting the 0.5.0/0.5.1 version warning and the git-state warning), and running it with one tool hidden from `PATH` (expecting a non-zero stop with the install hint).
-
----
-
 ## Add Bindings and Flutter Release Build Steps
 
 Extend `scripts/build-macos.sh` so that after the checks it always runs `mopro build` at the repo root (no skip or opt-in flag), reports with a `git status`/`git diff --stat` notice if the committed bindings under `mopro_flutter_bindings/lib/src/rust/` changed, deletes only the Release `.app` under `flutter/build/macos/Build/Products/Release/` (never a full `flutter clean`, and no clean/incremental flag), and then runs `flutter build macos` inside `flutter/` with no `--build-name` override so the bundle version comes from the pubspec. Verification needs mopro-cli installed by hand first (`cargo install mopro-cli`), which the script itself never does; it is verified by running the script and confirming a freshly produced `Zero Knowledge Migration App.app` in the Release products directory whose `CFBundleShortVersionString` matches the pubspec version.
