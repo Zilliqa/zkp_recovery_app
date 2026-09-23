@@ -50,5 +50,9 @@ The script writes the finished `.dmg` to a new `dist/` directory at the repo roo
 
 `flutter/pubspec.yaml` is the authoritative version. The script reads its `version:` (without any `+build` suffix) and uses it in the dmg file name. It runs `flutter build macos` with no `--build-name` override, so the bundle's `CFBundleShortVersionString` comes from the pubspec through `FLUTTER_BUILD_NAME`, and the file name and bundle version always match. If the root `Cargo.toml` version or the `zkp_recovery_app` dependency version in `mopro_flutter_bindings/rust/Cargo.toml` differs from the pubspec, the script prints a warning naming each file and value and carries on. As long as the 0.5.0/0.5.1 mismatch stays unfixed (it is out of scope here), a build from the current tree is named and versioned 0.5.0. A maintainer must bump the pubspec before building a release.
 
+### Artifact and volume naming
+
+The dmg file is named `zkp-migration-app-macos-arm64-<version>.dmg`. It follows the Linux `zkp-migration-app-linux-amd64.tar.gz` stem with the macOS platform and arch, and puts the pubspec version last. The name is lowercase, hyphenated and has no spaces, so the `shasum -a 256` step in `docs/macOS.md` and the script need no quoting. The mounted volume is named after the bundle's product name, `Zero Knowledge Migration App`, with no version, to match the `.app` users drag to `/Applications`. Any script or doc step that refers to the mounted volume uses `/Volumes/Zero Knowledge Migration App`, quoted. Renaming the unversioned Linux artifact is not part of this milestone.
+
 ## Out of Scope
 

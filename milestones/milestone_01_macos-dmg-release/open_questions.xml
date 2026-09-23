@@ -1,23 +1,4 @@
 <open-questions>
-  <open-question id="Artifact and volume naming">
-    <question>What exact naming convention should the dmg file and its mounted volume use? The Linux release uses zkp-migration-app-linux-amd64.tar.gz with no version. Should the macOS file follow the same pattern with a version added (e.g. zkp-migration-app-macos-arm64-&lt;version&gt;.dmg)? What volume name should users see when they open it?</question>
-    <alternative id="Linux pattern, version last">
-      Name the file `zkp-migration-app-macos-arm64-&lt;version&gt;.dmg`. This follows the Linux `zkp-migration-app-linux-amd64.tar.gz` stem, swaps in the macOS platform and arch, and puts the version at the end. Set the volume name to the bundle&apos;s product name, `Zero Knowledge Migration App`, with no version.
-      <advantage>It matches the only existing release artifact name almost exactly. Users and the release page see one consistent family of names, and the lowercase, hyphenated file name has no spaces, so the `shasum -a 256` command in docs/macOS.md needs no quoting. The volume shows the same name as the `.app` users drag to `/Applications`, which is what Finder users expect.</advantage>
-      <drawback>The version comes after the platform and arch, so a sorted list of files from several releases groups by platform rather than by release. Because the volume name has no version, two mounted dmgs from different releases look the same in Finder. The Linux artifact still has no version, so the two platforms&apos; names stay inconsistent unless the Linux name is changed later, which this milestone does not cover.</drawback>
-    </alternative>
-    <alternative id="Version-first, tag-style">
-      Name the file `zkp-migration-app-&lt;version&gt;-macos-arm64.dmg`, or with the git-tag form `zkp-migration-app-v&lt;version&gt;-macos-arm64.dmg` so it matches tags like `v0.5.1`. Set the volume name to include the version, e.g. `Zero Knowledge Migration App &lt;version&gt;`.
-      <advantage>This follows the common `name-version-platform-arch` convention used by many projects&apos; GitHub release assets. Files from several releases sort by release, the name ties directly to the git tag the release comes from, and the versioned volume name shows users which release they have mounted.</advantage>
-      <drawback>It departs from the Linux artifact&apos;s `name-platform-arch` order, so the release page mixes two naming schemes. The `v` prefix, if used, is one more format detail the script must derive and keep consistent. A versioned volume name also has spaces and changes every release, so any doc step or script test-mount that refers to `/Volumes/&lt;name&gt;` has to be versioned as well.</drawback>
-    </alternative>
-    <alternative id="Mac-idiomatic product name">
-      Name the file after the app&apos;s display name, e.g. `Zero Knowledge Migration App-&lt;version&gt;-arm64.dmg` (or a space-free variant such as `ZeroKnowledgeMigrationApp-&lt;version&gt;-arm64.dmg`). Set the volume name to `Zero Knowledge Migration App`, as many native macOS apps do.
-      <advantage>What users download, what they see mounted, and what lands in `/Applications` all carry the same human-readable product name. That makes the download easy to recognise for non-technical macOS users following docs/macOS.md.</advantage>
-      <drawback>It shares nothing with the `zkp-migration-app-*` Linux name, so release assets no longer form one recognisable family. The spaced form also needs quoting in every `shasum`, `hdiutil` and `codesign` command in the script and the user doc, and it gets URL-encoded in GitHub release download links.</drawback>
-    </alternative>
-    <recommendation option="Linux pattern, version last">Keeping the zkp-migration-app-platform-arch stem gives one recognisable family on the release page, the space-free lowercase name needs no quoting in docs or the script, and a volume named after the product matches the .app users drag to /Applications.</recommendation>
-  </open-question>
   <open-question id="Entitlements when re-signing">
     <question>Xcode already ad-hoc signs the Release build with Release.entitlements (app-sandbox and network.client), but codesign --force --deep -s - without --entitlements removes them. Should the script re-sign explicitly with flutter/macos/Runner/Release.entitlements, keep Xcode&apos;s signature and only verify it, or do something else? Should the app stay sandboxed?</question>
     <alternative id="Re-sign with Release.entitlements">
