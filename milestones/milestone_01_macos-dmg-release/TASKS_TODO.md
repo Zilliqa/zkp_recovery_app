@@ -1,11 +1,5 @@
 # TASKS TODO
 
-## Add Bindings and Flutter Release Build Steps
-
-Extend `scripts/build-macos.sh` so that after the checks it always runs `mopro build` at the repo root (no skip or opt-in flag), reports with a `git status`/`git diff --stat` notice if the committed bindings under `mopro_flutter_bindings/lib/src/rust/` changed, deletes only the Release `.app` under `flutter/build/macos/Build/Products/Release/` (never a full `flutter clean`, and no clean/incremental flag), and then runs `flutter build macos` inside `flutter/` with no `--build-name` override so the bundle version comes from the pubspec. Verification needs mopro-cli installed by hand first (`cargo install mopro-cli`), which the script itself never does; it is verified by running the script and confirming a freshly produced `Zero Knowledge Migration App.app` in the Release products directory whose `CFBundleShortVersionString` matches the pubspec version.
-
----
-
 ## Sign, Package DMG and Write Checksum
 
 Extend `scripts/build-macos.sh` to ad-hoc re-sign the built app with `codesign --force --deep -s -` passing `--entitlements flutter/macos/Runner/Release.entitlements`, stage a copy of the `.app` plus an `/Applications` symlink in a `mktemp -d` directory that an exit `trap` deletes, create a plain `hdiutil` dmg with the volume name `Zero Knowledge Migration App` as `dist/zkp-migration-app-macos-arm64-<version>.dmg` (silently overwriting an existing dmg of the same name), and print its SHA-256 while writing a `<dmg>.sha256` sidecar next to it in standard `shasum -a 256` output format with the bare file name and no directory; also add a `dist/` entry to the root `.gitignore`. Verified by running the script, mounting the dmg by hand to see the app and the `/Applications` symlink, comparing the sidecar with fresh `shasum -a 256` output, and confirming that no staging directory survives and that `git status` does not show `dist/`.

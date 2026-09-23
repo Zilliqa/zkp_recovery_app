@@ -13,6 +13,17 @@ PUBSPEC="$REPO_ROOT/flutter/pubspec.yaml"
 ROOT_CARGO="$REPO_ROOT/Cargo.toml"
 BINDINGS_CARGO="$REPO_ROOT/mopro_flutter_bindings/rust/Cargo.toml"
 
+# `mopro build` settings (they match build_mode/target_platforms in the root Config.toml)
+# and the committed Dart bindings it regenerates (relative to the repo root).
+MOPRO_MODE="release"
+MOPRO_PLATFORM="flutter"
+BINDINGS_DART_REL="mopro_flutter_bindings/lib/src/rust"
+
+# Bundle name comes from PRODUCT_NAME in flutter/macos/Runner/Configs/AppInfo.xcconfig.
+APP_NAME="Zero Knowledge Migration App"
+RELEASE_PRODUCTS_DIR="$REPO_ROOT/flutter/build/macos/Build/Products/Release"
+APP_PATH="$RELEASE_PRODUCTS_DIR/$APP_NAME.app"
+
 RUST_TARGET="aarch64-apple-darwin"
 
 usage() {
@@ -27,6 +38,18 @@ Flags:
 
 The version is read from flutter/pubspec.yaml ("version:", without any +build suffix),
 which is authoritative: bump it there before building a release.
+
+Steps (always run in this order; there are no skip or clean/incremental flags):
+  1. Check prerequisites, versions and git state.
+  2. Run 'mopro build --mode $MOPRO_MODE --platforms $MOPRO_PLATFORM --no-auto-update' at
+     the repo root to regenerate the Dart bindings, restore the relative crate path that
+     mopro build rewrites in mopro_flutter_bindings/rust/Cargo.toml, and print a notice
+     if the committed bindings under $BINDINGS_DART_REL/ changed.
+  3. Delete only the Release app bundle
+     (flutter/build/macos/Build/Products/Release/$APP_NAME.app);
+     the build caches under flutter/build/ are kept, and 'flutter clean' is never run.
+  4. Run 'flutter build macos' in flutter/ (no --build-name override, so the bundle
+     version comes from flutter/pubspec.yaml).
 
 Prerequisites (checked before anything is built; a missing one stops the script with an
 install hint -- the script never installs or changes your toolchain itself):
@@ -193,6 +216,69 @@ check_git_state() {
 }
 
 # ---------------------------------------------------------------------------------------
+# Build: Rust bindings (mopro build), then the Flutter Release app
+# ---------------------------------------------------------------------------------------
+
+# mopro build rewrites the committed `path = "../.."` of the zkp_recovery_app dependency in
+# mopro_flutter_bindings/rust/Cargo.toml to this machine's absolute repo path; put the
+# relative path back so the tree stays portable (both point at the same crate).
+restore_bindings_crate_path() {
+  local abs_line="path = \"$REPO_ROOT\"" tmp
+  grep -qxF "$abs_line" "$BINDINGS_CARGO" || return 0
+  tmp="$(mktemp -t build-macos-cargo)" || die "could not create a temporary file"
+  awk -v abs="$abs_line" '$0 == abs { print "path = \"../..\""; next } { print }' \
+    "$BINDINGS_CARGO" >"$tmp" && cat "$tmp" >"$BINDINGS_CARGO"
+  rm -f "$tmp"
+  info "Restored the relative zkp_recovery_app path in ${BINDINGS_CARGO#"$REPO_ROOT"/}"
+}
+
+# Always regenerate the Dart bindings from the current Rust API and circuit.
+# The mode and platform are passed explicitly (matching Config.toml) because mopro-cli
+# prompts for them interactively otherwise. mopro-cli exits 0 even when the build fails,
+# so its output is also scanned for its failure message.
+build_bindings() {
+  info "Running mopro build at the repo root (mode: $MOPRO_MODE, platform: $MOPRO_PLATFORM)"
+  local log status=0
+  log="$(mktemp -t build-macos-mopro)" || die "could not create a temporary log file"
+  (cd "$REPO_ROOT" && mopro build --mode "$MOPRO_MODE" --platforms "$MOPRO_PLATFORM" \
+    --no-auto-update) 2>&1 | tee "$log" || status=$?
+  if [ "$status" -ne 0 ] || grep -q "Failed to build project" "$log"; then
+    rm -f "$log"
+    die "mopro build failed (see its output above)"
+  fi
+  rm -f "$log"
+  restore_bindings_crate_path
+
+  if ! have git || ! git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    warn "cannot tell whether $BINDINGS_DART_REL/ changed (git unavailable)"
+    return
+  fi
+  if [ -n "$(git -C "$REPO_ROOT" status --porcelain -- "$BINDINGS_DART_REL" 2>/dev/null)" ]; then
+    warn "the committed bindings under $BINDINGS_DART_REL/ differ from HEAD after mopro build;" \
+      "review and commit them so the release matches the repo:"
+    git -C "$REPO_ROOT" status --short -- "$BINDINGS_DART_REL" >&2 || true
+    git -C "$REPO_ROOT" diff --stat -- "$BINDINGS_DART_REL" >&2 || true
+  else
+    info "Committed bindings under $BINDINGS_DART_REL/ are unchanged"
+  fi
+}
+
+# Delete only the Release app bundle, so the app that gets signed and packaged is always
+# freshly produced by this run (the Xcode, CocoaPods and cargokit caches are kept).
+build_app() {
+  if [ -e "$APP_PATH" ]; then
+    info "Deleting the previous Release app: ${APP_PATH#"$REPO_ROOT"/}"
+    rm -rf "$APP_PATH"
+  fi
+
+  info "Running flutter build macos in flutter/"
+  (cd "$REPO_ROOT/flutter" && flutter build macos --release) || die "flutter build macos failed"
+
+  [ -d "$APP_PATH" ] || die "flutter build macos did not produce ${APP_PATH#"$REPO_ROOT"/}"
+  info "Built ${APP_PATH#"$REPO_ROOT"/}"
+}
+
+# ---------------------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------------------
 info "Repo root: $REPO_ROOT"
@@ -206,3 +292,6 @@ if [ "$MISSING" -gt 0 ]; then
   die "$MISSING prerequisite(s) missing; install them (see the hints above) and re-run"
 fi
 info "All prerequisites found"
+
+build_bindings
+build_app

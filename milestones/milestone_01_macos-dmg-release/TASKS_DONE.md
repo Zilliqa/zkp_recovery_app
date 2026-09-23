@@ -17,3 +17,20 @@ Create `scripts/build-macos.sh` in a new top-level `scripts/` directory that res
 - In a throwaway clone checked out at `v0.5.1`, the script reports `HEAD is release tag: v0.5.1` and no release-ref warning.
 
 ---
+
+## Add Bindings and Flutter Release Build Steps
+
+Extend `scripts/build-macos.sh` so that after the checks it always runs `mopro build` at the repo root (no skip or opt-in flag), reports with a `git status`/`git diff --stat` notice if the committed bindings under `mopro_flutter_bindings/lib/src/rust/` changed, deletes only the Release `.app` under `flutter/build/macos/Build/Products/Release/` (never a full `flutter clean`, and no clean/incremental flag), and then runs `flutter build macos` inside `flutter/` with no `--build-name` override so the bundle version comes from the pubspec. Verification needs mopro-cli installed by hand first (`cargo install mopro-cli`), which the script itself never does; it is verified by running the script and confirming a freshly produced `Zero Knowledge Migration App.app` in the Release products directory whose `CFBundleShortVersionString` matches the pubspec version.
+
+**Verified:**
+
+- After the prerequisite, version and git-state checks, `scripts/build-macos.sh` always runs `mopro build` at the repo root (`build_bindings` is called unconditionally; the script has no skip, opt-in, clean or incremental flag -- `--help` is the only flag). It passes `--mode release --platforms flutter --no-auto-update` (matching `Config.toml`) because mopro-cli 0.3.7 otherwise prompts interactively for the build mode.
+- Because mopro-cli exits 0 even when its build fails, the script also scans the `mopro build` output for `Failed to build project`: with a stub `mopro` that prints that message and exits 0, the script stops with `ERROR: mopro build failed (see its output above)` and exit 1 before touching the Release app.
+- `mopro build` rewrites the `zkp_recovery_app` dependency's `path = "../.."` in `mopro_flutter_bindings/rust/Cargo.toml` to the machine's absolute repo path; the script puts the relative path back (`==> Restored the relative zkp_recovery_app path ...`), and after the run that file shows no diff from HEAD.
+- When the committed bindings under `mopro_flutter_bindings/lib/src/rust/` change, the script prints a `WARNING: the committed bindings ... differ from HEAD` notice followed by `git status --short` and `git diff --stat` output for that directory (seen on the real run, where mopro's dart formatting changed six files); otherwise it prints that they are unchanged.
+- Before `flutter build macos`, the script deletes only `flutter/build/macos/Build/Products/Release/Zero Knowledge Migration App.app` (logged as `Deleting the previous Release app`); it never runs `flutter clean` (the `Debug` products and build caches under `flutter/build/` remain).
+- The script runs `flutter build macos --release` inside `flutter/` with no `--build-name` override, and stops non-zero if the build fails or does not produce the `.app`.
+- With mopro-cli 0.3.7 installed by hand (`cargo install mopro-cli`; the script never installs it), a full run of `scripts/build-macos.sh` exits 0, printing only the expected 0.5.0/0.5.1 version-mismatch and git-state warnings plus the bindings notice, and produces a freshly built `flutter/build/macos/Build/Products/Release/Zero Knowledge Migration App.app` (timestamp from that run) whose `CFBundleShortVersionString` is `0.5.0`, matching `version: 0.5.0` in `flutter/pubspec.yaml`.
+- `--help` documents the build steps in order (checks, `mopro build` with its flags and the path restore and bindings notice, Release `.app` deletion without `flutter clean`, `flutter build macos` with the version from the pubspec), and the script passes `bash -n` under Homebrew bash and `/bin/bash` 3.2.
+
+---
