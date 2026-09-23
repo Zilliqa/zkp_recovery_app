@@ -62,5 +62,9 @@ The script keeps the goal's ad-hoc re-sign step (`codesign --force --deep -s -`)
 
 The script always runs `mopro build` at the repo root before `flutter build macos`. There is no skip or opt-in flag, so there is a single build path and every dmg ships with Dart bindings freshly regenerated from the current Rust API and circuit. If `mopro` is not on `PATH`, the script stops immediately and prints the install command (`cargo install mopro-cli`). It never installs or changes the maintainer's toolchain itself. After the step, if the committed bindings under `mopro_flutter_bindings/lib/src/rust/` changed, the script reports it with a `git status`/`git diff --stat` notice. Because mopro-cli is not installed on the developer machine today, it has to be installed by hand before the dry run. Repeated dry runs stay cheap because cargo's `target/` cache makes later `mopro build` runs incremental.
 
+### Clean build policy
+
+The script never runs a full `flutter clean`. On every run, before `flutter build macos`, it deletes only the outputs that decide what gets shipped: the Release `.app` under `flutter/build/macos/Build/Products/Release/` (together with the `mktemp -d` staging directory, which the exit `trap` already removes). This guarantees that the bundle signed and packaged into the dmg is always freshly produced by that run's `flutter build macos`, so a stale or leftover app bundle can never ship. There is one code path with no clean/incremental flag. The Xcode, CocoaPods and cargokit compile caches under `flutter/build/` are kept, so repeated dry runs skip the full Rust recompile, and invalidating those caches is left to Flutter, Xcode and cargokit dependency tracking. A dmg is therefore not guaranteed to match a from-scratch build if that dependency tracking misses a change, or if the toolchain or pods change between runs.
+
 ## Out of Scope
 
