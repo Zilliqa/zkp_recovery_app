@@ -42,5 +42,9 @@ The machine runs macOS 26.6.2 on arm64, with Xcode 27.0, Flutter 3.47.2 (stable,
 
 The macOS build script lives at `scripts/build-macos.sh`, in a new top-level `scripts/` directory. It resolves the repo root from its own location, runs `mopro build` at the root and `flutter build macos` inside `flutter/`, and reads the three version files from there. The `scripts/` directory is the repo-level home for platform packaging scripts, so any future Linux or Windows packaging scripts follow the same `scripts/build-<platform>.sh` pattern.
 
+### DMG output location
+
+The script writes the finished `.dmg` to a new `dist/` directory at the repo root, and a `dist/` entry is added to the root `.gitignore`, because nothing ignores it today. Keeping it there separates the release artifact from build state, so `flutter clean` or wiping `flutter/build/` never deletes it. The dmg staging folder (the `.app` copy and the `/Applications` symlink) is built in a `mktemp -d` directory that an exit `trap` deletes, so a failed run leaves no staging tree behind. An existing dmg with the same name is silently overwritten, so the build, sign and dmg dry run can be repeated until it passes. Releases are built from a tag, which guards against a rebuilt dmg replacing one whose checksum was already published.
+
 ## Out of Scope
 
