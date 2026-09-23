@@ -8,6 +8,34 @@ Out of scope: Intel/universal builds, Developer ID signing and notarization, a s
 
 ## Relevant starting state
 
+### Existing build and release tooling
+
+The repo has no app build or packaging script for any platform. Releases so far have been built by hand on a developer machine. `docs/Linux.md` describes a release `.tar.gz` named `zkp-migration-app-linux-amd64.tar.gz`, whose checksum users compare against the one listed on the GitHub releases page. There is no `.github/workflows` directory. The only existing shell scripts are in `groth16-prover-min/`, `plonk-*`, `groth16-cli-ceremony/`, `claim-relayer/e2e-anvil/` and cargokit's `build_pod.sh`, so there is no repo-level `scripts/` convention yet.
+
+### Rust bindings and how they get built on macOS
+
+`mopro build` (driven by the root `Config.toml`: release mode, `circom` adapter, `flutter` platform) regenerates the Dart bindings in `mopro_flutter_bindings/lib/src/rust/`, which are committed to git. The native Rust library is compiled during `flutter build macos` by the `mopro_flutter_bindings` pod's "Build Rust library" script phase, which runs `cargokit/build_pod.sh ../rust mopro_flutter_bindings` and force-loads `libmopro_flutter_bindings.a`. `build.rs` transpiles `test-vectors/circom/groth.wasm`, which is committed. `test-vectors/circom/groth_final.zkey` is absent; only `cargo test` needs it, not the build. The app downloads its zkey at runtime.
+
+### Versions
+
+The root `Cargo.toml` is at `0.5.1`, and so is the `zkp_recovery_app` dependency version in `mopro_flutter_bindings/rust/Cargo.toml`. `flutter/pubspec.yaml` is at `version: 0.5.0`, even though the latest tag is `v0.5.1`. `mopro_flutter_bindings/pubspec.yaml` has its own unrelated `0.0.1`. The macOS `Info.plist` takes `CFBundleShortVersionString` and `CFBundleVersion` from `FLUTTER_BUILD_NAME`/`FLUTTER_BUILD_NUMBER`, which means from the pubspec.
+
+### macOS Flutter project (`flutter/macos/`)
+
+`AppInfo.xcconfig` sets `PRODUCT_NAME = Zero Knowledge Migration App` and `PRODUCT_BUNDLE_IDENTIFIER = com.zilliqa.zkpRecoveryApp`, so the bundle is `Zero Knowledge Migration App.app` (the name has spaces). The deployment target is macOS 12.0 in both the Podfile and the Xcode project. Xcode signing is already `CODE_SIGN_IDENTITY = "-"` (ad-hoc), with no `DEVELOPMENT_TEAM` and no hardened-runtime setting. `Release.entitlements` turns on `app-sandbox` and `network.client`. `DebugProfile.entitlements` also adds `allow-jit` and `network.server`. Re-signing with `codesign --force --deep -s -` without `--entitlements` would drop these entitlements. Only a `Debug` build exists under `flutter/build/macos/Build/Products/`, so a Release macOS build has not been produced on this machine yet.
+
+### Runtime behaviour relevant to a sandboxed release
+
+A release build (`!kDebugMode`) uses `domain` `32769` (zq2 mainnet); see `flutter/lib/services/proof_service.dart:116`. `DownloadService` stores the ~358 MB proving key in `getApplicationSupportDirectory()`. Under the sandbox, that directory is inside `~/Library/Containers/com.zilliqa.zkpRecoveryApp/`. The download uses `package:http` over HTTPS to GCS, which is covered by `network.client`.
+
+### Developer machine toolchain (as found)
+
+The machine runs macOS 26.6.2 on arm64, with Xcode 27.0, Flutter 3.47.2 (stable, Homebrew), CocoaPods (Homebrew), and rustup/cargo with the `aarch64-apple-darwin` target installed. `hdiutil`, `codesign` and `shasum` are system tools. `mopro` (the mopro-cli) is **not** installed or on `PATH`, so the `mopro build` step needs `cargo install mopro-cli` before the dry run.
+
+### User documentation
+
+`docs/Linux.md` and `docs/Windows.md` each have a screenshot (`docs/linux.png`, `docs/windows.png`). The Linux guide is structured as: download from GitHub releases only → check the SHA-256 → unpack and run → "(Alternative): Build from Source". There is no `docs/macOS.md`, and no macOS screenshot. The root `README.md` is the stock mopro template and does not link to the platform guides.
+
 ## Decisions
 
 ## Out of Scope
