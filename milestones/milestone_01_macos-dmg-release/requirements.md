@@ -66,5 +66,9 @@ The script always runs `mopro build` at the repo root before `flutter build maco
 
 The script never runs a full `flutter clean`. On every run, before `flutter build macos`, it deletes only the outputs that decide what gets shipped: the Release `.app` under `flutter/build/macos/Build/Products/Release/` (together with the `mktemp -d` staging directory, which the exit `trap` already removes). This guarantees that the bundle signed and packaged into the dmg is always freshly produced by that run's `flutter build macos`, so a stale or leftover app bundle can never ship. There is one code path with no clean/incremental flag. The Xcode, CocoaPods and cargokit compile caches under `flutter/build/` are kept, so repeated dry runs skip the full Rust recompile, and invalidating those caches is left to Flutter, Xcode and cargokit dependency tracking. A dmg is therefore not guaranteed to match a from-scratch build if that dependency tracking misses a change, or if the toolchain or pods change between runs.
 
+### Checksum publication format
+
+The script prints the dmg's SHA-256 and also writes a `<dmg>.sha256` sidecar next to the dmg in `dist/`. The sidecar uses the standard `shasum -a 256` output format (`<hash>  <filename>`), with the bare file name and no directory. The maintainer attaches the sidecar to the GitHub release, so the published hash comes straight from the build and nobody copies it by hand. `docs/macOS.md` tells users to run `shasum -a 256 <dmg>` and compare the output by eye with the published hash (from the release page or the `.sha256` asset). This keeps it parallel to the compare-by-eye step in `docs/Linux.md`, and the doc does not use `shasum -c`, which fails when a browser renames the download. The sidecar only guards against transport errors, not against tampering at the release source.
+
 ## Out of Scope
 
