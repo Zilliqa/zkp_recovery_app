@@ -1,28 +1,4 @@
 <open-questions>
-  <open-question id="Screenshot and doc links">
-    <question>Should docs/macOS.md include a screenshot (docs/macos.png) like the Linux and Windows guides? Should any existing doc (e.g. the root README.md or flutter/README.md) link to the new macOS guide?</question>
-    <alternative id="Screenshot, no new links">
-      docs/macOS.md opens with an embedded screenshot (docs/macos.png) of the app running on macOS, as docs/Linux.md does with `![Linux desktop screenshot](linux.png)`, and no other doc is changed to link to the new guide.
-      <advantage>It matches the only guide that actually embeds its screenshot, docs/Linux.md. docs/Windows.md has a windows.png beside it but never references it. Leaving the other docs alone follows the current convention, since nothing in the repo links to Linux.md or Windows.md either. The root README.md and flutter/README.md are stock mopro templates, and a project link would sit oddly in them.</advantage>
-      <drawback>Taking the screenshot means launching a Release build. The goal says launch will be tested manually after the milestone, and the done criterion is only the build, sign and dmg dry run. So the image either becomes extra work inside the milestone or the guide ships with a broken image reference until someone captures it. The guide also stays hard to find, because nothing links to any of the platform guides.</drawback>
-    </alternative>
-    <alternative id="Screenshot plus README links">
-      docs/macOS.md embeds docs/macos.png like docs/Linux.md does, and the root README.md gets a short platform-guides section that links docs/Linux.md, docs/Windows.md and the new docs/macOS.md.
-      <advantage>Anyone landing on the repo can find the macOS guide, and the two existing guides that currently have no inbound links become findable too. The new guide also looks the same as the Linux one.</advantage>
-      <drawback>It has the same problem getting the screenshot as the other screenshot option, because it needs a launched Release app outside the milestone&apos;s dry-run done criterion. It also edits the root README.md, which is the stock mopro template, not project documentation. That widens a macOS packaging milestone into general docs cleanup, and the link section sits next to template text that describes a different project.</drawback>
-    </alternative>
-    <alternative id="Text-only, no new links">
-      docs/macOS.md has no screenshot and no image reference, and no existing doc is changed.
-      <advantage>It is the smallest change and depends only on the build, sign and dmg dry run. Nothing in the guide waits for the manual launch test, and it adds no binary asset to the repo. The docs set is already inconsistent here (docs/Windows.md has no embedded image), so leaving it out breaks no convention the repo actually follows.</advantage>
-      <drawback>The guide looks less like docs/Linux.md, and users get no visual check that they are running the right app. It is also as hard to discover as the other platform guides, because nothing links to it.</drawback>
-    </alternative>
-    <alternative id="Text-only plus README links">
-      docs/macOS.md has no screenshot, and the root README.md gets a short platform-guides section that links docs/Linux.md, docs/Windows.md and docs/macOS.md.
-      <advantage>The guide can be finished entirely within the milestone&apos;s dry-run scope, with no dependency on launching the app, and the macOS guide and the existing platform guides are all findable from the repo landing page.</advantage>
-      <drawback>It still edits the stock mopro template README.md, which widens the milestone beyond macOS packaging. The guide also looks different from docs/Linux.md, which leads with a screenshot.</drawback>
-    </alternative>
-    <recommendation option="Text-only, no new links">A screenshot needs a launched Release build, which the goal defers to the manual test after this milestone, and the root README is the stock mopro template, so the guide ships complete within the dry-run scope and the image can be added once the launch test happens.</recommendation>
-  </open-question>
   <open-question id="Prerequisite checks scope">
     <question>Which prerequisites should the script check before building, and how strict should each check be? Candidates: host is arm64 macOS, Xcode command-line tools, flutter, CocoaPods, cargo/rustup with the aarch64-apple-darwin target, mopro, hdiutil/codesign/shasum, a clean git working tree, and building on a release tag or branch. Which of these fail the build and which only warn?</question>
     <alternative id="Option A">

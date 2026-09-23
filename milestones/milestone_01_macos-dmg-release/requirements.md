@@ -74,5 +74,9 @@ The script prints the dmg's SHA-256 and also writes a `<dmg>.sha256` sidecar nex
 
 `docs/macOS.md` documents two ways past Gatekeeper, leading with the GUI one. The main path is Open Anyway: launch the app once, then go to System Settings → Privacy & Security (System Preferences → Security & Privacy on macOS 12) and click "Open Anyway". This is the route Apple supports on every macOS version the app targets, 12 through 26. The fallback is `xattr -dr com.apple.quarantine "/Applications/Zero Knowledge Migration App.app"` on the installed app, with the path quoted because the bundle name has spaces. The doc does not use the right-click → Open shortcut and has no per-version procedures. It includes a short section matching each message to its fix: "Apple could not verify … is free of malware" or "unidentified developer" means use Open Anyway, and "… is damaged and can't be opened" means use the xattr command. That section also explains why the messages appear: the app is ad-hoc signed and not signed with a Developer ID or notarized. The "damaged" guidance stays in even though it may never be needed, because an ad-hoc signature can still trigger it. The manual launch test after the milestone confirms which messages actually appear.
 
+### Screenshot and doc links
+
+`docs/macOS.md` is text-only. It has no screenshot and no image reference (no `docs/macos.png`), and no existing doc (the root `README.md`, `flutter/README.md` or the other platform guides) is changed to link to it. The guide is therefore complete within the build, sign and dmg dry-run scope and does not depend on launching a Release build. A screenshot can be added after the manual launch test that follows the milestone. Like `docs/Linux.md` and `docs/Windows.md`, the macOS guide has no inbound links.
+
 ## Out of Scope
 
