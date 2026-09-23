@@ -40,6 +40,11 @@ VOLUME_NAME="$APP_NAME"
 # trap below deletes it, so a failed or interrupted run leaves no staging tree behind.
 STAGING_DIR=""
 
+# Temporary mount point of the read-only test mount of the finished dmg; the exit trap
+# detaches the image and removes the directory, so a failed check leaves no mount behind.
+MOUNT_POINT=""
+MOUNTED=0
+
 usage() {
   cat <<EOF
 Usage: scripts/$SCRIPT_NAME [-h|--help]
@@ -73,6 +78,17 @@ Steps (always run in this order; there are no skip or clean/incremental flags):
   7. Print the dmg's SHA-256 and write it to dist/$DMG_STEM-<version>.dmg.sha256
      in 'shasum -a 256' format (hash, two spaces, bare file name); attach this sidecar to
      the GitHub release together with the dmg.
+  8. Verify the result (any failure stops the script with a non-zero exit):
+       - codesign --verify --deep --strict --verbose=2 on the built app;
+       - the app's entitlements (codesign -d --entitlements -) must equal the set in
+         flutter/macos/Runner/Release.entitlements;
+       - hdiutil verify on the dmg;
+       - a read-only, no-browse test mount of the dmg (detached on exit) must contain
+         $APP_NAME.app and the /Applications symlink, and the mounted
+         app copy must pass codesign --verify;
+       - lastly spctl --assess --type execute, whose rejection of the ad-hoc signature is
+         expected and printed as information only (it never changes the exit status).
+     If a check fails, do not publish the dmg or its sidecar.
 
 Prerequisites (checked before anything is built; a missing one stops the script with an
 install hint -- the script never installs or changes your toolchain itself):
@@ -99,9 +115,29 @@ error() { printf 'ERROR: %s\n' "$*" >&2; }
 die() { error "$*"; exit 1; }
 
 cleanup() {
+  detach_test_mount
   if [ -n "$STAGING_DIR" ] && [ -d "$STAGING_DIR" ]; then
     rm -rf "$STAGING_DIR"
   fi
+}
+
+# Detach the test mount (if any) and remove its now-empty mount point. Never rm -rf the
+# mount point: if the detach failed, it still holds the mounted volume.
+detach_test_mount() {
+  if [ "$MOUNTED" -eq 1 ]; then
+    if hdiutil detach "$MOUNT_POINT" -quiet >/dev/null 2>&1 \
+      || hdiutil detach "$MOUNT_POINT" -force -quiet >/dev/null 2>&1; then
+      MOUNTED=0
+    else
+      warn "could not detach the test mount at $MOUNT_POINT; detach it with:" \
+        "hdiutil detach -force \"$MOUNT_POINT\""
+      return 0
+    fi
+  fi
+  if [ -n "$MOUNT_POINT" ] && [ -d "$MOUNT_POINT" ]; then
+    rmdir "$MOUNT_POINT" 2>/dev/null || true
+  fi
+  MOUNT_POINT=""
 }
 trap cleanup EXIT
 # Turn Ctrl-C and termination into a normal exit so the EXIT trap still cleans up.
@@ -361,6 +397,105 @@ write_checksum() {
 }
 
 # ---------------------------------------------------------------------------------------
+# Verify the signature and the dmg (any failure stops the script with a non-zero exit)
+# ---------------------------------------------------------------------------------------
+
+# $1 = what failed. Points the maintainer away from publishing a broken artifact.
+verify_failed() {
+  die "verification failed: $*; do not publish ${DMG_PATH#"$REPO_ROOT"/} or its .sha256"
+}
+
+# codesign --verify --deep --strict on the given app bundle ($1), labelled $2.
+verify_signature() {
+  info "Verifying the signature of $2"
+  codesign --verify --deep --strict --verbose=2 "$1" \
+    || verify_failed "codesign --verify rejected $2"
+}
+
+# The signed app's entitlements must be exactly the set in Release.entitlements (the single
+# source of truth), which catches entitlements silently dropped by the re-sign. Both sides
+# are normalised with plutil (sorted keys, canonical XML) before they are compared.
+verify_entitlements() {
+  info "Comparing the app's entitlements with ${ENTITLEMENTS#"$REPO_ROOT"/}"
+  have plutil || verify_failed "plutil not found on PATH (it ships with macOS in /usr/bin)"
+  local expected actual raw
+  expected="$(plutil -convert xml1 -o - "$ENTITLEMENTS")" \
+    || verify_failed "could not read ${ENTITLEMENTS#"$REPO_ROOT"/}"
+  raw="$(codesign -d --entitlements - --xml "$APP_PATH" 2>/dev/null)" \
+    || verify_failed "codesign -d --entitlements - failed on the built app"
+  if [ -z "$raw" ]; then
+    error "the signed app has no entitlements; expected:"
+    plutil -p "$ENTITLEMENTS" >&2 || true
+    verify_failed "the app's entitlements do not match ${ENTITLEMENTS#"$REPO_ROOT"/}"
+  fi
+  actual="$(printf '%s' "$raw" | plutil -convert xml1 -o - -)" \
+    || verify_failed "could not parse the app's entitlements"
+  if [ "$actual" != "$expected" ]; then
+    error "the app's entitlements differ from ${ENTITLEMENTS#"$REPO_ROOT"/}" \
+      "(< expected, > signed app):"
+    diff <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") >&2 || true
+    verify_failed "the app's entitlements do not match ${ENTITLEMENTS#"$REPO_ROOT"/}"
+  fi
+  info "Entitlements match:"
+  plutil -p "$ENTITLEMENTS"
+}
+
+verify_dmg_image() {
+  info "Verifying ${DMG_PATH#"$REPO_ROOT"/} with hdiutil verify"
+  hdiutil verify "$DMG_PATH" || verify_failed "hdiutil verify rejected ${DMG_PATH#"$REPO_ROOT"/}"
+}
+
+# Mount the dmg read-only and hidden from Finder at a private mount point, check that it
+# holds the app and the /Applications symlink, and re-verify the mounted app's signature.
+# The exit trap detaches the image if anything below fails.
+verify_dmg_contents() {
+  MOUNT_POINT="$(mktemp -d -t build-macos-mount)" || die "could not create a test mount point"
+  info "Test-mounting ${DMG_PATH#"$REPO_ROOT"/} read-only at $MOUNT_POINT"
+  hdiutil attach -readonly -nobrowse -noautoopen -mountpoint "$MOUNT_POINT" "$DMG_PATH" \
+    >/dev/null || verify_failed "hdiutil attach could not mount ${DMG_PATH#"$REPO_ROOT"/}"
+  MOUNTED=1
+
+  local mounted_app="$MOUNT_POINT/$APP_NAME.app" link="$MOUNT_POINT/Applications"
+  [ -d "$mounted_app" ] || verify_failed "the dmg does not contain $APP_NAME.app"
+  if [ ! -L "$link" ] || [ "$(readlink "$link")" != "/Applications" ]; then
+    verify_failed "the dmg does not contain an Applications symlink to /Applications"
+  fi
+  info "The dmg contains $APP_NAME.app and the Applications -> /Applications symlink"
+  verify_signature "$mounted_app" "the app copy inside the dmg"
+
+  detach_test_mount
+  info "Detached the test mount"
+}
+
+# Gatekeeper assessment, for information only: an ad-hoc signed app that is not notarized is
+# expected to be rejected, so the result never changes the exit status.
+assess_gatekeeper() {
+  info "Gatekeeper assessment (information only; rejection is expected for an ad-hoc signature):"
+  if ! have spctl; then
+    info "spctl not found on PATH; skipping the Gatekeeper assessment"
+    return 0
+  fi
+  local status=0
+  spctl --assess --type execute --verbose=2 "$APP_PATH" 2>&1 || status=$?
+  if [ "$status" -eq 0 ]; then
+    info "spctl accepted the app"
+  else
+    info "spctl rejected the app (exit $status), as expected for an ad-hoc signed," \
+      "non-notarized app (users get past Gatekeeper with Open Anyway)"
+  fi
+  return 0
+}
+
+verify_all() {
+  verify_signature "$APP_PATH" "${APP_PATH#"$REPO_ROOT"/}"
+  verify_entitlements
+  verify_dmg_image
+  verify_dmg_contents
+  info "All signature and dmg checks passed"
+  assess_gatekeeper
+}
+
+# ---------------------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------------------
 info "Repo root: $REPO_ROOT"
@@ -380,3 +515,4 @@ build_app
 sign_app
 create_dmg
 write_checksum
+verify_all

@@ -52,3 +52,22 @@ Extend `scripts/build-macos.sh` to ad-hoc re-sign the built app with `codesign -
 - `--help` lists the new steps 5 to 7 (ad-hoc re-sign with the Release entitlements, staging plus `hdiutil` dmg with the volume name and file name and silent overwrite, SHA-256 print plus sidecar), and the script passes `bash -n` under Homebrew bash and `/bin/bash` 3.2.
 
 ---
+
+## Add Post-Build Signature and DMG Verification
+
+Extend `scripts/build-macos.sh` with a final layered check stage in which any failure stops it with a non-zero exit: `codesign --verify --deep --strict --verbose=2` on the built app, a comparison of the `codesign -d --entitlements -` output against the expected set in `flutter/macos/Runner/Release.entitlements`, `hdiutil verify` on the finished dmg, a read-only, no-browse test mount (`hdiutil attach -readonly -nobrowse`, detached by a trap) that confirms the `.app` and the `/Applications` symlink are present and re-runs `codesign --verify` on the mounted copy, and lastly `spctl --assess --type execute`, whose expected rejection of the ad-hoc signature is printed as information only and never changes the exit status. No bundle-content assertions (`lipo` architecture, `CFBundleIdentifier`, `CFBundleShortVersionString`) are added. Verified by a full script run passing, and by a deliberate tamper (for example re-signing the app without entitlements, or appending a byte to the dmg) making the script exit non-zero.
+
+**Verified:**
+
+- `scripts/build-macos.sh` ends with a final verification stage (`verify_all`, run after `write_checksum`) whose checks run in order and each stop the script with a non-zero exit (`ERROR: verification failed: ...; do not publish dist/<dmg> or its .sha256`, exit 1) on failure.
+- It runs `codesign --verify --deep --strict --verbose=2` on the built Release app; an app whose sealed resource was modified after signing is rejected (`a sealed resource is missing or invalid`, exit 1).
+- It compares the `codesign -d --entitlements - --xml` output of the built app with `flutter/macos/Runner/Release.entitlements`, both normalised by `plutil -convert xml1` (sorted keys); an app re-signed without entitlements (`the signed app has no entitlements`) and one signed with an extra `network.server` entitlement (diff shown) both exit 1.
+- It runs `hdiutil verify` on the finished dmg; a dmg with one byte appended is rejected (`image not recognized`, exit 1).
+- It test-mounts the dmg with `hdiutil attach -readonly -nobrowse -noautoopen -mountpoint <mktemp -d dir>`, checks that `Zero Knowledge Migration App.app` and an `Applications` symlink whose `readlink` is `/Applications` are present, and re-runs `codesign --verify --deep --strict --verbose=2` on the mounted copy; a dmg without the symlink and a dmg holding a tampered app copy each exit 1. The EXIT trap detaches the image (falling back to `-force`) and removes the mount point: after the passing and all failing runs, `hdiutil info` lists no attached image and no `$TMPDIR/build-macos-*` directory survives.
+- `spctl --assess --type execute --verbose=2` runs last on the built app; its rejection (`rejected`, exit 3) is printed as information only and the script still exits 0 (a missing `spctl` is also only reported).
+- No bundle-content assertions were added: the script contains no `lipo`, `CFBundleIdentifier` or `CFBundleShortVersionString` check.
+- A full real run of `scripts/build-macos.sh` (mopro build, flutter build, sign, dmg, checksum, verification) exits 0, printing only the expected 0.5.0/0.5.1 version-mismatch, git-state and bindings-changed warnings, `All signature and dmg checks passed`, and the informational spctl rejection.
+- Deliberate tampers through the full script make it exit non-zero: re-signing the app without `--entitlements` (stub `codesign` on PATH) exits 1 at the entitlements comparison, and appending a byte to the dmg after `hdiutil create` (stub `hdiutil` on PATH) exits 1 at `hdiutil verify`.
+- `--help` documents the new step 8 (the checks in order, the informational spctl result and not publishing on failure), and the script passes `bash -n` under Homebrew bash and `/bin/bash` 3.2.
+
+---
