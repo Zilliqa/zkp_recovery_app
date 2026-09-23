@@ -1,6 +1,21 @@
 <open-questions>
   <open-question id="Script location and name">
     <question>Where should the macOS build script live, and what should it be called? The repo has no scripts/ directory or app build script yet. Options include a repo-root scripts/build-macos.sh, a script inside flutter/, or something else.</question>
+    <alternative id="Repo-root scripts/build-macos.sh">
+      Create a new top-level `scripts/` directory and put the script there as `scripts/build-macos.sh`. It resolves the repo root from its own location, then runs `mopro build` at the root and `flutter build macos` inside `flutter/`.
+      <advantage>This starts a repo-level convention in a repo that has none yet. A future `scripts/build-linux.sh` or a Windows/WSL script fits beside it with matching names. The script also sits at the level where its first step (`mopro build`, driven by the root `Config.toml`) runs and where the three version files it compares (`Cargo.toml`, `flutter/pubspec.yaml`, `mopro_flutter_bindings/rust/Cargo.toml`) are equally reachable.</advantage>
+      <drawback>It adds a new top-level directory holding a single file. The generic &quot;build&quot; name also hides the fact that the script signs and packages a dmg as well as building. That may be a problem next to future scripts, unless those scripts follow the same build-plus-package pattern.</drawback>
+    </alternative>
+    <alternative id="Script inside flutter/">
+      Put the script in the Flutter project, as `flutter/build-macos.sh` or `flutter/scripts/build-macos.sh`, so it lives next to `flutter/macos/` and the `flutter build` it runs.
+      <advantage>It sits beside the app it packages, where `Release.entitlements`, `AppInfo.xcconfig` and `flutter/build/macos/Build/Products/Release` are. It also matches the &quot;Build from Source&quot; section of `docs/Linux.md`, which already tells people to `cd flutter` before building.</advantage>
+      <drawback>The script&apos;s first step, `mopro build`, has to run from the repo root and regenerates the `mopro_flutter_bindings/` bindings, and it checks `Cargo.toml` versions outside `flutter/`. So a script inside `flutter/` has to climb out of its own directory for its main work, which makes it look narrower than it is. It also places a repo-wide release tool inside a subproject whose `build/` directory is git-ignored and removed by `flutter clean`, which makes a misplaced path an easy mistake.</drawback>
+    </alternative>
+    <alternative id="Top-level file at repo root">
+      Put the script directly in the repo root, next to `Cargo.toml` and `Config.toml`, with a name that says what it produces, e.g. `build-macos-dmg.sh` or `release-macos.sh`.
+      <advantage>It is the easiest place to find: it shows up with `ls` next to the README, it needs no new directory, and it follows the pattern the repo already has of a runnable `.sh` at the top level of the tree it works on (e.g. `groth16-prover-min/build-circuit.sh`, `claim-relayer/e2e-anvil/run.sh`). A name like `build-macos-dmg.sh` also states the output clearly.</advantage>
+      <drawback>It clutters a root that already holds the mopro crate files (`build.rs`, `Config.toml`, `Cargo.toml`), where a stray shell script can look like part of the Rust/mopro build. It also sets no pattern for more platform scripts, so a later Linux or Windows packaging script would either pile up at the root or force a move to `scripts/`.</drawback>
+    </alternative>
   </open-question>
   <open-question id="DMG output location">
     <question>Where should the script write the final .dmg and its intermediate staging files? For example, a git-ignored dist/ directory at the repo root, or somewhere under flutter/build/. Should an existing output be overwritten or should the script refuse?</question>
