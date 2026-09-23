@@ -38,5 +38,9 @@ The machine runs macOS 26.6.2 on arm64, with Xcode 27.0, Flutter 3.47.2 (stable,
 
 ## Decisions
 
+### Build script location and name
+
+The macOS build script lives at `scripts/build-macos.sh`, in a new top-level `scripts/` directory. It resolves the repo root from its own location, runs `mopro build` at the root and `flutter build macos` inside `flutter/`, and reads the three version files from there. The `scripts/` directory is the repo-level home for platform packaging scripts, so any future Linux or Windows packaging scripts follow the same `scripts/build-<platform>.sh` pattern.
+
 ## Out of Scope
 
