@@ -78,5 +78,9 @@ The script prints the dmg's SHA-256 and also writes a `<dmg>.sha256` sidecar nex
 
 `docs/macOS.md` is text-only. It has no screenshot and no image reference (no `docs/macos.png`), and no existing doc (the root `README.md`, `flutter/README.md` or the other platform guides) is changed to link to it. The guide is therefore complete within the build, sign and dmg dry-run scope and does not depend on launching a Release build. A screenshot can be added after the manual launch test that follows the milestone. Like `docs/Linux.md` and `docs/Windows.md`, the macOS guide has no inbound links.
 
+### Prerequisite checks scope
+
+Before building anything, the script checks its prerequisites. Missing tools stop the build, and git state only produces a warning. Each missing tool that has no workaround stops the script with an install hint: an arm64 macOS host (`uname -s`/`uname -m`), the Xcode command-line tools (`xcode-select -p`), `flutter`, CocoaPods `pod`, `cargo`/`rustup` with `aarch64-apple-darwin` listed by `rustup target list --installed`, `hdiutil`/`codesign`/`shasum`, and `mopro`. The `mopro` check always fails the build when `mopro` is missing, because `mopro build` always runs, and its hint is `cargo install mopro-cli`. This way toolchain gaps show up in the first seconds, not deep inside `mopro build`, `flutter build macos` or cargokit. The script warns and carries on if the working tree is dirty or if HEAD is not a release tag or a `release/*` branch. That lets the milestone's dry run pass on the feature branch, and it follows the same warn-without-stopping pattern as the version-mismatch check. Nothing enforces a committed, tagged state for a published dmg, so building releases from a clean tag depends on the maintainer's discipline.
+
 ## Out of Scope
 
