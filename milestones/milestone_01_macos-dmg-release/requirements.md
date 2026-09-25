@@ -1,0 +1,94 @@
+# Milestone 1: macOS DMG Release
+
+## Goal
+
+Add a developer-machine build script that turns the Flutter app into a distributable Apple Silicon (arm64) macOS app. It checks the prerequisites, runs `mopro build` and `flutter build macos`, ad-hoc signs the app (`codesign --force --deep -s -`, no Developer ID), and packages it as a plain `hdiutil` `.dmg` with an `/Applications` shortcut. The dmg's file name includes the version, and the script prints its SHA-256. It checks the signature and dmg, and it warns (without stopping) if the versions in `Cargo.toml`, `pubspec.yaml` and the bindings disagree. Alongside the script, document how a maintainer uses it and add a user guide, `docs/macOS.md`, in the style of `docs/Linux.md`: download, check the checksum, install from the dmg, and get past Gatekeeper for an unsigned app. The milestone is done when a dry run of build → sign → create dmg succeeds on the developer machine, with any problems it finds fixed. Launch and the in-app flow will be tested manually afterwards.
+
+Out of scope: Intel/universal builds, Developer ID signing and notarization, a styled dmg (create-dmg), automated launch or end-to-end testing, and fixing the current 0.5.0/v0.5.1 version mismatch.
+
+## Relevant starting state
+
+### Existing build and release tooling
+
+The repo has no app build or packaging script for any platform. Releases so far have been built by hand on a developer machine. `docs/Linux.md` describes a release `.tar.gz` named `zkp-migration-app-linux-amd64.tar.gz`, whose checksum users compare against the one listed on the GitHub releases page. There is no `.github/workflows` directory. The only existing shell scripts are in `groth16-prover-min/`, `plonk-*`, `groth16-cli-ceremony/`, `claim-relayer/e2e-anvil/` and cargokit's `build_pod.sh`, so there is no repo-level `scripts/` convention yet.
+
+### Rust bindings and how they get built on macOS
+
+`mopro build` (driven by the root `Config.toml`: release mode, `circom` adapter, `flutter` platform) regenerates the Dart bindings in `mopro_flutter_bindings/lib/src/rust/`, which are committed to git. The native Rust library is compiled during `flutter build macos` by the `mopro_flutter_bindings` pod's "Build Rust library" script phase, which runs `cargokit/build_pod.sh ../rust mopro_flutter_bindings` and force-loads `libmopro_flutter_bindings.a`. `build.rs` transpiles `test-vectors/circom/groth.wasm`, which is committed. `test-vectors/circom/groth_final.zkey` is absent; only `cargo test` needs it, not the build. The app downloads its zkey at runtime.
+
+### Versions
+
+The root `Cargo.toml` is at `0.5.1`, and so is the `zkp_recovery_app` dependency version in `mopro_flutter_bindings/rust/Cargo.toml`. `flutter/pubspec.yaml` is at `version: 0.5.0`, even though the latest tag is `v0.5.1`. `mopro_flutter_bindings/pubspec.yaml` has its own unrelated `0.0.1`. The macOS `Info.plist` takes `CFBundleShortVersionString` and `CFBundleVersion` from `FLUTTER_BUILD_NAME`/`FLUTTER_BUILD_NUMBER`, which means from the pubspec.
+
+### macOS Flutter project (`flutter/macos/`)
+
+`AppInfo.xcconfig` sets `PRODUCT_NAME = Zero Knowledge Migration App` and `PRODUCT_BUNDLE_IDENTIFIER = com.zilliqa.zkpRecoveryApp`, so the bundle is `Zero Knowledge Migration App.app` (the name has spaces). The deployment target is macOS 12.0 in both the Podfile and the Xcode project. Xcode signing is already `CODE_SIGN_IDENTITY = "-"` (ad-hoc), with no `DEVELOPMENT_TEAM` and no hardened-runtime setting. `Release.entitlements` turns on `app-sandbox` and `network.client`. `DebugProfile.entitlements` also adds `allow-jit` and `network.server`. Re-signing with `codesign --force --deep -s -` without `--entitlements` would drop these entitlements. Only a `Debug` build exists under `flutter/build/macos/Build/Products/`, so a Release macOS build has not been produced on this machine yet.
+
+### Runtime behaviour relevant to a sandboxed release
+
+A release build (`!kDebugMode`) uses `domain` `32769` (zq2 mainnet); see `flutter/lib/services/proof_service.dart:116`. `DownloadService` stores the ~358 MB proving key in `getApplicationSupportDirectory()`. Under the sandbox, that directory is inside `~/Library/Containers/com.zilliqa.zkpRecoveryApp/`. The download uses `package:http` over HTTPS to GCS, which is covered by `network.client`.
+
+### Developer machine toolchain (as found)
+
+The machine runs macOS 26.6.2 on arm64, with Xcode 27.0, Flutter 3.47.2 (stable, Homebrew), CocoaPods (Homebrew), and rustup/cargo with the `aarch64-apple-darwin` target installed. `hdiutil`, `codesign` and `shasum` are system tools. `mopro` (the mopro-cli) is **not** installed or on `PATH`, so the `mopro build` step needs `cargo install mopro-cli` before the dry run.
+
+### User documentation
+
+`docs/Linux.md` and `docs/Windows.md` each have a screenshot (`docs/linux.png`, `docs/windows.png`). The Linux guide is structured as: download from GitHub releases only → check the SHA-256 → unpack and run → "(Alternative): Build from Source". There is no `docs/macOS.md`, and no macOS screenshot. The root `README.md` is the stock mopro template and does not link to the platform guides.
+
+## Decisions
+
+### Build script location and name
+
+The macOS build script lives at `scripts/build-macos.sh`, in a new top-level `scripts/` directory. It resolves the repo root from its own location, runs `mopro build` at the root and `flutter build macos` inside `flutter/`, and reads the three version files from there. The `scripts/` directory is the repo-level home for platform packaging scripts, so any future Linux or Windows packaging scripts follow the same `scripts/build-<platform>.sh` pattern.
+
+### DMG output location
+
+The script writes the finished `.dmg` to a new `dist/` directory at the repo root, and a `dist/` entry is added to the root `.gitignore`, because nothing ignores it today. Keeping it there separates the release artifact from build state, so `flutter clean` or wiping `flutter/build/` never deletes it. The dmg staging folder (the `.app` copy and the `/Applications` symlink) is built in a `mktemp -d` directory that an exit `trap` deletes, so a failed run leaves no staging tree behind. An existing dmg with the same name is silently overwritten, so the build, sign and dmg dry run can be repeated until it passes. Releases are built from a tag, which guards against a rebuilt dmg replacing one whose checksum was already published.
+
+### Version source for naming
+
+`flutter/pubspec.yaml` is the authoritative version. The script reads its `version:` (without any `+build` suffix) and uses it in the dmg file name. It runs `flutter build macos` with no `--build-name` override, so the bundle's `CFBundleShortVersionString` comes from the pubspec through `FLUTTER_BUILD_NAME`, and the file name and bundle version always match. If the root `Cargo.toml` version or the `zkp_recovery_app` dependency version in `mopro_flutter_bindings/rust/Cargo.toml` differs from the pubspec, the script prints a warning naming each file and value and carries on. As long as the 0.5.0/0.5.1 mismatch stays unfixed (it is out of scope here), a build from the current tree is named and versioned 0.5.0. A maintainer must bump the pubspec before building a release.
+
+### Artifact and volume naming
+
+The dmg file is named `zkp-migration-app-macos-arm64-<version>.dmg`. It follows the Linux `zkp-migration-app-linux-amd64.tar.gz` stem with the macOS platform and arch, and puts the pubspec version last. The name is lowercase, hyphenated and has no spaces, so the `shasum -a 256` step in `docs/macOS.md` and the script need no quoting. The mounted volume is named after the bundle's product name, `Zero Knowledge Migration App`, with no version, to match the `.app` users drag to `/Applications`. Any script or doc step that refers to the mounted volume uses `/Volumes/Zero Knowledge Migration App`, quoted. Renaming the unversioned Linux artifact is not part of this milestone.
+
+### Entitlements when re-signing
+
+The script keeps the goal's ad-hoc re-sign step (`codesign --force --deep -s -`) and passes the entitlements explicitly with `--entitlements flutter/macos/Runner/Release.entitlements`. The shipped app stays sandboxed with `app-sandbox` and `network.client`, the same configuration Xcode applies to the Release build, so the app that handles mnemonics stays isolated. `Release.entitlements` in git remains the single source of truth for the app's entitlements, and the script never drops them or substitutes its own. The zkey therefore keeps its home under `~/Library/Containers/com.zilliqa.zkpRecoveryApp/`, and the sandboxed Release behaviour (zkey download and file access) has to be confirmed at runtime during the manual testing.
+
+### mopro build handling
+
+The script always runs `mopro build` at the repo root before `flutter build macos`. There is no skip or opt-in flag, so there is a single build path and every dmg ships with Dart bindings freshly regenerated from the current Rust API and circuit. If `mopro` is not on `PATH`, the script stops immediately and prints the install command (`cargo install mopro-cli`). It never installs or changes the maintainer's toolchain itself. After the step, if the committed bindings under `mopro_flutter_bindings/lib/src/rust/` changed, the script reports it with a `git status`/`git diff --stat` notice. Because mopro-cli is not installed on the developer machine today, it has to be installed by hand before the dry run. Repeated dry runs stay cheap because cargo's `target/` cache makes later `mopro build` runs incremental.
+
+### Clean build policy
+
+The script never runs a full `flutter clean`. On every run, before `flutter build macos`, it deletes only the outputs that decide what gets shipped: the Release `.app` under `flutter/build/macos/Build/Products/Release/` (together with the `mktemp -d` staging directory, which the exit `trap` already removes). This guarantees that the bundle signed and packaged into the dmg is always freshly produced by that run's `flutter build macos`, so a stale or leftover app bundle can never ship. There is one code path with no clean/incremental flag. The Xcode, CocoaPods and cargokit compile caches under `flutter/build/` are kept, so repeated dry runs skip the full Rust recompile, and invalidating those caches is left to Flutter, Xcode and cargokit dependency tracking. A dmg is therefore not guaranteed to match a from-scratch build if that dependency tracking misses a change, or if the toolchain or pods change between runs.
+
+### Checksum publication format
+
+The script prints the dmg's SHA-256 and also writes a `<dmg>.sha256` sidecar next to the dmg in `dist/`. The sidecar uses the standard `shasum -a 256` output format (`<hash>  <filename>`), with the bare file name and no directory. The maintainer attaches the sidecar to the GitHub release, so the published hash comes straight from the build and nobody copies it by hand. `docs/macOS.md` tells users to run `shasum -a 256 <dmg>` and compare the output by eye with the published hash (from the release page or the `.sha256` asset). This keeps it parallel to the compare-by-eye step in `docs/Linux.md`, and the doc does not use `shasum -c`, which fails when a browser renames the download. The sidecar only guards against transport errors, not against tampering at the release source.
+
+### Gatekeeper bypass instructions
+
+`docs/macOS.md` documents two ways past Gatekeeper, leading with the GUI one. The main path is Open Anyway: launch the app once, then go to System Settings → Privacy & Security (System Preferences → Security & Privacy on macOS 12) and click "Open Anyway". This is the route Apple supports on every macOS version the app targets, 12 through 26. The fallback is `xattr -dr com.apple.quarantine "/Applications/Zero Knowledge Migration App.app"` on the installed app, with the path quoted because the bundle name has spaces. The doc does not use the right-click → Open shortcut and has no per-version procedures. It includes a short section matching each message to its fix: "Apple could not verify … is free of malware" or "unidentified developer" means use Open Anyway, and "… is damaged and can't be opened" means use the xattr command. That section also explains why the messages appear: the app is ad-hoc signed and not signed with a Developer ID or notarized. The "damaged" guidance stays in even though it may never be needed, because an ad-hoc signature can still trigger it. The manual launch test after the milestone confirms which messages actually appear.
+
+### Screenshot and doc links
+
+`docs/macOS.md` is text-only. It has no screenshot and no image reference (no `docs/macos.png`), and no existing doc (the root `README.md`, `flutter/README.md` or the other platform guides) is changed to link to it. The guide is therefore complete within the build, sign and dmg dry-run scope and does not depend on launching a Release build. A screenshot can be added after the manual launch test that follows the milestone. Like `docs/Linux.md` and `docs/Windows.md`, the macOS guide has no inbound links.
+
+### Prerequisite checks scope
+
+Before building anything, the script checks its prerequisites. Missing tools stop the build, and git state only produces a warning. Each missing tool that has no workaround stops the script with an install hint: an arm64 macOS host (`uname -s`/`uname -m`), the Xcode command-line tools (`xcode-select -p`), `flutter`, CocoaPods `pod`, `cargo`/`rustup` with `aarch64-apple-darwin` listed by `rustup target list --installed`, `hdiutil`/`codesign`/`shasum`, and `mopro`. The `mopro` check always fails the build when `mopro` is missing, because `mopro build` always runs, and its hint is `cargo install mopro-cli`. This way toolchain gaps show up in the first seconds, not deep inside `mopro build`, `flutter build macos` or cargokit. The script warns and carries on if the working tree is dirty or if HEAD is not a release tag or a `release/*` branch. That lets the milestone's dry run pass on the feature branch, and it follows the same warn-without-stopping pattern as the version-mismatch check. Nothing enforces a committed, tagged state for a published dmg, so building releases from a clean tag depends on the maintainer's discipline.
+
+### Verification checks and outcomes
+
+After building, the script runs a layered set of checks, and any failure stops it with a non-zero exit. It runs `codesign --verify --deep --strict --verbose=2` on the built app. It compares the output of `codesign -d --entitlements -` against the expected set in `flutter/macos/Runner/Release.entitlements`, which catches entitlements silently dropped by the re-sign. It runs `hdiutil verify` on the finished dmg. It then does a read-only, no-browse test mount (`hdiutil attach -readonly -nobrowse`), confirms the `.app` and the `/Applications` symlink are present, and re-runs `codesign --verify` on the mounted copy, with a trap that detaches the image. `spctl --assess --type execute` runs last. Its expected rejection of the ad-hoc signature is printed as information only and never changes the exit status. Success of the dry run therefore means the whole build, sign and dmg chain passed these checks. The script makes no bundle-content assertions (architecture via `lipo`, `CFBundleIdentifier`, or `CFBundleShortVersionString`), which would overlap the version-mismatch warning. The entitlement check is tied to `Release.entitlements` as the single source of truth, and a mount left behind by an interrupted run can make later runs fail.
+
+### Maintainer doc location
+
+Maintainer instructions live in two places, following the `docs/Linux.md` precedent. `scripts/build-macos.sh` has a `--help`/usage block that lists its (few) flags and its prerequisites, so a maintainer at the terminal has a built-in reference. `docs/macOS.md` ends with an "(Alternative): Build from Source / Release" section, as `docs/Linux.md` does. It walks through cloning the repo, installing the toolchain (including `cargo install mopro-cli`), running the script, and publishing the dmg with its `.sha256` sidecar on the GitHub release. No separate maintainer document is added. Because the script has almost no flags, the overlap between the usage text and the doc section stays small, but both must be updated together whenever flags or prerequisites change. The user guide therefore carries this maintainer section after its end-user download, checksum, install and Gatekeeper steps.
+
+## Out of Scope
+
