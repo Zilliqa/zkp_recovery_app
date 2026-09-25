@@ -91,8 +91,8 @@ Once computed, you get everything you need to actually complete the migration:
 1. **Send your wallet's ZIL balance** to the Escrow Contract's legacy (`zil1...`) address shown on screen, from your legacy Schnorr wallet.
 2. Copy the **zero-knowledge proof calldata** shown (a long hex string) — this is what proves your ownership and claims your funds to your designated EVM account.
 3. Submit that calldata one of two ways:
-   - **Automatically:** if your wallet lets you send a transaction with raw hex data (MetaMask, Rabby, Brave Wallet, and most desktop browser-extension wallets do — look for **Hex Data** under "Advanced details" on the send/confirm screen, sometimes labeled "Data" or "Input Data"), send a 0-value transaction to the **Escrow Contract address** shown (the `0x...` address on screen) with the calldata pasted into that field.
-   - **Manually:** if you'd rather not do that yourself, copy the calldata and submit it via the **Google Form link** shown on screen for manual processing.
+   - **Submit it yourself (instant, small gas fee):** if your wallet lets you send a transaction with raw hex data (MetaMask, Rabby, Brave Wallet, and most desktop browser-extension wallets do — look for **Hex Data** under "Advanced details" on the send/confirm screen, sometimes labeled "Data" or "Input Data"), send a 0-value transaction to the **Escrow Contract address** shown (the `0x...` address on screen) with the calldata pasted into that field. This needs a small amount of ZIL in that EVM wallet to cover gas (typically well under 2 ZIL). Your funds are released as soon as your transaction confirms.
+   - **Let us submit it for you (free, no ZIL needed):** don't have any ZIL to cover gas, or just don't want to deal with it? Copy the calldata and submit it via the **Google Form link** shown on screen instead — it's free, and completely safe: the calldata only contains your zero-knowledge proof, it never includes your private key, seed phrase, or any other sensitive information. We'll process it for you within 24 hours.
 4. For added safety, the app suggests you may remove the Migration App and restart your device after submitting your proof.
 
 ---
