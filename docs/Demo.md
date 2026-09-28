@@ -1,6 +1,6 @@
 # Demo Walkthrough — Using the Migration App
 
-This page walks through the Migration App screen by screen, using real screenshots from a live run (v0.5.1), so you know exactly what to expect before you start.
+This page walks through the Migration App screen by screen, using real screenshots from a live run (v0.6.0), so you know exactly what to expect before you start.
 
 For platform-specific installation steps, see **[Linux.md](./Linux.md)** and **[Windows.md](./Windows.md)**. More docs are in this same [`docs/`](./) folder.
 
@@ -10,7 +10,7 @@ For platform-specific installation steps, see **[Linux.md](./Linux.md)** and **[
 
 Get the latest release from:
 
-**https://github.com/Zilliqa/zkp_recovery_app/releases/tag/v0.5.1**
+**https://github.com/Zilliqa/zkp_recovery_app/releases/tag/v0.6.0**
 
 There's a single download for both Linux and Windows users — `zkp-migration-app-linux-amd64.tar.gz`. There is no separate Windows build; see the note below.
 
