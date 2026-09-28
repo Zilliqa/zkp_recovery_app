@@ -91,7 +91,7 @@ class _DownloadListTile extends StatelessWidget {
       case DownloadState.downloaded:
         return 'Ready';
       case DownloadState.error:
-        return 'Error: ${progress.errorMessage ?? 'unknown'} - tap to retry';
+        return 'Error: ${progress.errorMessage ?? 'unknown'}';
     }
   }
 
