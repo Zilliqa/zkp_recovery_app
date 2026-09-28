@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:hashlib/hashlib.dart';
-import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:zkp_recovery_app/models/download_status.dart';
 
@@ -28,30 +27,6 @@ class DownloadService {
 
   File _metaFileFor(Directory dir, String fileName) =>
       File('${dir.path}/$fileName.meta.json');
-
-  Future<Map<String, String>?> _readMeta(Directory dir, String fileName) async {
-    final metaFile = _metaFileFor(dir, fileName);
-    if (!await metaFile.exists()) return null;
-    try {
-      final raw = await metaFile.readAsString();
-      final decoded = jsonDecode(raw) as Map<String, dynamic>;
-      return decoded.map((k, v) => MapEntry(k, v.toString()));
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _writeMeta(
-    Directory dir,
-    String fileName, {
-    String? etag,
-    String? lastModified,
-  }) async {
-    final metaFile = _metaFileFor(dir, fileName);
-    await metaFile.writeAsString(
-      jsonEncode({'etag': etag, 'lastModified': lastModified}),
-    );
-  }
 
   Future<String> _computeSha256Hex(
     File file,
@@ -105,84 +80,36 @@ class DownloadService {
     const spec = ProvingArtifacts.artifact;
     final dir = await getCacheDir();
     final file = _fileFor(dir, spec.fileName);
-    final meta = await _readMeta(dir, spec.fileName);
     final hasLocalCopy = (await file.exists()) && (await file.length() > 0);
 
     onProgress(FileDownloadProgress(state: DownloadState.downloading));
 
     try {
-      final client = http.Client();
-      final request = http.Request('GET', Uri.parse(spec.url));
-
-      if (hasLocalCopy && meta != null) {
-        final etag = meta['etag'];
-        final lastModified = meta['lastModified'];
-        if (etag != null) request.headers['If-None-Match'] = etag;
-        if (lastModified != null) {
-          request.headers['If-Modified-Since'] = lastModified;
-        }
-      }
-
-      final streamedResponse = await client.send(request);
-
-      if (streamedResponse.statusCode == 304) {
-        await streamedResponse.stream.drain();
-        client.close();
-
+      if (hasLocalCopy) {
         final actualHash = await _computeSha256Hex(file, onProgress);
-        if (!_hashMatches(actualHash, spec.checksum)) {
-          await _purgeCachedFile(dir, spec.fileName);
+        if (_hashMatches(actualHash, spec.checksum)) {
           onProgress(
             FileDownloadProgress(
-              state: DownloadState.error,
-              errorMessage:
-                  'Checksum verification failed for cached ${spec.fileName}',
+              state: DownloadState.downloaded,
+              fractionComplete: 1.0,
             ),
           );
           return;
         }
 
-        onProgress(
-          FileDownloadProgress(
-            state: DownloadState.downloaded,
-            fractionComplete: 1.0,
-          ),
-        );
-        return;
+        await _purgeCachedFile(dir, spec.fileName);
       }
 
-      if (streamedResponse.statusCode != 200) {
-        await streamedResponse.stream.drain();
-        client.close();
-        onProgress(
-          FileDownloadProgress(
-            state: DownloadState.error,
-            errorMessage: 'HTTP ${streamedResponse.statusCode}',
-          ),
-        );
-        return;
-      }
+      final assetData = await rootBundle.load('assets/${spec.fileName}');
+      final bytes = assetData.buffer.asUint8List(
+        assetData.offsetInBytes,
+        assetData.lengthInBytes,
+      );
 
-      final total = streamedResponse.contentLength;
       final sink = file.openWrite();
-      int received = 0;
-
-      await for (final chunk in streamedResponse.stream) {
-        sink.add(chunk);
-        received += chunk.length;
-        onProgress(
-          FileDownloadProgress(
-            state: DownloadState.downloading,
-            fractionComplete: total != null && total > 0
-                ? received / total
-                : null,
-          ),
-        );
-        await Future.delayed(Duration.zero);
-      }
+      sink.add(bytes);
       await sink.flush();
       await sink.close();
-      client.close();
 
       final actualHash = await _computeSha256Hex(file, onProgress);
       if (!_hashMatches(actualHash, spec.checksum)) {
@@ -195,15 +122,6 @@ class DownloadService {
         );
         return;
       }
-
-      final newEtag = streamedResponse.headers['etag'];
-      final newLastModified = streamedResponse.headers['last-modified'];
-      await _writeMeta(
-        dir,
-        spec.fileName,
-        etag: newEtag,
-        lastModified: newLastModified,
-      );
 
       onProgress(
         FileDownloadProgress(
