@@ -196,8 +196,8 @@ class _OnboardingStepperPageState extends State<OnboardingStepperPage> {
       ),
     ),
     Step(
-      title: const Text('Downloads'),
-      subtitle: const Text('Required to generate your zero-knowledge proof'),
+      title: const Text('Checksumming'),
+      subtitle: const Text('Validating the key for the zero-knowledge proof'),
       state: _stepState(_stepDownload),
       isActive: _currentStep >= _stepDownload,
       content: Align(

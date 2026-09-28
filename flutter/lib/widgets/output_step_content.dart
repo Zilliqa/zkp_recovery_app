@@ -22,7 +22,7 @@ class OutputStepContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Send your entire legacy balance to the Escrow contract, published at the address below, using the legacy Schnorr wallet.',
+          'Send your entire legacy balance to the Escrow contract, published at the address below, using the legacy Schnorr wallet. The transfer will cost about 0.1-0.2 \$ZIL in fees.',
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
@@ -34,7 +34,7 @@ class OutputStepContent extends StatelessWidget {
         _CopyableField(label: 'Zero-knowledge proof calldata', value: result),
         const SizedBox(height: 16),
         Text(
-          'To automatically claim your \$ZILs that you lodged with the Escrow Contract, copy and paste the zero-knowledge proof into your EVM wallet, and submit it to the Escrow contract at the address below.',
+          'To automatically claim your \$ZILs that you lodged with the Escrow Contract, copy and paste the zero-knowledge proof into your EVM wallet, and submit it to the Escrow contract at the address below. The call should cost about 1.0-2.0 \$ZIL gas. Do not send \$ZIL with this call.',
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
