@@ -30,7 +30,7 @@ const List<InfoCardData> welcomeInfoCards = [
     icon: Icons.airplanemode_active,
     title: 'Offline mode capable',
     body:
-        'In Step 4, enable Flight mode and disable WiFi for added safety.',
+        'This app can be used offline - enable Flight mode and disable WiFi for added safety.',
   ),
   InfoCardData(
     icon: Icons.savings,

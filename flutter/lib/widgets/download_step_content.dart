@@ -33,7 +33,7 @@ class DownloadStepContent extends StatelessWidget {
         if (!allDownloaded) ...[
           const SizedBox(height: 12),
           Text(
-            'Please wait for the download to finish.',
+            'Please wait for the checksum to finish.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.error,
             ),
