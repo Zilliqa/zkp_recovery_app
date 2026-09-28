@@ -4,6 +4,11 @@ This is the example app of mopro. You can use the following commands to build na
 
 **📚 To learn more about mopro, visit: https://zkmopro.org**
 
+## Platform guides
+
+- **macOS (Apple Silicon):** see [docs/macOS.md](docs/macOS.md) for installing a release disk image, or building and running from source when no `.dmg` is published yet. Intel Macs are not supported.
+- **Linux:** see [docs/Linux.md](docs/Linux.md).
+
 ## Getting Started
 
 To set up and build bindings, follow these steps.
