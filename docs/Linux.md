@@ -2,7 +2,7 @@
 
 ![Linux desktop screenshot](linux.png)
 
-This guide will help you run the Migration App on a Linux computer, step by step. (Tested on Ubuntu 24.04.)
+This guide will help you run the Migration App on a Linux computer, step by step. (Tested on Ubuntu 26.04.)
 
 **Before you start:**
 - This takes about **5–10 minutes**.
@@ -13,7 +13,7 @@ This guide will help you run the Migration App on a Linux computer, step by step
 
 ## What you'll need
 
-- A computer running Linux (tested on Ubuntu 24.04)
+- A computer running Linux (tested on Ubuntu 26.04)
 - About 5–10 minutes
 - An internet connection
 

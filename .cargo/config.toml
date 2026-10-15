@@ -1,2 +1,10 @@
 [unstable]
 build-std = ["panic_abort", "std"]
+
+# Build the C that rust_witness generates from groth.wasm (via w2c2) with clang. GCC 15
+# defaults to C23, where `bool` is a keyword, and rejects w2c2_base.h's `typedef enum bool`.
+# This covers both `mopro build` and the cargokit build run by `flutter build`. Without
+# `force`, a CC already set in the environment wins (e.g. `CC=gcc mopro build`), and
+# cross-compiles are unaffected because cc-rs prefers the CC_<target> that cargokit sets.
+[env]
+CC = "clang"

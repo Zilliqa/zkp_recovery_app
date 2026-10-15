@@ -25,6 +25,10 @@ class OutputStepContent extends StatelessWidget {
           'Send your entire legacy balance to the Escrow contract, published at the address below, using the legacy Schnorr wallet. The transfer will cost about 0.1-0.2 \$ZIL in fees.',
           style: theme.textTheme.bodyMedium,
         ),
+        Text(
+          '⚠ IMPORTANT ⚠ DO NOT SEND ZRC-2 TOKENS. Send ONLY \$ZILs from your Legacy Account to the Escrow Contract.',
+          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.red),
+        ),
         const SizedBox(height: 16),
         const _CopyableField(
           label: 'Legacy escrow address',
