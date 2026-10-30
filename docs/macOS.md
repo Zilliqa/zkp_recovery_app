@@ -4,8 +4,8 @@ This guide is for Macs with an **Apple M-series chip (M1 or newer)** running **m
 
 ## Step 1: Download and check the app
 
-1. Open [Zilliqa’s official GitHub releases page](https://github.com/Zilliqa/zkp_recovery_app/releases). Under the latest release, click **Assets** if you need to expand the list. Download the macOS file whose name starts with `zkp-migration-app-macos-arm64-` and ends with `.dmg`, for example `zkp-migration-app-macos-arm64-0.6.0.dmg`. It will usually go to **Downloads**. **Do not download it from another website.**
-2. On the same release page, download the file with the **same name plus `.sha256`** at the end, for example `zkp-migration-app-macos-arm64-0.6.0.dmg.sha256`. This small text file contains the official fingerprint for the app. The same fingerprint is also listed on the release page.
+1. Open [Zilliqa’s official GitHub releases page](https://github.com/Zilliqa/zkp_recovery_app/releases). Under the latest release, click **Assets** if you need to expand the list. Download the macOS file whose name starts with `zkp-migration-app-macos-arm64-` and ends with `.dmg`, for example `zkp-migration-app-macos-arm64-0.6.1.dmg`. It will usually go to **Downloads**. **Do not download it from another website.**
+2. On the same release page, download the file with the **same name plus `.sha256`** at the end, for example `zkp-migration-app-macos-arm64-0.6.1.dmg.sha256`. This small text file contains the official fingerprint for the app. The same fingerprint is also listed on the release page.
 3. Open **Terminal**: press **Command (⌘) + Space**, type `Terminal`, then press **Return**.
 4. Type `shasum -a 256` followed by **one space**. Do not press Return yet. Open **Finder → Downloads**, then **drag the downloaded `.dmg` file into Terminal**. Its location will appear after the space. Now press **Return**.
    Terminal will show a string of 64 letters and numbers followed by the file's location. That string is your download’s **fingerprint**.
