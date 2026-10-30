@@ -2,7 +2,7 @@
 
 ![Linux desktop screenshot](linux.png)
 
-This guide will help you run the Migration App on a Linux computer, step by step. (Tested on Ubuntu 24.04.)
+This guide will help you run the Migration App on a Linux computer, step by step. (Tested on Ubuntu 26.04.)
 
 **Before you start:**
 - This takes about **5–10 minutes**.
@@ -13,7 +13,7 @@ This guide will help you run the Migration App on a Linux computer, step by step
 
 ## What you'll need
 
-- A computer running Linux (tested on Ubuntu 24.04)
+- A computer running Linux (tested on Ubuntu 26.04)
 - About 5–10 minutes
 - An internet connection
 
@@ -43,7 +43,7 @@ This keeps everything for the app in one place, so it's easy to find later.
 2. Find the file named `zkp-migration-app-linux-amd64.tar.gz`, right-click it, and choose **"Copy Link"**.
 3. Back in the terminal window, type `wget ` (with a space after it), then paste the link you copied, and press Enter. It should look something like this:
    ```
-   wget https://github.com/Zilliqa/zkp_recovery_app/releases/download/v0.6.0/zkp-migration-app-linux-amd64.tar.gz
+   wget https://github.com/Zilliqa/zkp_recovery_app/releases/download/v0.6.1/zkp-migration-app-linux-amd64.tar.gz
    ```
 
 This downloads the app into the folder you created in Step 2.

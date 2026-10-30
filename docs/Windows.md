@@ -41,7 +41,7 @@ You should now see a black window with white text. This is the **Command Prompt*
 In the Windows window, type this and press Enter:
 
 ```
-wsl --install -d Ubuntu-24.04
+wsl --install -d Ubuntu-26.04
 ```
 
 This downloads and installs everything needed — it can take a few minutes. You'll see progress messages like this:
