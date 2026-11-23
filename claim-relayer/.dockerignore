@@ -1,0 +1,7 @@
+# Keep secrets, state and test fixtures out of the build context: the image only needs the relayer code.
+*
+!package.json
+!package-lock.json
+!lock.js
+!relay.js
+!store.js
