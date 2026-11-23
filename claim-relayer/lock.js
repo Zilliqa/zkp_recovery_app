@@ -3,23 +3,80 @@
 import fs from 'node:fs';
 import os from 'node:os';
 
+const MARKER_TTL_MS = 30_000; // a takeover takes milliseconds; an older marker belongs to a process that died
+
 // Two relayers at once would double-submit and clash nonces, so only one may hold the lock. A second live
 // instance on the same host gets { acquired: false } instead of crashing on SQLITE_BUSY. A lock whose owner
 // is dead, or that was written on another host, is stale and is taken over: on another host (a previous
 // Kubernetes Job pod, where node always runs as PID 1) the pid says nothing about a process here, and the
 // scheduler (CronJob concurrencyPolicy: Forbid) is what guarantees there is no other writer.
-export function acquireLock(dbFile, { host = os.hostname(), pid = process.pid, isAlive = pidAlive } = {}) {
+//
+// Takeovers are serialized by an exclusive marker (<lock>.takeover): only the process that creates it may
+// replace the stale lock, and only if the lock still holds the stale content it judged. The lock is
+// overwritten in place, never removed, so a fresh exclusive create cannot slip in during a takeover.
+export function acquireLock(dbFile, { host = os.hostname(), pid = process.pid, isAlive = pidAlive, now = Date.now } = {}) {
   const file = `${dbFile}.lock`;
+  const marker = `${file}.takeover`;
   const owner = JSON.stringify({ host, pid });
-  try {
-    fs.writeFileSync(file, owner, { flag: 'wx' }); // atomic create-if-absent
-  } catch (e) {
-    if (e.code !== 'EEXIST') throw e;
-    const holder = parseOwner(fs.readFileSync(file, 'utf8'), host);
-    if (holder.host === host && holder.pid && isAlive(holder.pid)) return { acquired: false, holder, release: () => {} };
-    fs.writeFileSync(file, owner); // stale: dead owner, or written on another host
+  const won = () => ({ acquired: true, holder: { host, pid }, release: () => releaseIfOwned(file, owner) });
+  const lost = (holder) => ({ acquired: false, holder, release: () => {} });
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (createExclusive(file, owner)) return won();
+    const text = readIfExists(file);
+    if (text === null) continue; // released meanwhile: try to create it again
+    const holder = parseOwner(text, host);
+    if (holder.host === host && holder.pid && isAlive(holder.pid)) return lost(holder);
+
+    // Stale: dead owner, or written on another host.
+    if (!createExclusive(marker, owner)) {
+      const stat = statIfExists(marker);
+      if (stat && now() - stat.mtimeMs < MARKER_TTL_MS) return lost(parseOwner(readIfExists(marker) ?? '', host));
+      fs.rmSync(marker, { force: true }); // left by a takeover that died
+      continue;
+    }
+    try {
+      if (readIfExists(file) !== text) continue; // changed hands since we judged it: look again
+      fs.writeFileSync(file, owner);
+      return won();
+    } finally {
+      fs.rmSync(marker, { force: true });
+    }
   }
-  return { acquired: true, holder: { host, pid }, release: () => fs.rmSync(file, { force: true }) };
+  throw new Error(`could not take the lock ${file}: it keeps changing hands`);
+}
+
+function createExclusive(file, content) {
+  try {
+    fs.writeFileSync(file, content, { flag: 'wx' }); // atomic create-if-absent
+    return true;
+  } catch (e) {
+    if (e.code === 'EEXIST') return false;
+    throw e;
+  }
+}
+
+function readIfExists(file) {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch (e) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
+}
+
+function statIfExists(file) {
+  try {
+    return fs.statSync(file);
+  } catch (e) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
+}
+
+// Remove the lock only if it is still ours: never delete a lock another owner has taken over.
+function releaseIfOwned(file, owner) {
+  if (readIfExists(file) === owner) fs.rmSync(file, { force: true });
 }
 
 // Locks written before this format held only the pid; they come from the host we are on.
