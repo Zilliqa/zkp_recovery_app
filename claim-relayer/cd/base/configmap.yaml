@@ -1,0 +1,9 @@
+# ABOUTME: Non-secret relayer settings (see ../../.env.example), passed to the container as environment.
+# ABOUTME: The chain RPC and escrow come from the overlay; the sheet ids are in the Secret; the DB lives on /data.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claim-relayer
+data:
+  DB_FILE: /data/relayer.db
+  RETRY_MAX: "20"

@@ -1,0 +1,19 @@
+# ABOUTME: Production claim relayer: ZQ2 mainnet escrow, the claim Form's response sheet, key from 1Password.
+# ABOUTME: Deployed on gke-p-prod-apps-02-ase1 by `z app sync claim-relayer` (devops prj-p-prod-apps/z_ase1.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: claim-relayer-prd
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: claim-relayer
+    path: configmap.yaml
+  - target:
+      kind: Secret
+      name: claim-relayer
+    path: secrets.yaml
