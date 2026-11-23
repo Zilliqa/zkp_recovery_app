@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { ethers } from 'ethers';
 import { openStore } from './store.js';
+import { acquireLock } from './lock.js';
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex');
 // Key a row by its SUBMISSION (timestamp + calldata), not just the proof bytes: the escrow has no
@@ -90,29 +91,21 @@ async function readRows(watermark) {
 }
 
 // Single-instance guard (the README assumes one relayer at a time — two would double-submit and clash
-// nonces). An advisory PID lock file next to the DB; a second live instance exits cleanly instead of
-// crashing on SQLITE_BUSY. A stale lock left by a dead process is taken over.
-function acquireLock(dbFile) {
-  const lock = `${dbFile}.lock`;
-  try {
-    fs.writeFileSync(lock, String(process.pid), { flag: 'wx' }); // atomic create-if-absent
-  } catch (e) {
-    if (e.code !== 'EEXIST') throw e;
-    const pid = parseInt(fs.readFileSync(lock, 'utf8').trim(), 10);
-    let alive = false;
-    try { if (pid) { process.kill(pid, 0); alive = true; } } catch (err) { alive = err.code === 'EPERM'; }
-    if (alive) { console.error(`another relayer instance appears to be running (pid ${pid}, lock ${lock}) — exiting`); process.exit(1); }
-    fs.writeFileSync(lock, String(process.pid)); // stale lock (holder dead) → take it over
+// nonces): see lock.js. A second live instance exits cleanly instead of crashing on SQLITE_BUSY.
+function holdLock(dbFile) {
+  const lock = acquireLock(dbFile);
+  if (!lock.acquired) {
+    console.error(`another relayer instance appears to be running (host ${lock.holder.host}, pid ${lock.holder.pid}, lock ${dbFile}.lock) — exiting`);
+    process.exit(1);
   }
-  const release = () => { try { fs.unlinkSync(lock); } catch { /* already gone */ } };
-  process.on('exit', release);
-  for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { release(); process.exit(1); });
+  process.on('exit', lock.release);
+  for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { lock.release(); process.exit(1); });
 }
 
 async function main() {
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = new ethers.NonceManager(new ethers.Wallet(RELAYER_PRIVATE_KEY, provider));
-  if (!DRY_RUN) acquireLock(DB_FILE); // dry-run is read-only, so it doesn't need (or take) the lock
+  if (!DRY_RUN) holdLock(DB_FILE); // dry-run is read-only, so it doesn't need (or take) the lock
   const store = openStore(DB_FILE);
 
   // 1) Ingest new rows: read only rows at/after the stored timestamp watermark, keyed by submission hash

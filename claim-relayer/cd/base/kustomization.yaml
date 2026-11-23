@@ -1,0 +1,18 @@
+# ABOUTME: Claim relayer on Kubernetes: a daily CronJob with its SQLite DB on a volume, deployed by the devops z CLI.
+# ABOUTME: Environment-specific values (chain, escrow, sheet, 1Password vault) live in the overlays.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: claim-relayer
+    includeSelectors: false
+
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - pvc.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - cronjob.yaml
+  - networkpolicy.yaml

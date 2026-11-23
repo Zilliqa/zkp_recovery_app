@@ -1,0 +1,6 @@
+# ABOUTME: Namespace of the claim relayer; the overlay renames it per environment (claim-relayer-prd).
+# ABOUTME: Holds the CronJob, its volume, settings, key Secret and NetworkPolicy.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: claim-relayer

@@ -1,0 +1,13 @@
+# ABOUTME: Volume for relayer.db, the state of every claim since the start (status, retries, tx hashes).
+# ABOUTME: SQLite needs a real filesystem with working locks, so a persistent disk rather than object storage.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: claim-relayer-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard-rwo
+  resources:
+    requests:
+      storage: 1Gi

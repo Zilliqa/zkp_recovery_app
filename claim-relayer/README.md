@@ -78,9 +78,11 @@ verbatim as `tx.data` (no ABI/Interface needed).
   watermark uses gviz's unambiguous `Date(y,m,d,…)` JSON encoding — not the sheet's locale display — so
   M/D/YYYY vs D/M/YYYY doesn't matter. (Assumes column A is the Form's datetime `Timestamp`.)
 - **Single instance (enforced).** Run **one** relayer at a time — two would double-submit and clash
-  nonces. A second instance detects the first via a PID lock file (`<DB_FILE>.lock`) and **exits cleanly**
-  ("another relayer instance appears to be running") instead of crashing on `SQLITE_BUSY`; a stale lock
-  from a crashed run is taken over automatically. (A `busy_timeout` also waits out a transient lock, e.g.
+  nonces. A second instance detects the first via a lock file (`<DB_FILE>.lock`, holding the owner's host and
+  pid, see `lock.js`) and **exits cleanly** ("another relayer instance appears to be running") instead of
+  crashing on `SQLITE_BUSY`; a stale lock from a crashed run is taken over automatically. A lock written on
+  another host is always stale: on Kubernetes every Job pod has its own hostname and runs node as PID 1, and
+  the CronJob's `concurrencyPolicy: Forbid` is what keeps a single writer. (A `busy_timeout` also waits out a transient lock, e.g.
   an open `sqlite3` reader.) `--dry-run` is read-only and takes no lock. True multi-instance would still
   need a shared DB + row-level leasing.
 - **Sequential submission.** Each tx is awaited before the next (simple, correct nonces via `NonceManager`).

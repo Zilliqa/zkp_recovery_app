@@ -1,0 +1,9 @@
+# ABOUTME: Production settings: ZQ2 mainnet RPC and escrow (both public, on-chain).
+# ABOUTME: The response sheet ids come from 1Password through the Secret, not from here.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: claim-relayer
+data:
+  RPC_URL: https://api.zq2-mainnet.zilliqa.com
+  ESCROW_ADDRESS: "0x00000000005A494C31455343524F5750524F5859"
