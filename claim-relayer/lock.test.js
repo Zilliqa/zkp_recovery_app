@@ -85,3 +85,25 @@ test('a stale lock is taken over once: the next contender sees the new live owne
   assert.deepEqual(second.holder, { host: 'vm', pid: 7 });
   assert.deepEqual(fs.readdirSync(path.dirname(db)), ['relayer.db.lock']);
 });
+
+test('a takeover in progress (fresh marker) makes the contender back off', (t) => {
+  const db = tmpDb(t);
+  fs.writeFileSync(`${db}.lock`, JSON.stringify({ host: 'vm', pid: 42 }));
+  fs.writeFileSync(`${db}.lock.takeover`, JSON.stringify({ host: 'vm', pid: 9 }));
+  const lock = acquireLock(db, { host: 'vm', pid: 7, isAlive: () => false });
+  assert.equal(lock.acquired, false);
+  assert.deepEqual(lock.holder, { host: 'vm', pid: 9 });
+  assert.deepEqual(readLock(db), { host: 'vm', pid: 42 });
+});
+
+test('a marker left by a takeover that died is cleared after 30 s', (t) => {
+  const db = tmpDb(t);
+  fs.writeFileSync(`${db}.lock`, JSON.stringify({ host: 'old-pod', pid: 1 }));
+  fs.writeFileSync(`${db}.lock.takeover`, JSON.stringify({ host: 'old-pod', pid: 1 }));
+  const old = new Date(Date.now() - 60_000);
+  fs.utimesSync(`${db}.lock.takeover`, old, old);
+  const lock = acquireLock(db, { host: 'new-pod', pid: 1, isAlive: () => true });
+  assert.equal(lock.acquired, true);
+  assert.deepEqual(readLock(db), { host: 'new-pod', pid: 1 });
+  assert.equal(fs.existsSync(`${db}.lock.takeover`), false);
+});
