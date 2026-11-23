@@ -14,6 +14,9 @@ const MARKER_TTL_MS = 30_000; // a takeover takes milliseconds; an older marker 
 // Takeovers are serialized by an exclusive marker (<lock>.takeover): only the process that creates it may
 // replace the stale lock, and only if the lock still holds the stale content it judged. The lock is
 // overwritten in place, never removed, so a fresh exclusive create cannot slip in during a takeover.
+// Limits, like any lease: a takeover stalled for over MARKER_TTL_MS can lose its marker to another
+// contender, and a live owner on another host is not detected. The lock is a second line of defence; the
+// scheduler (CronJob Forbid on Kubernetes, `flock -n` in the VM's crontab) is the first.
 export function acquireLock(dbFile, { host = os.hostname(), pid = process.pid, isAlive = pidAlive, now = Date.now } = {}) {
   const file = `${dbFile}.lock`;
   const marker = `${file}.takeover`;
