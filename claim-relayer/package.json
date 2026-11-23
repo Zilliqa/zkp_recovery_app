@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Relayer: read claim calldata from the Google Form's link-readable Sheet (public gviz JSON), simulate against the escrow, and submit the valid ones.",
   "scripts": {
-    "start": "node relay.js"
+    "start": "node relay.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=22"
