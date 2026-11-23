@@ -1,0 +1,32 @@
+# ABOUTME: Nothing may connect to the relayer; it may only resolve names and reach public HTTPS endpoints.
+# ABOUTME: Blocks private ranges, the cluster's Pods and Services (172.112.0.0/16 on prod) and the metadata server.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: claim-relayer
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: claim-relayer
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 100.64.0.0/10
+              - 172.112.0.0/16
+              - 169.254.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP

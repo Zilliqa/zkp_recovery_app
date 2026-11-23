@@ -1,0 +1,65 @@
+# ABOUTME: Runs the relayer once a day at 11:30 UTC with its SQLite DB on the claim-relayer-data volume.
+# ABOUTME: The image name is rewritten by z to <registry>/claim-relayer:<release tag>.
+#
+# Forbid + backoffLimit 0 keep a single writer and never resubmit after a half-done run: a failed run is
+# simply retried by the next day's schedule.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: claim-relayer
+spec:
+  schedule: "30 11 * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 7
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: claim-relayer
+        spec:
+          restartPolicy: Never
+          serviceAccountName: claim-relayer
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: claim-relayer
+              image: claim-relayer
+              envFrom:
+                - configMapRef:
+                    name: claim-relayer
+                - secretRef:
+                    name: claim-relayer
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: claim-relayer-data
+            - name: tmp
+              emptyDir: {}
