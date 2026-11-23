@@ -1,0 +1,45 @@
+# ABOUTME: Builds and pushes the claim relayer image for every published release (tag = release tag).
+# ABOUTME: Deploying it is a manual `z app sync claim-relayer` from the devops repo (prj-p-prod-apps).
+name: "Claim relayer: CICD production"
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-docker:
+    permissions:
+      id-token: write
+      contents: read
+      security-events: write
+    runs-on: ubuntu-22.04
+    name: "Build and push claim-relayer"
+    env:
+      REGISTRY: asia-docker.pkg.dev/prj-p-devops-services-tvwmrf63/zilliqa-public
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Unit tests
+        working-directory: claim-relayer
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+
+      - name: Docker build and push - production
+        uses: Zilliqa/gh-actions-workflows/actions/ci-dockerized-app-build-push@v4
+        with:
+          file: claim-relayer/Dockerfile
+          context: claim-relayer
+          push: true
+          tag: ${{ env.REGISTRY }}/claim-relayer:${{ github.ref_name }}
+          registry: asia-docker.pkg.dev
+          workload-identity-provider: "${{ secrets.GCP_PRD_GITHUB_WIF }}"
+          service-account: "${{ secrets.GCP_PRD_GITHUB_SA_DOCKER_REGISTRY }}"
+          cache-key: ${{ env.REGISTRY }}/claim-relayer-cache
+          trivy-scan: true
