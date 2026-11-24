@@ -1,0 +1,9 @@
+{
+  "name": "verify-calldata",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone offline validator for Zilliqa ZQ2 escrow claim() calldata (chain-id binding + Groth16 proof against the production ceremony VK).",
+  "bin": { "verify-calldata": "verify_calldata.js" },
+  "scripts": { "verify": "node verify_calldata.js" },
+  "dependencies": { "snarkjs": "0.7.6" }
+}
